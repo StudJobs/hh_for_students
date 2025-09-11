@@ -1,0 +1,10 @@
+addReviewers: true
+numberOfReviewers: 2
+reviewers:
+ - Ktuty
+ - H1kar1
+addAssignees: true
+assignees:
+  - Ktuty
+  - H1kar1
+numberOfAssignees: 2
