@@ -2,9 +2,9 @@ addReviewers: true
 numberOfReviewers: 2
 reviewers:
  - Ktuty
- - H1kar1
+ - H1kkar1
 addAssignees: true
 assignees:
   - Ktuty
-  - H1kar1
+  - H1kkar1
 numberOfAssignees: 2
