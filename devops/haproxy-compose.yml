@@ -1,0 +1,27 @@
+services:
+  haproxy-lb:
+    image: haproxy:lts-alpine3.22 # 2 low priority vulnerabilities + lightweight
+    ports:
+      - "8888:80"
+      - "8443:443"  
+      - "8404:8404"
+    command: >
+      sh -c "genereate_cert_haproxy.sh"
+    volumes:
+      - ./haproxy.cfg:/usr/local/etc/haproxy/haproxy.cfg
+      - ./certs/.haproxy:/etc/ssl/private
+    healthcheck:
+      test: ["CMD", "curl", "-f", "-k", "https://localhost:8443"]
+      interval: 30s
+      timeout: 20s
+      retries: 3
+  
+  # app-frontend-1:
+  #   image: nginx:alpine
+  #   container_name: app-frontend-1
+  #   labels:
+  #     - "traefik.enable=false"
+  #   volumes:
+  #     - ./test/frontend-html:/usr/share/nginx/html
+  #   networks:
+  #     - test

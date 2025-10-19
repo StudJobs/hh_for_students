@@ -1,0 +1,59 @@
+version: "3.8"
+
+services:
+
+  app:
+    build:
+      dockerfile: Dockerfile
+    ports:
+      - "8001:8001"
+    volumes:
+      - .:/app
+    networks:
+      - webapi
+    depends_on:
+      - db
+    command: sh -c "alembic upgrade head && python3 main.py"
+
+  db:
+    image: postgres:17-alpine
+
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: 123
+      POSTGRES_DB: Task
+      PGDATA: /var/lib/postgresql/data/pgdata
+    networks:
+      - webapi
+    ports:
+      - "5433:5433"
+    volumes:
+      - ./pgdata:/var/lib/postgresql/data/pgdata
+      -
+    healthcheck:
+      test: "pg_isready -U user -d mydb"
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 5s
+  redis:
+    image: redis:7-alpine
+    container_name: redis
+    restart: unless-stopped
+    ports:
+      - "6379:6379"
+    command: redis-server --requirepass 1
+    volumes:
+      - redis_data:/data
+    environment:
+      - REDIS_PASSWORD=123
+    networks:
+      - webapi
+
+volumes:
+  redis_data:
+
+networks:
+  default:
+    external:
+      name: webapi
