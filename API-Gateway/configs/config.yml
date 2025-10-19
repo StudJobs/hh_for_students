@@ -1,8 +1,6 @@
 server:
   port: "8000"
 
-db:
-  host: "localhost"
-  port: "5436"
-  dbname: "postgres"
-  sslmode: "disable"
+grpc:
+  auth_address: "localhost:50051"
+  users_address: "localhost:50052"

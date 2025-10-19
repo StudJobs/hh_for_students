@@ -1,25 +1,24 @@
 package handlers
 
 import (
-	apigatewayV1 "github.com/StudJobs/proto_srtucture/gen/go/proto/apigateway/v1"
 	"github.com/gofiber/fiber/v2"
 	"github.com/studjobs/hh_for_students/api-gateway/internal/services"
+	"log"
 	"time"
 )
 
 type Handler struct {
-	app           *fiber.App
-	gatewayClient apigatewayV1.ApiGatewayServiceClient
-	apiService    *services.ServiceAPIGateway
+	app        *fiber.App
+	apiService *services.ApiGateway
 }
 
-func NewHandler(gatewayClient apigatewayV1.ApiGatewayServiceClient, apiService *services.ServiceAPIGateway) *Handler {
+// NewHandler создает новый экземпляр Handler
+func NewHandler(apiService *services.ApiGateway) *Handler {
+	log.Printf("Creating new Handler")
 	return &Handler{
-		gatewayClient: gatewayClient,
-		apiService:    apiService,
+		apiService: apiService,
 	}
 }
-
 func (h *Handler) Init() *fiber.App {
 
 	h.app = fiber.New(fiber.Config{
@@ -31,7 +30,7 @@ func (h *Handler) Init() *fiber.App {
 		CaseSensitive: true,
 		StrictRouting: false,
 	})
-	h.app.Use(AuthMiddleware(h.gatewayClient))
+	h.app.Use(AuthMiddleware(h.apiService))
 
 	h.initRoutes()
 

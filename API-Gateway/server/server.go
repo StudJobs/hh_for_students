@@ -2,8 +2,9 @@ package server
 
 import (
 	"context"
-	"github.com/gofiber/fiber/v2"
 	"log"
+
+	"github.com/gofiber/fiber/v2"
 )
 
 type Server struct {
@@ -17,7 +18,6 @@ func NewServer(app *fiber.App) *Server {
 }
 
 func (s *Server) Run(port string) error {
-
 	address := ":" + port
 
 	log.Printf("Server starting on http://localhost%s", address)

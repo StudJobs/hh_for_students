@@ -1,11 +1,10 @@
 package handlers
 
 import (
-	apigatewayV1 "github.com/StudJobs/proto_srtucture/gen/go/proto/apigateway/v1"
-	authv1 "github.com/StudJobs/proto_srtucture/gen/go/proto/auth/v1"
+	"context"
 	"github.com/gofiber/fiber/v2"
-	"google.golang.org/grpc/codes"
-	"google.golang.org/grpc/status"
+	"github.com/studjobs/hh_for_students/api-gateway/internal/services"
+	"log"
 	"strings"
 )
 
@@ -26,15 +25,19 @@ const (
 	ID string = "id"
 )
 
-// AuthMiddleware проверяет JWT токен через ApiGateway
-func AuthMiddleware(client apigatewayV1.ApiGatewayServiceClient) fiber.Handler {
+// AuthMiddleware проверяет JWT токен через APIGatewayService
+func AuthMiddleware(apiService *services.ApiGateway) fiber.Handler {
 	return func(c *fiber.Ctx) error {
-		if c.Path() == "/api/v1/auth/login" || c.Path() == "/api/v1/auth/register" {
+		// Пропускаем auth endpoints и health check
+		if c.Path() == "/api/v1/auth/login" ||
+			c.Path() == "/api/v1/auth/register" ||
+			c.Path() == "/health" {
 			return c.Next()
 		}
 
 		authHeader := c.Get("Authorization")
 		if authHeader == "" {
+			log.Printf("AuthMiddleware: Missing Authorization header")
 			return c.Status(fiber.StatusUnauthorized).JSON(fiber.Map{
 				"error": "Authorization header required",
 			})
@@ -42,34 +45,53 @@ func AuthMiddleware(client apigatewayV1.ApiGatewayServiceClient) fiber.Handler {
 
 		token := strings.TrimPrefix(authHeader, "Bearer ")
 		if token == authHeader {
+			log.Printf("AuthMiddleware: Bearer token prefix missing")
 			return c.Status(fiber.StatusUnauthorized).JSON(fiber.Map{
 				"error": "Bearer token required",
 			})
 		}
 
-		validation, err := client.ParseToken(c.Context(), &authv1.ParseTokenRequest{
-			AccessToken: token,
-		})
+		log.Printf("AuthMiddleware: Validating token: %s...", token[:min(10, len(token))])
+
+		// Вызываем сервис для проверки токена
+		valid, userUUID, role, err := apiService.Auth.ValidateToken(context.Background(), token)
 		if err != nil {
-			if status.Code(err) == codes.Unauthenticated {
-				return c.Status(fiber.StatusUnauthorized).JSON(fiber.Map{
-					"error": "Invalid token",
-				})
-			}
+			log.Printf("AuthMiddleware: Token validation error: %v", err)
 			return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{
 				"error": "Authentication service error",
 			})
 		}
 
-		if !validation.Valid {
+		if !valid {
+			log.Printf("AuthMiddleware: Invalid token")
 			return c.Status(fiber.StatusUnauthorized).JSON(fiber.Map{
 				"error": "Invalid token",
 			})
 		}
 
-		c.Locals(string(UserIDKey), validation.UserUuid)
-		c.Locals(string(RoleKey), validation.Role.String())
+		log.Printf("AuthMiddleware: Token validated - user_uuid: %s, role: %s", userUUID, role)
+
+		// Конвертируем строку роли в тип Role
+		var userRole Role
+		switch role {
+		case "ROLE_DEVELOPER":
+			userRole = ROLE_DEVELOPER
+		case "ROLE_STUDENT":
+			userRole = ROLE_STUDENT
+		case "ROLE_EMPLOYER":
+			userRole = ROLE_HR
+		default:
+			log.Printf("AuthMiddleware: Unknown role: %s", role)
+			return c.Status(fiber.StatusUnauthorized).JSON(fiber.Map{
+				"error": "Invalid user role",
+			})
+		}
+
+		// Сохраняем данные в контекст
+		c.Locals(string(UserIDKey), userUUID)
+		c.Locals(string(RoleKey), userRole)
 		c.Locals(string(TokenKey), token)
+
 		return c.Next()
 	}
 }
@@ -79,23 +101,29 @@ func RoleMiddleware(allowedRoles ...Role) fiber.Handler {
 	return func(c *fiber.Ctx) error {
 		userRole := getRoleFromContext(c)
 		if userRole == "" {
+			log.Printf("RoleMiddleware: User not authenticated")
 			return c.Status(fiber.StatusUnauthorized).JSON(fiber.Map{
 				"error": "User not authenticated",
 			})
 		}
 
+		log.Printf("RoleMiddleware: Checking role %s against allowed roles: %v", userRole, allowedRoles)
+
 		// ROLE_DEVELOPER имеет доступ ко всему
 		if userRole == ROLE_DEVELOPER {
+			log.Printf("RoleMiddleware: Developer role - access granted")
 			return c.Next()
 		}
 
 		// Проверяем разрешенные роли
 		for _, role := range allowedRoles {
 			if userRole == role {
+				log.Printf("RoleMiddleware: Role %s allowed - access granted", userRole)
 				return c.Next()
 			}
 		}
 
+		log.Printf("RoleMiddleware: Role %s not in allowed roles - access denied", userRole)
 		return c.Status(fiber.StatusForbidden).JSON(fiber.Map{
 			"error": "Insufficient permissions",
 		})
@@ -107,6 +135,7 @@ func OwnerOrRoleMiddleware(paramName string, allowedRoles ...Role) fiber.Handler
 	return func(c *fiber.Ctx) error {
 		userID := getUserIDFromContext(c)
 		if userID == "" {
+			log.Printf("OwnerOrRoleMiddleware: User not authenticated")
 			return c.Status(fiber.StatusUnauthorized).JSON(fiber.Map{
 				"error": "User not authenticated",
 			})
@@ -115,23 +144,29 @@ func OwnerOrRoleMiddleware(paramName string, allowedRoles ...Role) fiber.Handler
 		targetID := c.Params(paramName)
 		userRole := getRoleFromContext(c)
 
+		log.Printf("OwnerOrRoleMiddleware: User %s (role: %s) accessing resource %s", userID, userRole, targetID)
+
 		// ROLE_DEVELOPER имеет доступ ко всему
 		if userRole == ROLE_DEVELOPER {
+			log.Printf("OwnerOrRoleMiddleware: Developer role - access granted")
 			return c.Next()
 		}
 
 		// Владелец имеет доступ к своим данным
 		if userID == targetID {
+			log.Printf("OwnerOrRoleMiddleware: Owner access - access granted")
 			return c.Next()
 		}
 
 		// Проверяем разрешенные роли
 		for _, role := range allowedRoles {
 			if userRole == role {
+				log.Printf("OwnerOrRoleMiddleware: Role %s allowed - access granted", userRole)
 				return c.Next()
 			}
 		}
 
+		log.Printf("OwnerOrRoleMiddleware: Access denied for user %s to resource %s", userID, targetID)
 		return c.Status(fiber.StatusForbidden).JSON(fiber.Map{
 			"error": "Insufficient permissions",
 		})
@@ -148,7 +183,7 @@ func getUserIDFromContext(c *fiber.Ctx) string {
 
 // getRoleFromContext возвращает роль из контекста
 func getRoleFromContext(c *fiber.Ctx) Role {
-	if role, ok := c.Locals(string(RoleKey)).(Role); ok { // Type Assertion НУЖНО ПОНАБЛЮДАТЬ как он парсит строку в роль
+	if role, ok := c.Locals(string(RoleKey)).(Role); ok {
 		return role
 	}
 	return ""
