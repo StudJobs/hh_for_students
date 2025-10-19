@@ -1,0 +1,6 @@
+server:
+  port: "8000"
+
+grpc:
+  auth_address: "localhost:50051"
+  users_address: "localhost:50052"
