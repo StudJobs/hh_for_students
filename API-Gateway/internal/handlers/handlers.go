@@ -56,9 +56,9 @@ func (h *Handler) initRoutes() {
 	// === User Achievement routes ===
 	userAchievement := users.Group("/achievement")
 	userAchievement.Get("/", h.GetUserAchievements, RoleMiddleware(ROLE_DEVELOPER, ROLE_STUDENT, ROLE_HR))
-	userAchievement.Get("/id", h.CreateUserAchievement, RoleMiddleware(ROLE_DEVELOPER, ROLE_STUDENT, ROLE_HR))
+	userAchievement.Get("/:id", h.CreateUserAchievement, RoleMiddleware(ROLE_DEVELOPER, ROLE_STUDENT, ROLE_HR))
 	userAchievement.Post("/", h.CreateUserAchievement, OwnerOrRoleMiddleware(ID, ROLE_DEVELOPER, ROLE_STUDENT))
-	userAchievement.Delete("/id", h.DeleteAchievement, OwnerOrRoleMiddleware(ID, ROLE_DEVELOPER, ROLE_STUDENT))
+	userAchievement.Delete("/:id", h.DeleteAchievement, OwnerOrRoleMiddleware(ID, ROLE_DEVELOPER, ROLE_STUDENT))
 
 	// === HR routes ===
 	profileHR := api.Group("/hr")

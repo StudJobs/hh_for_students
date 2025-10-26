@@ -105,8 +105,6 @@ func (h *Handler) GetMe(c *fiber.Ctx) error {
 		user.ResumeID = uuid.MustParse(profile.ResumeId)
 	}
 
-	// TODO: вытащить ссылку на резюме
-
 	log.Printf("GetUser: Successfully retrieved user: %s", userID)
 	return c.JSON(user)
 
@@ -150,8 +148,6 @@ func (h *Handler) GetUser(c *fiber.Ctx) error {
 	if profile.ResumeId != "" {
 		user.ResumeID = uuid.MustParse(profile.ResumeId)
 	}
-
-	// TODO: вытащить ссылку на резюме
 
 	log.Printf("GetUser: Successfully retrieved user: %s", userID)
 	return c.JSON(user)
