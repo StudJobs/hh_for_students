@@ -23,9 +23,11 @@ type Clients struct {
 
 // Config конфигурация для gRPC подключений
 type Config struct {
-	AuthAddress  string
-	UsersAddress string
-	Timeout      time.Duration
+	AuthAddress            string
+	UsersAddress           string
+	UserAchievementAddress string
+	VacancyAddress         string
+	Timeout                time.Duration
 }
 
 // NewClients создает и возвращает все gRPC клиенты
@@ -39,15 +41,14 @@ func NewClients(cfg Config) (*Clients, error) {
 	}
 
 	// Создаем соединение с Users сервисом
-	//usersConn, err := createConnection(cfg.UsersAddress, cfg.Timeout)
-	//if err != nil {
-	//	authConn.Close()
-	//	return nil, err
-	//}
+	usersConn, err := createConnection(cfg.UsersAddress, cfg.Timeout)
+	if err != nil {
+		return nil, err
+	}
 
 	clients := &Clients{
-		Auth: authv1.NewAuthServiceClient(authConn),
-		//Users: usersv1.NewUsersServiceClient(usersConn),
+		Auth:  authv1.NewAuthServiceClient(authConn),
+		Users: usersv1.NewUsersServiceClient(usersConn),
 	}
 
 	log.Printf("✓ All gRPC clients initialized successfully")
