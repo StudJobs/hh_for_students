@@ -4,3 +4,5 @@ server:
 grpc:
   auth_address: "localhost:50051"
   users_address: "localhost:50052"
+  user_ach_address: "localhost:50053"
+  vacancy_address: "localhost:50054"

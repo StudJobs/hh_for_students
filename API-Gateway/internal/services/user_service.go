@@ -4,7 +4,6 @@ import (
 	"context"
 	"log"
 
-	commonv1 "github.com/StudJobs/proto_srtucture/gen/go/proto/common/v1"
 	usersv1 "github.com/StudJobs/proto_srtucture/gen/go/proto/users/v1"
 )
 
@@ -48,12 +47,9 @@ func (s *usersService) GetUser(ctx context.Context, userID string) (*usersv1.Pro
 	return resp, nil
 }
 
-func (s *usersService) GetUsers(ctx context.Context, pagination *commonv1.Pagination) (*usersv1.ProfileList, error) {
-	log.Printf("UsersService: GetUsers attempt, page: %d, limit: %d", pagination.Page, pagination.Limit)
+func (s *usersService) GetUsers(ctx context.Context, req *usersv1.GetAllProfilesRequest) (*usersv1.ProfileList, error) {
 
-	resp, err := s.client.GetAllProfiles(ctx, &usersv1.GetAllProfilesRequest{
-		Pagination: pagination,
-	})
+	resp, err := s.client.GetAllProfiles(ctx, req)
 	if err != nil {
 		log.Printf("UsersService: GetUsers failed: %v", err)
 		return nil, err

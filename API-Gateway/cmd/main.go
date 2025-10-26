@@ -25,9 +25,11 @@ func main() {
 
 	// Конфигурация gRPC клиентов из config.yaml
 	grpcConfig := grpc.Config{
-		AuthAddress:  viper.GetString("grpc.auth_address"),
-		UsersAddress: viper.GetString("grpc.users_address"),
-		Timeout:      10 * time.Second,
+		AuthAddress:            viper.GetString("grpc.auth_address"),
+		UsersAddress:           viper.GetString("grpc.users_address"),
+		UserAchievementAddress: viper.GetString("grpc.user_ach_address"),
+		VacancyAddress:         viper.GetString("grpc.vacancy_address"),
+		Timeout:                10 * time.Second,
 	}
 
 	log.Printf("Auth service: %s", grpcConfig.AuthAddress)

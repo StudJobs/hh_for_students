@@ -3,6 +3,7 @@ package server
 import (
 	"fmt"
 	authv1 "github.com/StudJobs/proto_srtucture/gen/go/proto/auth/v1"
+	"google.golang.org/grpc/reflection"
 	"log"
 	"net"
 
@@ -23,6 +24,7 @@ func New(port string, authHandlers *handlers.AuthHandlers) *Server {
 
 	// Регистрируем сервисы
 	authv1.RegisterAuthServiceServer(grpcServer, authHandlers)
+	reflection.Register(grpcServer)
 
 	return &Server{
 		grpcServer: grpcServer,

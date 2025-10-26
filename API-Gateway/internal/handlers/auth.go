@@ -2,6 +2,7 @@ package handlers
 
 import (
 	"context"
+	usersv1 "github.com/StudJobs/proto_srtucture/gen/go/proto/users/v1"
 
 	"github.com/gofiber/fiber/v2"
 	"github.com/studjobs/hh_for_students/api-gateway/internal/models"
@@ -86,11 +87,23 @@ func (h *Handler) Register(c *fiber.Ctx) error {
 	log.Printf("Calling API Gateway Register for email: %s, role: %s", req.Email, req.Role)
 
 	// Вызываем сервис (конвертация роли теперь в сервисе)
-	ctx := context.Background()
-	resp, err := h.apiService.Auth.Register(ctx, req.Email, req.Password, req.Role)
+	resp, err := h.apiService.Auth.Register(c.Context(), req.Email, req.Password, req.Role)
 
 	if err != nil {
 		log.Printf("API Gateway Register failed for email %s: %v", req.Email, err)
+		return h.handleAuthError(c, err)
+	}
+
+	if _, err = h.apiService.User.CreateUser(c.Context(), &usersv1.NewProfileRequest{
+		Profile: &usersv1.Profile{
+			Id:    resp.UserUUID,
+			Email: req.Email,
+			Age:   18,
+		},
+	}); err != nil {
+		log.Printf("API Gateway Create failed for email %s: %v", req.Email, err)
+
+		// TODO: Удалить пользователя из auth
 		return h.handleAuthError(c, err)
 	}
 

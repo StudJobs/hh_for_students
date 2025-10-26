@@ -5,7 +5,6 @@ import (
 	authv1 "github.com/StudJobs/proto_srtucture/gen/go/proto/auth/v1"
 	"github.com/studjobs/hh_for_students/api-gateway/internal/models"
 
-	commonv1 "github.com/StudJobs/proto_srtucture/gen/go/proto/common/v1"
 	usersv1 "github.com/StudJobs/proto_srtucture/gen/go/proto/users/v1"
 )
 
@@ -20,7 +19,7 @@ type AuthService interface {
 type UsersService interface {
 	CreateUser(ctx context.Context, req *usersv1.NewProfileRequest) (*usersv1.Profile, error)
 	GetUser(ctx context.Context, userID string) (*usersv1.Profile, error)
-	GetUsers(ctx context.Context, pagination *commonv1.Pagination) (*usersv1.ProfileList, error)
+	GetUsers(ctx context.Context, pagination *usersv1.GetAllProfilesRequest) (*usersv1.ProfileList, error)
 	UpdateUser(ctx context.Context, req *usersv1.UpdateProfileRequest) (*usersv1.Profile, error)
 	DeleteUser(ctx context.Context, userID string) error
 }
