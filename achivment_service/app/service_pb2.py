@@ -21,18 +21,18 @@ _runtime_version.ValidateProtobufRuntimeVersion(
 
 _sym_db = _symbol_database.Default()
 
+from . import types_pb2 as types__pb2
+from . import common_pb2 as common__pb2
 
-import types_pb2 as types__pb2
-import common_pb2 as common__pb2
 
-
-DESCRIPTOR = _descriptor_pool.Default().AddSerializedFile(b'\n\rservice.proto\x12\x0e\x61\x63hievement.v1\x1a\x0btypes.proto\x1a\x0c\x63ommon.proto\".\n\x19GetAllAchievementsRequest\x12\x11\n\tuser_uuid\x18\x01 \x01(\t\"D\n\x15GetAchievementRequest\x12\x11\n\tuser_uuid\x18\x01 \x01(\t\x12\x18\n\x10\x61\x63hievement_name\x18\x02 \x01(\t\"p\n\x1bGetAchievementUploadRequest\x12\x11\n\tuser_uuid\x18\x01 \x01(\t\x12\x18\n\x10\x61\x63hievement_name\x18\x02 \x01(\t\x12\x11\n\tfile_name\x18\x03 \x01(\t\x12\x11\n\tfile_type\x18\x04 \x01(\t\"J\n\x19\x41\x64\x64\x41\x63hievementMetaRequest\x12-\n\x04meta\x18\x01 \x01(\x0b\x32\x1f.achievement.v1.AchievementMeta\"G\n\x18\x44\x65leteAchievementRequest\x12\x11\n\tuser_uuid\x18\x01 \x01(\t\x12\x18\n\x10\x61\x63hievement_name\x18\x02 \x01(\t2\xe6\x03\n\x12\x41\x63hievementService\x12`\n\x12GetAllAchievements\x12).achievement.v1.GetAllAchievementsRequest\x1a\x1f.achievement.v1.AchievementList\x12\x62\n\x19GetAchievementDownloadUrl\x12%.achievement.v1.GetAchievementRequest\x1a\x1e.achievement.v1.AchievementUrl\x12\x66\n\x17GetAchievementUploadUrl\x12+.achievement.v1.GetAchievementUploadRequest\x1a\x1e.achievement.v1.AchievementUrl\x12Q\n\x12\x41\x64\x64\x41\x63hievementMeta\x12).achievement.v1.AddAchievementMetaRequest\x1a\x10.common.v1.Empty\x12O\n\x11\x44\x65leteAchievement\x12(.achievement.v1.DeleteAchievementRequest\x1a\x10.common.v1.Emptyb\x06proto3')
+DESCRIPTOR = _descriptor_pool.Default().AddSerializedFile(b'\n\rservice.proto\x12\x0e\x61\x63hievement.v1\x1a\x0btypes.proto\x1a\x0c\x63ommon.proto\".\n\x19GetAllAchievementsRequest\x12\x11\n\tuser_uuid\x18\x01 \x01(\t\"D\n\x15GetAchievementRequest\x12\x11\n\tuser_uuid\x18\x01 \x01(\t\x12\x18\n\x10\x61\x63hievement_name\x18\x02 \x01(\t\"p\n\x1bGetAchievementUploadRequest\x12\x11\n\tuser_uuid\x18\x01 \x01(\t\x12\x18\n\x10\x61\x63hievement_name\x18\x02 \x01(\t\x12\x11\n\tfile_name\x18\x03 \x01(\t\x12\x11\n\tfile_type\x18\x04 \x01(\t\"J\n\x19\x41\x64\x64\x41\x63hievementMetaRequest\x12-\n\x04meta\x18\x01 \x01(\x0b\x32\x1f.achievement.v1.AchievementMeta\"G\n\x18\x44\x65leteAchievementRequest\x12\x11\n\tuser_uuid\x18\x01 \x01(\t\x12\x18\n\x10\x61\x63hievement_name\x18\x02 \x01(\t2\xe6\x03\n\x12\x41\x63hievementService\x12`\n\x12GetAllAchievements\x12).achievement.v1.GetAllAchievementsRequest\x1a\x1f.achievement.v1.AchievementList\x12\x62\n\x19GetAchievementDownloadUrl\x12%.achievement.v1.GetAchievementRequest\x1a\x1e.achievement.v1.AchievementUrl\x12\x66\n\x17GetAchievementUploadUrl\x12+.achievement.v1.GetAchievementUploadRequest\x1a\x1e.achievement.v1.AchievementUrl\x12Q\n\x12\x41\x64\x64\x41\x63hievementMeta\x12).achievement.v1.AddAchievementMetaRequest\x1a\x10.common.v1.Empty\x12O\n\x11\x44\x65leteAchievement\x12(.achievement.v1.DeleteAchievementRequest\x1a\x10.common.v1.EmptyB;Z9github.com/StudJobs/proto_srtucture/gen/go/achievement/v1b\x06proto3')
 
 _globals = globals()
 _builder.BuildMessageAndEnumDescriptors(DESCRIPTOR, _globals)
 _builder.BuildTopDescriptorsAndMessages(DESCRIPTOR, 'service_pb2', _globals)
 if not _descriptor._USE_C_DESCRIPTORS:
-  DESCRIPTOR._loaded_options = None
+  _globals['DESCRIPTOR']._loaded_options = None
+  _globals['DESCRIPTOR']._serialized_options = b'Z9github.com/StudJobs/proto_srtucture/gen/go/achievement/v1'
   _globals['_GETALLACHIEVEMENTSREQUEST']._serialized_start=60
   _globals['_GETALLACHIEVEMENTSREQUEST']._serialized_end=106
   _globals['_GETACHIEVEMENTREQUEST']._serialized_start=108

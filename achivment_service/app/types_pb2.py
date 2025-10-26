@@ -24,13 +24,14 @@ _sym_db = _symbol_database.Default()
 
 
 
-DESCRIPTOR = _descriptor_pool.Default().AddSerializedFile(b'\n\x0btypes.proto\x12\x0e\x61\x63hievement.v1\"\x7f\n\x0f\x41\x63hievementMeta\x12\x0c\n\x04name\x18\x01 \x01(\t\x12\x11\n\tuser_uuid\x18\x02 \x01(\t\x12\x11\n\tfile_name\x18\x03 \x01(\t\x12\x11\n\tfile_type\x18\x04 \x01(\t\x12\x11\n\tfile_size\x18\x05 \x01(\x03\x12\x12\n\ncreated_at\x18\x06 \x01(\t\"H\n\x0f\x41\x63hievementList\x12\x35\n\x0c\x61\x63hievements\x18\x01 \x03(\x0b\x32\x1f.achievement.v1.AchievementMeta\"\x9b\x01\n\x0e\x41\x63hievementUrl\x12\x0b\n\x03url\x18\x01 \x01(\t\x12\x0e\n\x06method\x18\x02 \x01(\t\x12<\n\x07headers\x18\x03 \x03(\x0b\x32+.achievement.v1.AchievementUrl.HeadersEntry\x1a.\n\x0cHeadersEntry\x12\x0b\n\x03key\x18\x01 \x01(\t\x12\r\n\x05value\x18\x02 \x01(\t:\x02\x38\x01\"\xaa\x01\n\x0f\x41\x63hievementData\x12-\n\x04meta\x18\x01 \x01(\x0b\x32\x1f.achievement.v1.AchievementMeta\x12\x32\n\nupload_url\x18\x02 \x01(\x0b\x32\x1e.achievement.v1.AchievementUrl\x12\x34\n\x0c\x64ownload_url\x18\x03 \x01(\x0b\x32\x1e.achievement.v1.AchievementUrlb\x06proto3')
+DESCRIPTOR = _descriptor_pool.Default().AddSerializedFile(b'\n\x0btypes.proto\x12\x0e\x61\x63hievement.v1\"\x7f\n\x0f\x41\x63hievementMeta\x12\x0c\n\x04name\x18\x01 \x01(\t\x12\x11\n\tuser_uuid\x18\x02 \x01(\t\x12\x11\n\tfile_name\x18\x03 \x01(\t\x12\x11\n\tfile_type\x18\x04 \x01(\t\x12\x11\n\tfile_size\x18\x05 \x01(\x03\x12\x12\n\ncreated_at\x18\x06 \x01(\t\"H\n\x0f\x41\x63hievementList\x12\x35\n\x0c\x61\x63hievements\x18\x01 \x03(\x0b\x32\x1f.achievement.v1.AchievementMeta\"\x9b\x01\n\x0e\x41\x63hievementUrl\x12\x0b\n\x03url\x18\x01 \x01(\t\x12\x0e\n\x06method\x18\x02 \x01(\t\x12<\n\x07headers\x18\x03 \x03(\x0b\x32+.achievement.v1.AchievementUrl.HeadersEntry\x1a.\n\x0cHeadersEntry\x12\x0b\n\x03key\x18\x01 \x01(\t\x12\r\n\x05value\x18\x02 \x01(\t:\x02\x38\x01\"\xaa\x01\n\x0f\x41\x63hievementData\x12-\n\x04meta\x18\x01 \x01(\x0b\x32\x1f.achievement.v1.AchievementMeta\x12\x32\n\nupload_url\x18\x02 \x01(\x0b\x32\x1e.achievement.v1.AchievementUrl\x12\x34\n\x0c\x64ownload_url\x18\x03 \x01(\x0b\x32\x1e.achievement.v1.AchievementUrlB;Z9github.com/StudJobs/proto_srtucture/gen/go/achievement/v1b\x06proto3')
 
 _globals = globals()
 _builder.BuildMessageAndEnumDescriptors(DESCRIPTOR, _globals)
 _builder.BuildTopDescriptorsAndMessages(DESCRIPTOR, 'types_pb2', _globals)
 if not _descriptor._USE_C_DESCRIPTORS:
-  DESCRIPTOR._loaded_options = None
+  _globals['DESCRIPTOR']._loaded_options = None
+  _globals['DESCRIPTOR']._serialized_options = b'Z9github.com/StudJobs/proto_srtucture/gen/go/achievement/v1'
   _globals['_ACHIEVEMENTURL_HEADERSENTRY']._loaded_options = None
   _globals['_ACHIEVEMENTURL_HEADERSENTRY']._serialized_options = b'8\001'
   _globals['_ACHIEVEMENTMETA']._serialized_start=31

@@ -3,9 +3,9 @@
 import grpc
 import warnings
 
-import common_pb2 as common__pb2
-import service_pb2 as service__pb2
-import types_pb2 as types__pb2
+from . import common_pb2 as common__pb2
+from . import service_pb2 as service__pb2
+from . import types_pb2 as types__pb2
 
 GRPC_GENERATED_VERSION = '1.75.1'
 GRPC_VERSION = grpc.__version__
@@ -94,7 +94,7 @@ class AchievementServiceServicer(object):
         context.set_details('Method not implemented!')
         raise NotImplementedError('Method not implemented!')
 
-    def AddAchievementMeta(self, request, context):
+    def DeleteAchievement(self, request, context):
         """Удалить достижение
         """
         context.set_code(grpc.StatusCode.UNIMPLEMENTED)

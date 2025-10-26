@@ -4,7 +4,7 @@ from typing import Optional, Union, List
 import asyncio
 import aioboto3
 from botocore.config import Config
-from achivment_service.app.config import settings
+from app.config import settings
 
 
 class AsyncS3BucketService:
