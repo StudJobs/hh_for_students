@@ -4,7 +4,7 @@ from pydantic import PostgresDsn
 
 
 class S3Settings(BaseModel):
-    bucket_name: str = "achive"
+    bucket_name: str = "achivements"
     endpoint: str
     access_key: str
     secret_key: str
