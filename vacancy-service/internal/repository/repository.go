@@ -15,6 +15,7 @@ type Vacancy interface {
 	GetAllVacancies(ctx context.Context, limit, offset int32) (*vacancyv1.VacancyList, error)
 }
 
+// Repository — основная хранилка
 type Repository struct {
 	Vacancy Vacancy
 }
