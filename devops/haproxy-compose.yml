@@ -1,15 +1,19 @@
+version: '3.8'
+
 services:
-  haproxy-lb:
+  haproxy:
     image: haproxy:lts-alpine3.22 # 2 low priority vulnerabilities + lightweight
+    working_dir: /devops
+    user: root 
     ports:
       - "8888:80"
       - "8443:443"  
       - "8404:8404"
-    command: >
-      sh -c "genereate_cert_haproxy.sh"
+    command: sh -c "apk add --no-cache openssl && /devops/genereate_cert_haproxy.sh && haproxy -f /usr/local/etc/haproxy/haproxy.cfg -db"
     volumes:
       - ./haproxy.cfg:/usr/local/etc/haproxy/haproxy.cfg
       - ./certs/.haproxy:/etc/ssl/private
+      - ./genereate_cert_haproxy.sh:/devops/genereate_cert_haproxy.sh:rw
     healthcheck:
       test: ["CMD", "curl", "-f", "-k", "https://localhost:8443"]
       interval: 30s

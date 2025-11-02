@@ -1,3 +1,5 @@
+version: '3.8'
+
 services:
   minio:
     restart: always
@@ -15,8 +17,14 @@ services:
       - MINIO_BROWSER_REDIRECT_URL=https://localhost:9001
     extra_hosts:
       - "minio.local:192.168.0.199"
-    command: >
-      sh -c "genereate_cert_minio.sh && server /data --console-address ':9001'"
+    entrypoint: 
+      - sh
+      - -c
+      - |
+        mkdir -p /root/.minio/certs
+        cp /certs/public.crt /root/.minio/certs/public.crt
+        cp /certs/private.key /root/.minio/certs/private.key
+        exec minio server /data --console-address ':9001'
     volumes:
       - ./minio-data:/data
       - ./certs/.minio/certs:/root/.minio/certs

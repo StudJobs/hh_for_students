@@ -1,0 +1,48 @@
+version: '3.8'
+
+networks:
+  app-network:
+    driver: bridge
+    
+services:
+  apigateway:
+    extends:
+      file: ./API-Gateway/api-gateway-compose.yml
+      service: apigateway
+    networks:
+      - app-network
+
+  auth:
+    extends:
+      file: ./Auth/auth-compose.yml
+      service: auth
+    networks:
+    - app-network
+
+  achievement:
+    extends:
+      file: ./achinement_service/achivement-compose.yml
+      service: achievement
+    networks:
+      - app-network
+
+  users:
+    extends:
+      file: ./Users/user-compose.yml
+      service: users
+    networks:
+      - app-network
+
+  loadbalancer:
+    extends:
+      file: ./devops/haproxy-compose.yml
+      service: loadbalancer
+    networks:
+      - app-network
+
+  minio:
+    extends:
+      file: ./devops/minio-compose.yml
+      service: minio
+    networks:
+      - app-network
