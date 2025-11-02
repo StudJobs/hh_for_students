@@ -41,7 +41,7 @@ func main() {
 		log.Fatalf("Failed to initialize gRPC clients: %v", err)
 	}
 
-	apiGateway := services.NewApiGateway(clients.Auth, clients.Users)
+	apiGateway := services.NewApiGateway(clients.Auth, clients.Users, clients.Achievement)
 	handler := handlers.NewHandler(apiGateway)
 	app := handler.Init()
 

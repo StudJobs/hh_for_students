@@ -2,6 +2,7 @@ package services
 
 import (
 	"context"
+	achievementv1 "github.com/StudJobs/proto_srtucture/gen/go/proto/achievement/v1"
 	authv1 "github.com/StudJobs/proto_srtucture/gen/go/proto/auth/v1"
 	"github.com/studjobs/hh_for_students/api-gateway/internal/models"
 
@@ -24,16 +25,30 @@ type UsersService interface {
 	DeleteUser(ctx context.Context, userID string) error
 }
 
+type AchievementService interface {
+	GetAllAchievements(ctx context.Context, userID string) (*models.AchievementList, error)
+	GetAchievementDownloadUrl(ctx context.Context, userID, achieveName string) (*models.AchievementUrl, error)
+	GetAchievementUploadUrl(ctx context.Context, userID, achieveName, fileName, fileType string) (*models.AchievementUrl, error)
+	AddAchievementMeta(ctx context.Context, meta *models.AchievementMeta) error
+	DeleteAchievement(ctx context.Context, userID, achieveName string) error
+}
+
 // ApiGateway объединяет все сервисы
 type ApiGateway struct {
-	Auth AuthService
-	User UsersService
+	Auth        AuthService
+	User        UsersService
+	Achievement AchievementService
 }
 
 // NewApiGateway создает новый экземпляр ApiGateway
-func NewApiGateway(authClient authv1.AuthServiceClient, usersClient usersv1.UsersServiceClient) *ApiGateway {
+func NewApiGateway(
+	authClient authv1.AuthServiceClient,
+	usersClient usersv1.UsersServiceClient,
+	achievementClient achievementv1.AchievementServiceClient,
+) *ApiGateway {
 	return &ApiGateway{
-		Auth: NewAuthService(authClient),
-		User: NewUsersService(usersClient),
+		Auth:        NewAuthService(authClient),
+		User:        NewUsersService(usersClient),
+		Achievement: NewAchievementService(achievementClient),
 	}
 }

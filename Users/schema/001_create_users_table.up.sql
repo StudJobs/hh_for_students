@@ -5,7 +5,7 @@ CREATE TABLE profiles (
     first_name VARCHAR(100) NOT NULL,
     last_name VARCHAR(100) NOT NULL,
     age INTEGER NOT NULL CHECK (age >= 17 AND age <= 150),
-    tg VARCHAR(100) UNIQUE,
+    tg VARCHAR(100) DEFAULT NULL,
     resume_id UUID DEFAULT NULL,
     email VARCHAR(255) NOT NULL UNIQUE,
     description TEXT,
