@@ -12,7 +12,7 @@ class S3Settings(BaseModel):
 
 class RunSettings(BaseModel):
     host: str = "0.0.0.0"
-    port: int = 50051
+    port: int = 50053
     version: str = "1.0.0"
 
 

@@ -24,7 +24,7 @@ services:
       context: .
       dockerfile: Dockerfile
     ports:
-      - "50051:50051"
+      - "50053:50053"
     environment:
       - S3__BUCKET_NAME=achievements
       - S3__ENDPOINT_URL=http://minio:9000

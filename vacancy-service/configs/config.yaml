@@ -2,11 +2,8 @@ database:
   host: "postgres"
   port: "5432"
   username: "postgres"
-  name: "auth"
+  name: "vacancy"
   sslmode: "disable"
 
 grpc:
-  port: "50051"
-
-jwt:
-  expiration_minutes: 60
+  port: "50054"

@@ -67,6 +67,49 @@ func (h *Handler) GetUsers(c *fiber.Ctx) error {
 	return c.JSON(profileList)
 }
 
+func (h *Handler) GetMe(c *fiber.Ctx) error {
+	log.Printf("GetUsers: Getting me")
+	userID := getUserIDFromContext(c)
+
+	// Валидация UUID
+	if _, err := uuid.Parse(userID); err != nil {
+		log.Printf("GetUser: Invalid UUID format: %s", userID)
+		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{
+			"error": "Invalid user ID format",
+		})
+	}
+
+	// Вызываем users service
+	profile, err := h.apiService.User.GetUser(c.Context(), userID)
+	if err != nil {
+		log.Printf("GetUser: Failed to get user %s: %v", userID, err)
+		return c.Status(fiber.StatusNotFound).JSON(fiber.Map{
+			"error": "User not found",
+		})
+	}
+
+	// Конвертируем в HTTP модель
+	user := models.User{
+		ID:                 uuid.MustParse(profile.Id),
+		FirstName:          profile.FirstName,
+		LastName:           profile.LastName,
+		Age:                profile.Age,
+		Tg:                 profile.Tg,
+		Email:              profile.Email,
+		Description:        profile.Description,
+		ProfessionCategory: profile.ProfessionCategory,
+	}
+
+	// Обрабатываем resume_id
+	if profile.ResumeId != "" {
+		user.ResumeID = uuid.MustParse(profile.ResumeId)
+	}
+
+	log.Printf("GetUser: Successfully retrieved user: %s", userID)
+	return c.JSON(user)
+
+}
+
 // GetUser возвращает профиль пользователя по ID
 func (h *Handler) GetUser(c *fiber.Ctx) error {
 	userID := c.Params("id")
@@ -106,25 +149,14 @@ func (h *Handler) GetUser(c *fiber.Ctx) error {
 		user.ResumeID = uuid.MustParse(profile.ResumeId)
 	}
 
-	// TODO: вытащить ссылку на резюме
-
 	log.Printf("GetUser: Successfully retrieved user: %s", userID)
 	return c.JSON(user)
 }
 
 // UpdateUser обновляет профиль пользователя (PATCH)
 func (h *Handler) UpdateUser(c *fiber.Ctx) error {
-	userID := c.Params("id")
-	currentUserID := getUserIDFromContext(c)
-	log.Printf("UpdateUser: Updating user %s by user %s", userID, currentUserID)
-
-	// Проверяем что пользователь обновляет свой профиль
-	if userID != currentUserID {
-		log.Printf("UpdateUser: User %s trying to update profile of user %s", currentUserID, userID)
-		return c.Status(fiber.StatusForbidden).JSON(fiber.Map{
-			"error": "Can only update your own profile",
-		})
-	}
+	userID := getUserIDFromContext(c)
+	log.Printf("UpdateUser: Updating user %s", userID)
 
 	// Валидация UUID
 	if _, err := uuid.Parse(userID); err != nil {
@@ -206,10 +238,9 @@ func (h *Handler) UpdateUser(c *fiber.Ctx) error {
 
 // DeleteUser удаляет профиль пользователя
 func (h *Handler) DeleteUser(c *fiber.Ctx) error {
-	userID := c.Params("id")
-	currentUserID := getUserIDFromContext(c)
+	userID := getUserIDFromContext(c)
 	currentUserRole := getRoleFromContext(c)
-	log.Printf("DeleteUser: Deleting user %s by user %s (role: %s)", userID, currentUserID, currentUserRole)
+	log.Printf("DeleteUser: Deleting user %s (role: %s)", userID, currentUserRole)
 
 	// Валидация UUID
 	if _, err := uuid.Parse(userID); err != nil {
@@ -220,12 +251,17 @@ func (h *Handler) DeleteUser(c *fiber.Ctx) error {
 	}
 
 	// Вызываем users service
-	err := h.apiService.User.DeleteUser(c.Context(), userID)
-	if err != nil {
+	if err := h.apiService.User.DeleteUser(c.Context(), userID); err != nil {
 		log.Printf("DeleteUser: Failed to delete user %s: %v", userID, err)
 		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{
 			"error": "Failed to delete profile",
 		})
+	}
+
+	// удаляем пользователя при успешном удалении аккаунта
+	if err := h.apiService.Auth.DeleteUser(c.Context(), userID); err != nil {
+		log.Printf("DeleteUser: Failed to delete user %s: %v", userID, err)
+		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{})
 	}
 
 	log.Printf("DeleteUser: Successfully deleted user: %s", userID)

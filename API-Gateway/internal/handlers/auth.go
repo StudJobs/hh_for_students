@@ -103,13 +103,30 @@ func (h *Handler) Register(c *fiber.Ctx) error {
 	}); err != nil {
 		log.Printf("API Gateway Create failed for email %s: %v", req.Email, err)
 
-		// TODO: Удалить пользователя из auth
+		if err1 := h.apiService.Auth.DeleteUser(c.Context(), resp.UserUUID); err1 != nil {
+			log.Printf("API Gateway LogOut failed for email %s: %v", req.Email, err1)
+			return h.handleAuthError(c, err)
+		}
+
 		return h.handleAuthError(c, err)
 	}
 
 	log.Printf("Register successful for email: %s, user_uuid: %s", req.Email, resp.UserUUID)
 
 	return c.Status(fiber.StatusCreated).JSON(resp)
+}
+
+func (h *Handler) Logout(c *fiber.Ctx) error {
+	userID := getUserIDFromContext(c)
+	log.Printf("Logout attempt for User: %s", userID)
+
+	if err := h.apiService.Auth.Logout(c.Context(), userID); err != nil {
+		log.Printf("API Gateway Logout failed for user %s: %v", userID, err)
+		return h.handleAuthError(c, err)
+	}
+
+	log.Printf("Logout successful for user: %s", userID)
+	return c.Status(fiber.StatusNoContent).JSON(models.Error{})
 }
 
 // parseToken проверяет валидность токена

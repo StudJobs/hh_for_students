@@ -5,6 +5,7 @@ import (
 	"log"
 	"time"
 
+	achievementv1 "github.com/StudJobs/proto_srtucture/gen/go/proto/achievement/v1"
 	authv1 "github.com/StudJobs/proto_srtucture/gen/go/proto/auth/v1"
 	usersv1 "github.com/StudJobs/proto_srtucture/gen/go/proto/users/v1"
 	"google.golang.org/grpc"
@@ -13,12 +14,11 @@ import (
 
 // Clients содержит все gRPC клиенты
 type Clients struct {
-	Auth  authv1.AuthServiceClient
-	Users usersv1.UsersServiceClient
+	Auth        authv1.AuthServiceClient
+	Users       usersv1.UsersServiceClient
+	Achievement achievementv1.AchievementServiceClient
 
-	// Добавьте другие клиенты по мере необходимости
 	// Vacancy vacancyv1.VacancyServiceClient
-	// Achievement achievementv1.AchievementServiceClient
 }
 
 // Config конфигурация для gRPC подключений
@@ -46,9 +46,16 @@ func NewClients(cfg Config) (*Clients, error) {
 		return nil, err
 	}
 
+	// Создаем соединение с Achievement сервисом
+	achievementConn, err := createConnection(cfg.UserAchievementAddress, cfg.Timeout)
+	if err != nil {
+		return nil, err
+	}
+
 	clients := &Clients{
-		Auth:  authv1.NewAuthServiceClient(authConn),
-		Users: usersv1.NewUsersServiceClient(usersConn),
+		Auth:        authv1.NewAuthServiceClient(authConn),
+		Users:       usersv1.NewUsersServiceClient(usersConn),
+		Achievement: achievementv1.NewAchievementServiceClient(achievementConn),
 	}
 
 	log.Printf("✓ All gRPC clients initialized successfully")

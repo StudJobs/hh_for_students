@@ -1,17 +1,16 @@
-module github.com/studjobs/hh_for_students/auth
+module hh_for_students/vacancy-service
 
 go 1.25.1
 
 require (
 	github.com/Masterminds/squirrel v1.5.4
 	github.com/StudJobs/proto_srtucture v0.0.0-20251103193904-78b01002ad8b
-	github.com/golang-jwt/jwt/v4 v4.5.2
 	github.com/golang-migrate/migrate/v4 v4.19.0
+	github.com/google/uuid v1.6.0
 	github.com/jackc/pgx/v4 v4.18.3
 	github.com/joho/godotenv v1.5.1
 	github.com/sirupsen/logrus v1.9.3
 	github.com/spf13/viper v1.21.0
-	golang.org/x/crypto v0.40.0
 	google.golang.org/grpc v1.76.0
 )
 
@@ -39,11 +38,10 @@ require (
 	github.com/spf13/pflag v1.0.10 // indirect
 	github.com/subosito/gotenv v1.6.0 // indirect
 	go.yaml.in/yaml/v3 v3.0.4 // indirect
-	golang.org/x/net v0.42.0 // indirect
-	golang.org/x/sys v0.34.0 // indirect
-	golang.org/x/text v0.28.0 // indirect
-	google.golang.org/genproto/googleapis/rpc v0.0.0-20250804133106-a7a43d27e69b // indirect
+	golang.org/x/crypto v0.43.0 // indirect
+	golang.org/x/net v0.46.0 // indirect
+	golang.org/x/sys v0.37.0 // indirect
+	golang.org/x/text v0.30.0 // indirect
+	google.golang.org/genproto/googleapis/rpc v0.0.0-20251022142026-3a174f9686a8 // indirect
 	google.golang.org/protobuf v1.36.10 // indirect
 )
-
-//replace github.com/StudJobs/proto_srtucture => C:/Users/User/GolandProjects/github.com/TeamDev/StudJobs/proto_srtucture/proto_srtucture

@@ -1,15 +1,14 @@
 package main
 
 import (
+	"hh_for_students/vacancy-service/internal/handlers"
+	"hh_for_students/vacancy-service/internal/repository"
+	"hh_for_students/vacancy-service/internal/service"
+	"hh_for_students/vacancy-service/server"
+
 	"github.com/joho/godotenv"
 	"github.com/spf13/viper"
-	"github.com/studjobs/hh_for_students/auth/internal/handlers"
-	"github.com/studjobs/hh_for_students/auth/internal/repository"
-	"github.com/studjobs/hh_for_students/auth/server"
-	"strconv"
-	"time"
 
-	"github.com/studjobs/hh_for_students/auth/internal/service"
 	"log"
 	"os"
 	"os/signal"
@@ -47,34 +46,20 @@ func main() {
 
 	// Инициализация зависимостей
 	repo := repository.NewRepository(db)
+	serv := service.NewService(repo)
+	vacancyHandlers := handlers.NewVacancyHandler(serv)
 
-	jwtSecret := getEnv("JWT_SECRET", "default-secret-key-change-in-production")
-	if jwtSecret == "default-secret-key-change-in-production" {
-		log.Printf("warning: using default JWT secret, set JWT_SECRET environment variable")
-	}
-	timeDuration, err := strconv.Atoi(getEnv("JWT_TIME_DURATION", "60"))
-	if err != nil {
-		log.Fatalf("failed to parse JWT_TIME_DURATION: %s", err.Error())
-	}
-
-	services := service.NewService(repo, service.JWTConfig{
-		SecretKey:     jwtSecret,
-		TokenDuration: time.Duration(timeDuration) * time.Minute,
-	})
-
-	handler := handlers.NewAuthHandlers(services)
-
-	// Получаем порт из конфигурации - ИСПРАВЛЕНО!
+	// Получаем порт из конфигурации!
 	grpcPort := getEnv("GRPC_PORT", viper.GetString("grpc.port"))
 	if grpcPort == "" {
-		grpcPort = "50051" // значение по умолчанию
+		grpcPort = "50054" // значение по умолчанию
 		log.Printf("warning: using default gRPC port: %s", grpcPort)
 	}
 
 	log.Printf("Starting Auth Service on gRPC port: %s", grpcPort)
 
 	// Запуск gRPC сервера
-	grpcServer := server.New(grpcPort, handler)
+	grpcServer := server.New(grpcPort, vacancyHandlers)
 
 	// Graceful shutdown
 	go func() {
@@ -83,7 +68,7 @@ func main() {
 		}
 	}()
 
-	log.Printf("✓ Auth service started successfully on port %s", grpcPort)
+	log.Printf("✓ User service started successfully on port %s", grpcPort)
 	log.Printf("✓ Database connected: %s:%s",
 		getEnv("DB_HOST", viper.GetString("database.host")),
 		getEnv("DB_PORT", viper.GetString("database.port")))
@@ -94,7 +79,7 @@ func main() {
 	<-quit
 
 	grpcServer.GracefulStop()
-	log.Println("Auth service stopped")
+	log.Println("Vacancy service stopped")
 }
 
 func initConfig() error {
