@@ -52,7 +52,7 @@ func main() {
 	// Получаем порт из конфигурации!
 	grpcPort := getEnv("GRPC_PORT", viper.GetString("grpc.port"))
 	if grpcPort == "" {
-		grpcPort = "50052" // значение по умолчанию
+		grpcPort = "50054" // значение по умолчанию
 		log.Printf("warning: using default gRPC port: %s", grpcPort)
 	}
 

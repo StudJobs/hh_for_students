@@ -3,15 +3,16 @@ module github.com/studjobs/hh_for_students/auth
 go 1.25.1
 
 require (
-	github.com/StudJobs/proto_srtucture/gen/go v0.0.0-20250923174337-c1cbbc122d63
+	github.com/Masterminds/squirrel v1.5.4
+	github.com/StudJobs/proto_srtucture v0.0.0-20251103182802-a316c4b5b82e
 	github.com/golang-jwt/jwt/v4 v4.5.2
 	github.com/golang-migrate/migrate/v4 v4.19.0
 	github.com/jackc/pgx/v4 v4.18.3
 	github.com/joho/godotenv v1.5.1
 	github.com/sirupsen/logrus v1.9.3
 	github.com/spf13/viper v1.21.0
-	golang.org/x/crypto v0.39.0
-	google.golang.org/grpc v1.75.1
+	golang.org/x/crypto v0.40.0
+	google.golang.org/grpc v1.76.0
 )
 
 require (
@@ -27,6 +28,8 @@ require (
 	github.com/jackc/pgservicefile v0.0.0-20221227161230-091c0ba34f0a // indirect
 	github.com/jackc/pgtype v1.14.0 // indirect
 	github.com/jackc/puddle v1.3.0 // indirect
+	github.com/lann/builder v0.0.0-20180802200727-47ae307949d0 // indirect
+	github.com/lann/ps v0.0.0-20150810152359-62de8c46ede0 // indirect
 	github.com/lib/pq v1.10.9 // indirect
 	github.com/pelletier/go-toml/v2 v2.2.4 // indirect
 	github.com/sagikazarmark/locafero v0.11.0 // indirect
@@ -36,9 +39,11 @@ require (
 	github.com/spf13/pflag v1.0.10 // indirect
 	github.com/subosito/gotenv v1.6.0 // indirect
 	go.yaml.in/yaml/v3 v3.0.4 // indirect
-	golang.org/x/net v0.41.0 // indirect
-	golang.org/x/sys v0.33.0 // indirect
+	golang.org/x/net v0.42.0 // indirect
+	golang.org/x/sys v0.34.0 // indirect
 	golang.org/x/text v0.28.0 // indirect
-	google.golang.org/genproto/googleapis/rpc v0.0.0-20250707201910-8d1bb00bc6a7 // indirect
-	google.golang.org/protobuf v1.36.9 // indirect
+	google.golang.org/genproto/googleapis/rpc v0.0.0-20250804133106-a7a43d27e69b // indirect
+	google.golang.org/protobuf v1.36.10 // indirect
 )
+
+//replace github.com/StudJobs/proto_srtucture => C:/Users/User/GolandProjects/github.com/TeamDev/StudJobs/proto_srtucture/proto_srtucture

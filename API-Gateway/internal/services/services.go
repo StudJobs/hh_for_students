@@ -3,6 +3,7 @@ package services
 import (
 	"context"
 	achievementv1 "github.com/StudJobs/proto_srtucture/gen/go/proto/achievement/v1"
+
 	authv1 "github.com/StudJobs/proto_srtucture/gen/go/proto/auth/v1"
 	"github.com/studjobs/hh_for_students/api-gateway/internal/models"
 
@@ -14,6 +15,8 @@ type AuthService interface {
 	Login(ctx context.Context, email, password, role string) (*models.AuthResponse, error)
 	Register(ctx context.Context, email, password, role string) (*models.AuthResponse, error)
 	ValidateToken(ctx context.Context, token string) (bool, string, string, error)
+	Logout(ctx context.Context, userID string) error
+	DeleteUser(ctx context.Context, userID string) error
 }
 
 // UsersService интерфейс для работы с пользователями

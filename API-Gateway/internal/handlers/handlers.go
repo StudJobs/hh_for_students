@@ -44,6 +44,7 @@ func (h *Handler) initRoutes() {
 	auth := api.Group("/auth")
 	auth.Post("/login", h.Login)
 	auth.Post("/register", h.Register)
+	auth.Post("/logout", h.Logout)
 
 	// === User routes ===
 	users := api.Group("/users")

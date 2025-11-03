@@ -251,12 +251,17 @@ func (h *Handler) DeleteUser(c *fiber.Ctx) error {
 	}
 
 	// Вызываем users service
-	err := h.apiService.User.DeleteUser(c.Context(), userID)
-	if err != nil {
+	if err := h.apiService.User.DeleteUser(c.Context(), userID); err != nil {
 		log.Printf("DeleteUser: Failed to delete user %s: %v", userID, err)
 		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{
 			"error": "Failed to delete profile",
 		})
+	}
+
+	// удаляем пользователя при успешном удалении аккаунта
+	if err := h.apiService.Auth.DeleteUser(c.Context(), userID); err != nil {
+		log.Printf("DeleteUser: Failed to delete user %s: %v", userID, err)
+		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{})
 	}
 
 	log.Printf("DeleteUser: Successfully deleted user: %s", userID)

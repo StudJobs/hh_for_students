@@ -1,4 +1,4 @@
-package token
+package service
 
 import (
 	"errors"
@@ -6,7 +6,7 @@ import (
 	"log"
 	"time"
 
-	"github.com/StudJobs/proto_srtucture/gen/go/proto/auth/v1"
+	authv1 "github.com/StudJobs/proto_srtucture/gen/go/proto/auth/v1"
 	"github.com/golang-jwt/jwt/v4"
 )
 
@@ -27,10 +27,10 @@ type Claims struct {
 	jwt.RegisteredClaims
 }
 
-func NewJWTManager(secretKey string) *JWTManager {
+func NewJWTManager(cfg JWTConfig) *JWTManager {
 	return &JWTManager{
-		secretKey:     secretKey,
-		tokenDuration: time.Hour,
+		secretKey:     cfg.SecretKey,
+		tokenDuration: cfg.TokenDuration,
 	}
 }
 
