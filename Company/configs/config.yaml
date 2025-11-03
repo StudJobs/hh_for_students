@@ -1,0 +1,12 @@
+database:
+  host: "localhost"
+  port: "5432"
+  username: "postgres"
+  name: "company"
+  sslmode: "disable"
+
+grpc:
+  port: "50055"
+
+jwt:
+  expiration_hours: 1
