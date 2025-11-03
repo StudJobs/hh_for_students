@@ -134,32 +134,6 @@ func (r *AuthRepository) IsUserLoggedOut(ctx context.Context, userID string) (bo
 	return count > 0, nil
 }
 
-func (r *AuthRepository) Logout(ctx context.Context, userID string) error {
-	// Добавляем пользователя в черный список на 1 час (время жизни токена)
-	expiresAt := time.Now().Add(1 * time.Hour)
-
-	query, args, err := sb.
-		Insert("user_logouts").
-		Columns("user_id", "expires_at").
-		Values(userID, expiresAt).
-		Suffix("ON CONFLICT (user_id) DO UPDATE SET expires_at = EXCLUDED.expires_at").
-		ToSql()
-	if err != nil {
-		return fmt.Errorf("failed to build logout query: %w", err)
-	}
-
-	log.Printf("Logging out user: %s, blacklist until: %s", userID, expiresAt.Format(time.RFC3339))
-
-	_, err = r.db.Exec(ctx, query, args...)
-	if err != nil {
-		log.Printf("Failed to logout user: %s, error: %v", userID, err)
-		return fmt.Errorf("failed to logout user: %w", err)
-	}
-
-	log.Printf("User logged out successfully: %s", userID)
-	return nil
-}
-
 func (r *AuthRepository) DeleteUser(ctx context.Context, userID string) error {
 	// Мягкое удаление - устанавливаем deleted_at
 	query, args, err := sb.

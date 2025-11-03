@@ -4,7 +4,7 @@ go 1.25.1
 
 require (
 	github.com/Masterminds/squirrel v1.5.4
-	github.com/StudJobs/proto_srtucture v0.0.0-20251103182802-a316c4b5b82e
+	github.com/StudJobs/proto_srtucture v0.0.0-20251103193904-78b01002ad8b
 	github.com/golang-jwt/jwt/v4 v4.5.2
 	github.com/golang-migrate/migrate/v4 v4.19.0
 	github.com/jackc/pgx/v4 v4.18.3

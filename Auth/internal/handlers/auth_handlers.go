@@ -79,17 +79,6 @@ func (h *AuthHandlers) ParseToken(ctx context.Context, req *authv1.ParseTokenReq
 	return tokenValidation, nil
 }
 
-func (h *AuthHandlers) Logout(ctx context.Context, req *authv1.LogoutRequest) (*commonv1.Empty, error) {
-	log.Printf("gRPC Logout request - userID: %s", req.UserUuid)
-
-	if req.UserUuid == "" {
-		log.Printf("gRPC Logout failed - empty user uuid")
-		return &commonv1.Empty{}, status.Error(codes.InvalidArgument, "user uuid is required")
-	}
-
-	return h.service.Auth.Logout(ctx, req.UserUuid)
-}
-
 func (h *AuthHandlers) Delete(ctx context.Context, req *authv1.DeleteRequest) (*commonv1.Empty, error) {
 	log.Printf("gRPC Delete request - userID: %s", req.UserUuid)
 

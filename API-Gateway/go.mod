@@ -4,12 +4,11 @@ go 1.25.1
 
 require (
 	github.com/gofiber/fiber/v2 v2.52.9
-	golang.org/x/sync v0.17.0
 	google.golang.org/grpc v1.76.0
 )
 
 require (
-	github.com/StudJobs/proto_srtucture v1.1.2 // indirect
+	github.com/StudJobs/proto_srtucture v0.0.0-20251103193904-78b01002ad8b // indirect
 	github.com/andybalholm/brotli v1.2.0 // indirect
 	github.com/fsnotify/fsnotify v1.9.0 // indirect
 	github.com/go-viper/mapstructure/v2 v2.4.0 // indirect

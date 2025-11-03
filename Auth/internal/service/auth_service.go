@@ -4,7 +4,6 @@ import (
 	"context"
 	"fmt"
 	authv1 "github.com/StudJobs/proto_srtucture/gen/go/proto/auth/v1"
-	commonv1 "github.com/StudJobs/proto_srtucture/gen/go/proto/common/v1"
 	"github.com/studjobs/hh_for_students/auth/internal/repository"
 	"golang.org/x/crypto/bcrypt"
 	"log"
@@ -133,19 +132,6 @@ func (s *AuthService) ValidateToken(ctx context.Context, token string) (*authv1.
 		UserUuid: userUUID,
 		Role:     role,
 	}, nil
-}
-
-func (s *AuthService) Logout(ctx context.Context, userID string) (*commonv1.Empty, error) {
-	log.Printf("Service: Logging out user: %s", userID)
-
-	err := s.repo.Auth.Logout(ctx, userID)
-	if err != nil {
-		log.Printf("Service: Logout failed for user: %s, error: %v", userID, err)
-		return nil, fmt.Errorf("logout failed: %w", err)
-	}
-
-	log.Printf("Service: User logged out successfully: %s", userID)
-	return &commonv1.Empty{}, nil
 }
 
 func (s *AuthService) DeleteUser(ctx context.Context, userID string) error {
