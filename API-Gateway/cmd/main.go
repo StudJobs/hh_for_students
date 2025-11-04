@@ -9,12 +9,36 @@ import (
 	"time"
 
 	"github.com/spf13/viper"
+	_ "github.com/studjobs/hh_for_students/api-gateway/docs"
 	"github.com/studjobs/hh_for_students/api-gateway/internal/grpc"
 	"github.com/studjobs/hh_for_students/api-gateway/internal/handlers"
 	"github.com/studjobs/hh_for_students/api-gateway/internal/services"
 	"github.com/studjobs/hh_for_students/api-gateway/server"
 )
 
+// @title StudJobs HH API Gateway
+// @version 1.0
+// @description API Gateway для платформы StudJobs HH
+// @termsOfService http://swagger.io/terms/
+
+// @contact.name API Support
+// @contact.email support@studjobs.ru
+
+// @license.name MIT
+// @license.url https://opensource.org/licenses/MIT
+
+// @host localhost:8000
+// @BasePath /api/v1
+
+// @securityDefinitions.apikey BearerAuth
+// @in header
+// @name Authorization
+// @description JWT токен в формате: "Bearer {token}"
+
+// @securityDefinitions.apikey RoleAuth
+// @in header
+// @name X-User-Role
+// @description Роль пользователя
 func main() {
 	log.Printf("=== API Gateway Starting ===")
 
@@ -29,11 +53,9 @@ func main() {
 		UsersAddress:           viper.GetString("grpc.users_address"),
 		UserAchievementAddress: viper.GetString("grpc.user_ach_address"),
 		VacancyAddress:         viper.GetString("grpc.vacancy_address"),
+		CompanyAddress:         viper.GetString("grpc.company_address"),
 		Timeout:                10 * time.Second,
 	}
-
-	log.Printf("Auth service: %s", grpcConfig.AuthAddress)
-	log.Printf("Users service: %s", grpcConfig.UsersAddress)
 
 	// Остальной код без изменений...
 	clients, err := grpc.NewClients(grpcConfig)
@@ -41,7 +63,7 @@ func main() {
 		log.Fatalf("Failed to initialize gRPC clients: %v", err)
 	}
 
-	apiGateway := services.NewApiGateway(clients.Auth, clients.Users, clients.Achievement)
+	apiGateway := services.NewApiGateway(clients.Auth, clients.Users, clients.Achievement, clients.Company, clients.Vacancy)
 	handler := handlers.NewHandler(apiGateway)
 	app := handler.Init()
 

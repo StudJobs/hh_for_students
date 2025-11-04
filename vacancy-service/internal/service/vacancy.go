@@ -4,10 +4,11 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"log"
+
 	vacancyv1 "github.com/StudJobs/proto_srtucture/gen/go/proto/vacancy/v1"
 	"github.com/google/uuid"
 	"hh_for_students/vacancy-service/internal/repository"
-	"log"
 )
 
 type VacancyService struct {
@@ -108,9 +109,12 @@ func (s *VacancyService) GetVacancy(ctx context.Context, id string) (*vacancyv1.
 	return vacancy, nil
 }
 
-func (s *VacancyService) GetAllVacancies(ctx context.Context, companyID, positionStatus string, limit, offset int32) (*vacancyv1.VacancyList, error) {
-	log.Printf("Service: Listing vacancies - page: %d, limit: %d, company: %s, status: %s",
-		limit, offset, companyID, positionStatus)
+func (s *VacancyService) GetAllVacancies(ctx context.Context, companyID, positionStatus, workFormat, schedule string,
+	minSalary, maxSalary, minExperience, maxExperience int32,
+	searchTitle string, page, limit int32) (*vacancyv1.VacancyList, error) {
+
+	log.Printf("Service: Listing vacancies - page: %d, limit: %d, company: %s, status: %s, work_format: %s, schedule: %s, salary: %d-%d, experience: %d-%d, search: %s",
+		page, limit, companyID, positionStatus, workFormat, schedule, minSalary, maxSalary, minExperience, maxExperience, searchTitle)
 
 	if limit < 1 || limit > 100 {
 		limit = 10
@@ -118,13 +122,38 @@ func (s *VacancyService) GetAllVacancies(ctx context.Context, companyID, positio
 	}
 
 	log.Printf("Service: Getting vacancies from repository")
-	vacancies, err := s.repo.Vacancy.GetAllVacancies(ctx, companyID, positionStatus, limit, offset)
+	vacancies, err := s.repo.Vacancy.GetAllVacancies(ctx, companyID, positionStatus, workFormat, schedule,
+		minSalary, maxSalary, minExperience, maxExperience, searchTitle, page, limit)
 	if err != nil {
 		log.Printf("Service: Failed to list vacancies: %v", err)
 		return nil, fmt.Errorf("failed to list vacancies: %w", err)
 	}
 
 	log.Printf("Service: Retrieved %d vacancies successfully", len(vacancies.Vacancies))
+	return vacancies, nil
+}
+
+func (s *VacancyService) GetHRVacancies(ctx context.Context, companyID, positionStatus, workFormat, schedule string,
+	minSalary, maxSalary, minExperience, maxExperience int32,
+	searchTitle string, page, limit int32) (*vacancyv1.VacancyList, error) {
+
+	log.Printf("Service: Listing HR vacancies - page: %d, limit: %d, company: %s, status: %s, work_format: %s, schedule: %s, salary: %d-%d, experience: %d-%d, search: %s",
+		page, limit, companyID, positionStatus, workFormat, schedule, minSalary, maxSalary, minExperience, maxExperience, searchTitle)
+
+	if limit < 1 || limit > 100 {
+		limit = 10
+		log.Printf("Service: Limit adjusted to default: %d", limit)
+	}
+
+	log.Printf("Service: Getting HR vacancies from repository")
+	vacancies, err := s.repo.Vacancy.GetHRVacancies(ctx, companyID, positionStatus, workFormat, schedule,
+		minSalary, maxSalary, minExperience, maxExperience, searchTitle, page, limit)
+	if err != nil {
+		log.Printf("Service: Failed to list HR vacancies: %v", err)
+		return nil, fmt.Errorf("failed to list HR vacancies: %w", err)
+	}
+
+	log.Printf("Service: Retrieved %d HR vacancies successfully", len(vacancies.Vacancies))
 	return vacancies, nil
 }
 
@@ -148,7 +177,7 @@ func (s *VacancyService) validateVacancy(vacancy *vacancyv1.Vacancy) error {
 		return fmt.Errorf("%w: position_status is required", ErrInvalidVacancyData)
 	}
 	if vacancy.Schedule == "" {
-		return fmt.Errorf("%w: schedule cannot be negative", ErrInvalidVacancyData)
+		return fmt.Errorf("%w: schedule is required", ErrInvalidVacancyData)
 	}
 	if len(vacancy.WorkFormat) > 64 {
 		return fmt.Errorf("%w: work_format must be less than 64 characters", ErrInvalidVacancyData)

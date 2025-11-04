@@ -1,0 +1,1913 @@
+basePath: /api/v1
+definitions:
+  models.AchievementCreateResponse:
+    description: Ответ с данными для загрузки файла достижения
+    properties:
+      meta:
+        $ref: '#/definitions/models.AchievementMeta'
+      upload_url:
+        $ref: '#/definitions/models.UploadUrlResponse'
+    type: object
+  models.AchievementList:
+    description: Список достижений пользователя
+    properties:
+      achievements:
+        items:
+          $ref: '#/definitions/models.AchievementMeta'
+        type: array
+    type: object
+  models.AchievementMeta:
+    description: Метаданные достижения пользователя
+    properties:
+      created_at:
+        example: "2023-10-05T14:30:00Z"
+        type: string
+      file_name:
+        example: diploma.pdf
+        type: string
+      file_size:
+        example: 2048576
+        type: integer
+      file_type:
+        example: application/pdf
+        type: string
+      name:
+        example: Диплом бакалавра
+        type: string
+      user_uuid:
+        example: 550e8400-e29b-41d4-a716-446655440000
+        type: string
+    type: object
+  models.AchievementUploadRequest:
+    description: Запрос на подготовку загрузки достижения
+    properties:
+      file_name:
+        example: diploma.pdf
+        type: string
+      file_size:
+        example: 2048576
+        minimum: 1
+        type: integer
+      file_type:
+        example: application/pdf
+        type: string
+      name:
+        example: Диплом бакалавра
+        type: string
+    required:
+    - file_name
+    - file_size
+    - file_type
+    - name
+    type: object
+  models.AchievementUrl:
+    description: URL для скачивания файла достижения
+    properties:
+      expires_at:
+        example: 1696523400
+        type: integer
+      url:
+        example: https://s3.amazonaws.com/bucket/file.pdf?signature=...
+        type: string
+    type: object
+  models.AuthResponse:
+    description: Ответ с данными аутентификации
+    properties:
+      role:
+        example: ROLE_STUDENT
+        type: string
+      token:
+        example: eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...
+        type: string
+      user_uuid:
+        example: 550e8400-e29b-41d4-a716-446655440000
+        type: string
+    type: object
+  models.Company:
+    properties:
+      city:
+        type: string
+      description:
+        type: string
+      id:
+        type: string
+      logo_id:
+        description: ID логотипа в achievements
+        type: string
+      logo_url:
+        description: Ссылки на файлы
+        type: string
+      name:
+        type: string
+      site:
+        type: string
+      type:
+        $ref: '#/definitions/models.CompanyType'
+    type: object
+  models.CompanyList:
+    properties:
+      companies:
+        items:
+          $ref: '#/definitions/models.Company'
+        type: array
+      pagination:
+        $ref: '#/definitions/models.PaginationResponse'
+    type: object
+  models.CompanyType:
+    properties:
+      value:
+        type: string
+    type: object
+  models.Error:
+    description: Стандартная модель ошибки API
+    properties:
+      code:
+        example: VALIDATION_ERROR
+        type: string
+      message:
+        example: Invalid request parameters
+        type: string
+    type: object
+  models.ErrorResponse:
+    description: Расширенный ответ с ошибкой
+    properties:
+      code:
+        example: INVALID_INPUT
+        type: string
+      details:
+        items:
+          $ref: '#/definitions/models.ValidationError'
+        type: array
+      error:
+        example: Bad Request
+        type: string
+      message:
+        example: Invalid input data
+        type: string
+    type: object
+  models.FileInfo:
+    description: Детальная информация о загруженном файле
+    properties:
+      category:
+        enum:
+        - avatar
+        - resume
+        - logo
+        - document
+        - attachment
+        example: avatar
+        type: string
+      direct_url:
+        example: https://cdn.example.com/avatars/avatar_12345.jpg
+        type: string
+      id:
+        example: 550e8400-e29b-41d4-a716-446655440000
+        type: string
+      name:
+        example: avatar_12345.jpg
+        type: string
+      type:
+        enum:
+        - image
+        - document
+        - other
+        example: image
+        type: string
+      url:
+        example: https://api.example.com/files/user123/avatar_12345.jpg
+        type: string
+    type: object
+  models.FileUploadResponse:
+    description: Ответ после успешной загрузки файла
+    properties:
+      file_info:
+        $ref: '#/definitions/models.FileInfo'
+      message:
+        example: File uploaded successfully
+        type: string
+    type: object
+  models.LoginRequest:
+    description: Запрос на аутентификацию пользователя
+    properties:
+      email:
+        example: user@example.com
+        type: string
+      password:
+        example: password123
+        minLength: 6
+        type: string
+      role:
+        enum:
+        - ROLE_STUDENT
+        - ROLE_DEVELOPER
+        - ROLE_HR
+        - ROLE_COMPANY
+        example: ROLE_STUDENT
+        type: string
+    required:
+    - email
+    - password
+    - role
+    type: object
+  models.PaginationResponse:
+    properties:
+      current_page:
+        type: integer
+      pages:
+        type: integer
+      total:
+        type: integer
+    type: object
+  models.ProfileList:
+    description: Список пользователей с пагинацией
+    properties:
+      pagination:
+        $ref: '#/definitions/models.PaginationResponse'
+      profiles:
+        items:
+          $ref: '#/definitions/models.User'
+        type: array
+    type: object
+  models.SignUpRequest:
+    description: Запрос на регистрацию нового пользователя
+    properties:
+      email:
+        example: user@example.com
+        type: string
+      password:
+        example: password123
+        minLength: 6
+        type: string
+      role:
+        enum:
+        - ROLE_STUDENT
+        - ROLE_DEVELOPER
+        - ROLE_HR
+        - ROLE_COMPANY
+        example: ROLE_STUDENT
+        type: string
+    required:
+    - email
+    - password
+    - role
+    type: object
+  models.SuccessResponse:
+    description: Успешный ответ API
+    properties:
+      message:
+        example: Operation completed successfully
+        type: string
+    type: object
+  models.UploadUrlResponse:
+    description: URL для загрузки файла в S3
+    properties:
+      expires_at:
+        example: 1696523400
+        type: integer
+      s3_key:
+        example: achievements/user123/diploma.pdf
+        type: string
+      upload_url:
+        example: https://s3.amazonaws.com/bucket/upload?signature=...
+        type: string
+    type: object
+  models.User:
+    description: Модель данных пользователя
+    properties:
+      age:
+        example: 25
+        type: integer
+      avatar_id:
+        example: 550e8400-e29b-41d4-a716-446655440002
+        type: string
+      avatar_url:
+        example: https://example.com/files/user/avatar.jpg
+        type: string
+      description:
+        example: Опытный разработчик
+        type: string
+      email:
+        example: ivan@example.com
+        type: string
+      first_name:
+        example: Иван
+        type: string
+      id:
+        example: 550e8400-e29b-41d4-a716-446655440000
+        type: string
+      last_name:
+        example: Иванов
+        type: string
+      profession_category:
+        example: Backend Developer
+        type: string
+      resume_id:
+        example: 550e8400-e29b-41d4-a716-446655440001
+        type: string
+      resume_url:
+        description: Ссылки на файлы
+        example: https://example.com/files/user/resume.pdf
+        type: string
+      tg:
+        example: '@ivanov'
+        type: string
+    type: object
+  models.UserUpdateRequest:
+    description: Запрос на обновление данных пользователя
+    properties:
+      age:
+        example: 26
+        type: integer
+      avatar_id:
+        example: 550e8400-e29b-41d4-a716-446655440002
+        type: string
+      description:
+        example: Fullstack разработчик
+        type: string
+      email:
+        example: petr@example.com
+        type: string
+      first_name:
+        example: Петр
+        type: string
+      last_name:
+        example: Петров
+        type: string
+      profession_category:
+        example: Fullstack Developer
+        type: string
+      resume_id:
+        example: 550e8400-e29b-41d4-a716-446655440001
+        type: string
+      tg:
+        example: '@petrov'
+        type: string
+    type: object
+  models.Vacancy:
+    properties:
+      attachment_id:
+        type: string
+      attachment_url:
+        type: string
+      company_id:
+        type: string
+      create_at:
+        type: string
+      experience:
+        type: integer
+      id:
+        type: string
+      position_status:
+        type: string
+      salary:
+        type: integer
+      schedule:
+        type: string
+      title:
+        type: string
+      work_format:
+        type: string
+    type: object
+  models.VacancyList:
+    properties:
+      pagination:
+        $ref: '#/definitions/models.PaginationResponse'
+      vacancies:
+        items:
+          $ref: '#/definitions/models.Vacancy'
+        type: array
+    type: object
+  models.ValidationError:
+    description: Детализированная ошибка валидации
+    properties:
+      code:
+        example: REQUIRED_FIELD
+        type: string
+      field:
+        example: email
+        type: string
+      message:
+        example: Email is required
+        type: string
+    type: object
+host: localhost:8000
+info:
+  contact:
+    email: support@studjobs.ru
+    name: API Support
+  description: API Gateway для платформы StudJobs HH
+  license:
+    name: MIT
+    url: https://opensource.org/licenses/MIT
+  termsOfService: http://swagger.io/terms/
+  title: StudJobs HH API Gateway
+  version: "1.0"
+paths:
+  /auth/login:
+    post:
+      consumes:
+      - application/json
+      description: Выполняет вход пользователя в систему и возвращает JWT токен
+      parameters:
+      - description: Данные для входа
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/models.LoginRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Успешная аутентификация
+          schema:
+            $ref: '#/definitions/models.AuthResponse'
+        "400":
+          description: Неверный запрос
+          schema:
+            $ref: '#/definitions/models.ErrorResponse'
+        "401":
+          description: Неверные учетные данные
+          schema:
+            $ref: '#/definitions/models.ErrorResponse'
+        "500":
+          description: Внутренняя ошибка сервера
+          schema:
+            $ref: '#/definitions/models.ErrorResponse'
+      summary: Аутентификация пользователя
+      tags:
+      - Auth
+  /auth/parse-token:
+    get:
+      consumes:
+      - application/json
+      description: Проверяет валидность JWT токена и возвращает информацию о пользователе
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Информация о токене
+          schema:
+            additionalProperties: true
+            type: object
+        "400":
+          description: Отсутствует токен
+          schema:
+            $ref: '#/definitions/models.ErrorResponse'
+        "401":
+          description: Неверный токен
+          schema:
+            $ref: '#/definitions/models.ErrorResponse'
+        "500":
+          description: Внутренняя ошибка сервера
+          schema:
+            $ref: '#/definitions/models.ErrorResponse'
+      security:
+      - BearerAuth: []
+      summary: Проверка токена
+      tags:
+      - Auth
+  /auth/register:
+    post:
+      consumes:
+      - application/json
+      description: Создает нового пользователя и возвращает JWT токен
+      parameters:
+      - description: Данные для регистрации
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/models.SignUpRequest'
+      produces:
+      - application/json
+      responses:
+        "201":
+          description: Пользователь успешно создан
+          schema:
+            $ref: '#/definitions/models.AuthResponse'
+        "400":
+          description: Неверный запрос
+          schema:
+            $ref: '#/definitions/models.ErrorResponse'
+        "409":
+          description: Пользователь уже существует
+          schema:
+            $ref: '#/definitions/models.ErrorResponse'
+        "500":
+          description: Внутренняя ошибка сервера
+          schema:
+            $ref: '#/definitions/models.ErrorResponse'
+      summary: Регистрация нового пользователя
+      tags:
+      - Auth
+  /company:
+    delete:
+      consumes:
+      - application/json
+      description: Удаляет компанию текущего пользователя
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Сообщение об успешном удалении
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "401":
+          description: Неавторизованный доступ
+          schema:
+            $ref: '#/definitions/models.ErrorResponse'
+        "403":
+          description: Доступ запрещен
+          schema:
+            $ref: '#/definitions/models.ErrorResponse'
+        "404":
+          description: Компания не найдена
+          schema:
+            $ref: '#/definitions/models.ErrorResponse'
+        "500":
+          description: Внутренняя ошибка сервера
+          schema:
+            $ref: '#/definitions/models.ErrorResponse'
+      security:
+      - BearerAuth: []
+      summary: Удалить компанию
+      tags:
+      - Companies
+    get:
+      consumes:
+      - application/json
+      description: Возвращает список компаний с поддержкой пагинации и фильтрации
+        по городу и типу
+      parameters:
+      - default: 1
+        description: Номер страницы
+        in: query
+        minimum: 1
+        name: page
+        type: integer
+      - default: 10
+        description: Количество элементов на странице
+        in: query
+        maximum: 100
+        minimum: 1
+        name: limit
+        type: integer
+      - description: Фильтр по городу
+        in: query
+        name: city
+        type: string
+      - description: Фильтр по типу компании
+        in: query
+        name: type
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Список компаний
+          schema:
+            $ref: '#/definitions/models.CompanyList'
+        "400":
+          description: Неверные параметры запроса
+          schema:
+            $ref: '#/definitions/models.ErrorResponse'
+        "401":
+          description: Неавторизованный доступ
+          schema:
+            $ref: '#/definitions/models.ErrorResponse'
+        "500":
+          description: Внутренняя ошибка сервера
+          schema:
+            $ref: '#/definitions/models.ErrorResponse'
+      security:
+      - BearerAuth: []
+      summary: Получить список компаний
+      tags:
+      - Companies
+    patch:
+      consumes:
+      - application/json
+      description: Обновляет данные компании текущего пользователя
+      parameters:
+      - description: Данные для обновления
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/models.Company'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Обновленная компания
+          schema:
+            $ref: '#/definitions/models.Company'
+        "400":
+          description: Неверные данные запроса
+          schema:
+            $ref: '#/definitions/models.ErrorResponse'
+        "401":
+          description: Неавторизованный доступ
+          schema:
+            $ref: '#/definitions/models.ErrorResponse'
+        "403":
+          description: Доступ запрещен
+          schema:
+            $ref: '#/definitions/models.ErrorResponse'
+        "404":
+          description: Компания не найдена
+          schema:
+            $ref: '#/definitions/models.ErrorResponse'
+        "500":
+          description: Внутренняя ошибка сервера
+          schema:
+            $ref: '#/definitions/models.ErrorResponse'
+      security:
+      - BearerAuth: []
+      summary: Обновить компанию
+      tags:
+      - Companies
+    post:
+      consumes:
+      - application/json
+      description: Создает новую компанию для текущего пользователя
+      parameters:
+      - description: Данные компании
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/models.Company'
+      produces:
+      - application/json
+      responses:
+        "201":
+          description: Созданная компания
+          schema:
+            $ref: '#/definitions/models.Company'
+        "400":
+          description: Неверные данные запроса
+          schema:
+            $ref: '#/definitions/models.ErrorResponse'
+        "401":
+          description: Неавторизованный доступ
+          schema:
+            $ref: '#/definitions/models.ErrorResponse'
+        "403":
+          description: Доступ запрещен
+          schema:
+            $ref: '#/definitions/models.ErrorResponse'
+        "500":
+          description: Внутренняя ошибка сервера
+          schema:
+            $ref: '#/definitions/models.ErrorResponse'
+      security:
+      - BearerAuth: []
+      summary: Создать компанию
+      tags:
+      - Companies
+  /company/{id}:
+    get:
+      consumes:
+      - application/json
+      description: Возвращает информацию о компании по указанному идентификатору
+      parameters:
+      - description: ID компании
+        format: uuid
+        in: path
+        name: id
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Информация о компании
+          schema:
+            $ref: '#/definitions/models.Company'
+        "400":
+          description: Неверный ID компании
+          schema:
+            $ref: '#/definitions/models.ErrorResponse'
+        "401":
+          description: Неавторизованный доступ
+          schema:
+            $ref: '#/definitions/models.ErrorResponse'
+        "404":
+          description: Компания не найдена
+          schema:
+            $ref: '#/definitions/models.ErrorResponse'
+        "500":
+          description: Внутренняя ошибка сервера
+          schema:
+            $ref: '#/definitions/models.ErrorResponse'
+      security:
+      - BearerAuth: []
+      summary: Получить компанию по ID
+      tags:
+      - Companies
+  /company/{id}/files/documents:
+    post:
+      consumes:
+      - multipart/form-data
+      description: 'Загружает документ для компании текущего пользователя. Поддерживаемые
+        форматы: PDF, DOC, DOCX, XLS, XLSX. Максимальный размер: 20MB.'
+      parameters:
+      - description: ID компании
+        example: '"comp-123"'
+        in: path
+        name: id
+        required: true
+        type: string
+      - description: Файл документа (макс. 20MB)
+        in: formData
+        name: document
+        required: true
+        type: file
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Информация о загруженном файле
+          schema:
+            $ref: '#/definitions/models.FileUploadResponse'
+        "400":
+          description: Неверный запрос или файл слишком большой
+          schema:
+            $ref: '#/definitions/models.Error'
+        "401":
+          description: Неавторизованный доступ
+          schema:
+            $ref: '#/definitions/models.Error'
+        "403":
+          description: Доступ запрещен
+          schema:
+            $ref: '#/definitions/models.Error'
+        "404":
+          description: Компания не найдена
+          schema:
+            $ref: '#/definitions/models.Error'
+        "413":
+          description: Файл превышает максимальный размер
+          schema:
+            $ref: '#/definitions/models.Error'
+        "500":
+          description: Внутренняя ошибка сервера
+          schema:
+            $ref: '#/definitions/models.Error'
+      security:
+      - BearerAuth: []
+      summary: Загрузить документ компании
+      tags:
+      - Companies/Files
+  /company/{id}/files/logo:
+    delete:
+      consumes:
+      - application/json
+      description: Удаляет логотип компании текущего пользователя. После удаления
+        будет установлен логотип по умолчанию.
+      parameters:
+      - description: ID компании
+        example: '"comp-123"'
+        in: path
+        name: id
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Сообщение об успешном удалении
+          schema:
+            $ref: '#/definitions/models.SuccessResponse'
+        "400":
+          description: У компании нет логотипа
+          schema:
+            $ref: '#/definitions/models.Error'
+        "401":
+          description: Неавторизованный доступ
+          schema:
+            $ref: '#/definitions/models.Error'
+        "403":
+          description: Доступ запрещен
+          schema:
+            $ref: '#/definitions/models.Error'
+        "404":
+          description: Компания не найдена
+          schema:
+            $ref: '#/definitions/models.Error'
+        "500":
+          description: Внутренняя ошибка сервера
+          schema:
+            $ref: '#/definitions/models.Error'
+      security:
+      - BearerAuth: []
+      summary: Удалить логотип компании
+      tags:
+      - Companies/Files
+    post:
+      consumes:
+      - multipart/form-data
+      description: 'Загружает логотип для компании текущего пользователя. Поддерживаемые
+        форматы: JPG, PNG, SVG. Максимальный размер: 5MB.'
+      parameters:
+      - description: ID компании
+        example: '"comp-123"'
+        in: path
+        name: id
+        required: true
+        type: string
+      - description: Файл логотипа (макс. 5MB)
+        in: formData
+        name: logo
+        required: true
+        type: file
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Информация о загруженном файле
+          schema:
+            $ref: '#/definitions/models.FileUploadResponse'
+        "400":
+          description: Неверный запрос или файл слишком большой
+          schema:
+            $ref: '#/definitions/models.Error'
+        "401":
+          description: Неавторизованный доступ
+          schema:
+            $ref: '#/definitions/models.Error'
+        "403":
+          description: Доступ запрещен
+          schema:
+            $ref: '#/definitions/models.Error'
+        "404":
+          description: Компания не найдена
+          schema:
+            $ref: '#/definitions/models.Error'
+        "413":
+          description: Файл превышает максимальный размер
+          schema:
+            $ref: '#/definitions/models.Error'
+        "500":
+          description: Внутренняя ошибка сервера
+          schema:
+            $ref: '#/definitions/models.Error'
+      security:
+      - BearerAuth: []
+      summary: Загрузить логотип компании
+      tags:
+      - Companies/Files
+  /company/me:
+    get:
+      consumes:
+      - application/json
+      description: Возвращает информацию о компании текущего аутентифицированного
+        пользователя
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Информация о компании
+          schema:
+            $ref: '#/definitions/models.Company'
+        "401":
+          description: Неавторизованный доступ
+          schema:
+            $ref: '#/definitions/models.ErrorResponse'
+        "404":
+          description: Компания не найдена
+          schema:
+            $ref: '#/definitions/models.ErrorResponse'
+        "500":
+          description: Внутренняя ошибка сервера
+          schema:
+            $ref: '#/definitions/models.ErrorResponse'
+      security:
+      - BearerAuth: []
+      summary: Получить текущую компанию
+      tags:
+      - Companies
+  /files/{entity_id}/{file_name}:
+    get:
+      consumes:
+      - application/json
+      description: Перенаправляет на presigned URL для скачивания файла. Используется
+        для отображения изображений и файлов напрямую в браузере.
+      parameters:
+      - description: ID сущности (пользователь, компания, вакансия)
+        example: '"user-123"'
+        in: path
+        name: entity_id
+        required: true
+        type: string
+      - description: Имя файла
+        example: '"avatar.jpg"'
+        in: path
+        name: file_name
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "302":
+          description: Перенаправление на URL файла
+          schema:
+            type: string
+        "404":
+          description: Файл не найден
+          schema:
+            $ref: '#/definitions/models.Error'
+        "500":
+          description: Внутренняя ошибка сервера
+          schema:
+            $ref: '#/definitions/models.Error'
+      summary: Прямая загрузка файла
+      tags:
+      - Files
+  /hr/vacancy:
+    get:
+      consumes:
+      - application/json
+      description: Возвращает список вакансий для текущего HR с поддержкой фильтрации
+      parameters:
+      - default: 1
+        description: Номер страницы
+        in: query
+        minimum: 1
+        name: page
+        type: integer
+      - default: 10
+        description: Количество элементов на странице
+        in: query
+        maximum: 100
+        minimum: 1
+        name: limit
+        type: integer
+      - description: Фильтр по ID компании
+        in: query
+        name: company_id
+        type: string
+      - description: Фильтр по статусу позиции
+        in: query
+        name: position_status
+        type: string
+      - description: Фильтр по формату работы
+        in: query
+        name: work_format
+        type: string
+      - description: Фильтр по графику работы
+        in: query
+        name: schedule
+        type: string
+      - description: Минимальная зарплата
+        in: query
+        name: min_salary
+        type: integer
+      - description: Максимальная зарплата
+        in: query
+        name: max_salary
+        type: integer
+      - description: Минимальный опыт работы (лет)
+        in: query
+        name: min_experience
+        type: integer
+      - description: Максимальный опыт работы (лет)
+        in: query
+        name: max_experience
+        type: integer
+      - description: Поиск по названию вакансии
+        in: query
+        name: search_title
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Список вакансий HR
+          schema:
+            $ref: '#/definitions/models.VacancyList'
+        "400":
+          description: Неверные параметры запроса
+          schema:
+            $ref: '#/definitions/models.ErrorResponse'
+        "401":
+          description: Неавторизованный доступ
+          schema:
+            $ref: '#/definitions/models.ErrorResponse'
+        "403":
+          description: Доступ запрещен
+          schema:
+            $ref: '#/definitions/models.ErrorResponse'
+        "500":
+          description: Внутренняя ошибка сервера
+          schema:
+            $ref: '#/definitions/models.ErrorResponse'
+      security:
+      - BearerAuth: []
+      summary: Получить вакансии HR
+      tags:
+      - Vacancies
+    post:
+      consumes:
+      - application/json
+      description: Создает новую вакансию для текущего HR
+      parameters:
+      - description: Данные вакансии
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/models.Vacancy'
+      produces:
+      - application/json
+      responses:
+        "201":
+          description: Созданная вакансия
+          schema:
+            $ref: '#/definitions/models.Vacancy'
+        "400":
+          description: Неверные данные запроса
+          schema:
+            $ref: '#/definitions/models.ErrorResponse'
+        "401":
+          description: Неавторизованный доступ
+          schema:
+            $ref: '#/definitions/models.ErrorResponse'
+        "403":
+          description: Доступ запрещен
+          schema:
+            $ref: '#/definitions/models.ErrorResponse'
+        "500":
+          description: Внутренняя ошибка сервера
+          schema:
+            $ref: '#/definitions/models.ErrorResponse'
+      security:
+      - BearerAuth: []
+      summary: Создать вакансию
+      tags:
+      - Vacancies
+  /hr/vacancy/{id}:
+    delete:
+      consumes:
+      - application/json
+      description: Удаляет вакансию текущего HR
+      parameters:
+      - description: ID вакансии
+        in: path
+        name: id
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Сообщение об успешном удалении
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "401":
+          description: Неавторизованный доступ
+          schema:
+            $ref: '#/definitions/models.ErrorResponse'
+        "403":
+          description: Доступ запрещен
+          schema:
+            $ref: '#/definitions/models.ErrorResponse'
+        "404":
+          description: Вакансия не найдена
+          schema:
+            $ref: '#/definitions/models.ErrorResponse'
+        "500":
+          description: Внутренняя ошибка сервера
+          schema:
+            $ref: '#/definitions/models.ErrorResponse'
+      security:
+      - BearerAuth: []
+      summary: Удалить вакансию
+      tags:
+      - Vacancies
+    patch:
+      consumes:
+      - application/json
+      description: Обновляет данные вакансии текущего HR
+      parameters:
+      - description: ID вакансии
+        in: path
+        name: id
+        required: true
+        type: string
+      - description: Данные для обновления
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/models.Vacancy'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Обновленная вакансия
+          schema:
+            $ref: '#/definitions/models.Vacancy'
+        "400":
+          description: Неверные данные запроса
+          schema:
+            $ref: '#/definitions/models.ErrorResponse'
+        "401":
+          description: Неавторизованный доступ
+          schema:
+            $ref: '#/definitions/models.ErrorResponse'
+        "403":
+          description: Доступ запрещен
+          schema:
+            $ref: '#/definitions/models.ErrorResponse'
+        "404":
+          description: Вакансия не найдена
+          schema:
+            $ref: '#/definitions/models.ErrorResponse'
+        "500":
+          description: Внутренняя ошибка сервера
+          schema:
+            $ref: '#/definitions/models.ErrorResponse'
+      security:
+      - BearerAuth: []
+      summary: Обновить вакансию
+      tags:
+      - Vacancies
+  /positions:
+    get:
+      consumes:
+      - application/json
+      description: Возвращает список всех доступных должностей/позиций
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Список позиций
+          schema:
+            additionalProperties: true
+            type: object
+        "500":
+          description: Внутренняя ошибка сервера
+          schema:
+            $ref: '#/definitions/models.ErrorResponse'
+      security:
+      - BearerAuth: []
+      summary: Получить список позиций
+      tags:
+      - Vacancies
+  /user/achievements:
+    get:
+      consumes:
+      - application/json
+      description: Возвращает список всех достижений текущего пользователя
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Список достижений
+          schema:
+            $ref: '#/definitions/models.AchievementList'
+        "400":
+          description: Неверный ID пользователя
+          schema:
+            $ref: '#/definitions/models.ErrorResponse'
+        "401":
+          description: Неавторизованный доступ
+          schema:
+            $ref: '#/definitions/models.ErrorResponse'
+        "500":
+          description: Внутренняя ошибка сервера
+          schema:
+            $ref: '#/definitions/models.ErrorResponse'
+      security:
+      - BearerAuth: []
+      summary: Получить достижения пользователя
+      tags:
+      - Achievements
+    post:
+      consumes:
+      - application/json
+      description: Создает новое достижение и возвращает URL для загрузки файла
+      parameters:
+      - description: Данные достижения
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/models.AchievementUploadRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Данные для загрузки файла
+          schema:
+            $ref: '#/definitions/models.AchievementCreateResponse'
+        "400":
+          description: Неверные данные запроса
+          schema:
+            $ref: '#/definitions/models.ErrorResponse'
+        "401":
+          description: Неавторизованный доступ
+          schema:
+            $ref: '#/definitions/models.ErrorResponse'
+        "500":
+          description: Внутренняя ошибка сервера
+          schema:
+            $ref: '#/definitions/models.ErrorResponse'
+      security:
+      - BearerAuth: []
+      summary: Создать достижение
+      tags:
+      - Achievements
+  /user/achievements/{id}:
+    delete:
+      consumes:
+      - application/json
+      description: Удаляет достижение пользователя по названию
+      parameters:
+      - description: Название достижения
+        in: path
+        name: id
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Сообщение об успешном удалении
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "400":
+          description: Неверные параметры запроса
+          schema:
+            $ref: '#/definitions/models.ErrorResponse'
+        "401":
+          description: Неавторизованный доступ
+          schema:
+            $ref: '#/definitions/models.ErrorResponse'
+        "404":
+          description: Достижение не найдено
+          schema:
+            $ref: '#/definitions/models.ErrorResponse'
+        "500":
+          description: Внутренняя ошибка сервера
+          schema:
+            $ref: '#/definitions/models.ErrorResponse'
+      security:
+      - BearerAuth: []
+      summary: Удалить достижение
+      tags:
+      - Achievements
+  /user/achievements/{id}/confirm:
+    post:
+      consumes:
+      - application/json
+      description: Подтверждает успешную загрузку файла достижения и сохраняет метаданные
+      parameters:
+      - description: Название достижения
+        in: path
+        name: id
+        required: true
+        type: string
+      - description: S3 ключ файла
+        in: body
+        name: request
+        required: true
+        schema:
+          additionalProperties:
+            type: string
+          type: object
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Сообщение об успешном подтверждении
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "400":
+          description: Неверные данные запроса
+          schema:
+            $ref: '#/definitions/models.ErrorResponse'
+        "401":
+          description: Неавторизованный доступ
+          schema:
+            $ref: '#/definitions/models.ErrorResponse'
+        "404":
+          description: Достижение не найдено
+          schema:
+            $ref: '#/definitions/models.ErrorResponse'
+        "500":
+          description: Внутренняя ошибка сервера
+          schema:
+            $ref: '#/definitions/models.ErrorResponse'
+      security:
+      - BearerAuth: []
+      summary: Подтвердить загрузку достижения
+      tags:
+      - Achievements
+  /user/achievements/{id}/download:
+    get:
+      consumes:
+      - application/json
+      description: Возвращает presigned URL для скачивания файла достижения
+      parameters:
+      - description: Название достижения
+        in: path
+        name: id
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: URL для скачивания
+          schema:
+            $ref: '#/definitions/models.AchievementUrl'
+        "400":
+          description: Неверные параметры запроса
+          schema:
+            $ref: '#/definitions/models.ErrorResponse'
+        "401":
+          description: Неавторизованный доступ
+          schema:
+            $ref: '#/definitions/models.ErrorResponse'
+        "404":
+          description: Достижение не найдено
+          schema:
+            $ref: '#/definitions/models.ErrorResponse'
+        "500":
+          description: Внутренняя ошибка сервера
+          schema:
+            $ref: '#/definitions/models.ErrorResponse'
+      security:
+      - BearerAuth: []
+      summary: Получить URL для скачивания достижения
+      tags:
+      - Achievements
+  /users:
+    delete:
+      consumes:
+      - application/json
+      description: Удаляет профиль текущего пользователя
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Сообщение об успешном удалении
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "400":
+          description: Неверный ID пользователя
+          schema:
+            $ref: '#/definitions/models.ErrorResponse'
+        "401":
+          description: Неавторизованный доступ
+          schema:
+            $ref: '#/definitions/models.ErrorResponse'
+        "403":
+          description: Доступ запрещен
+          schema:
+            $ref: '#/definitions/models.ErrorResponse'
+        "500":
+          description: Внутренняя ошибка сервера
+          schema:
+            $ref: '#/definitions/models.ErrorResponse'
+      security:
+      - BearerAuth: []
+      summary: Удалить пользователя
+      tags:
+      - Users
+    get:
+      consumes:
+      - application/json
+      description: Возвращает список пользователей с поддержкой пагинации и фильтрации
+        по категории
+      parameters:
+      - default: 1
+        description: Номер страницы
+        in: query
+        minimum: 1
+        name: page
+        type: integer
+      - default: 10
+        description: Количество элементов на странице
+        in: query
+        maximum: 100
+        minimum: 1
+        name: limit
+        type: integer
+      - description: Фильтр по категории профессии
+        in: query
+        name: category
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Список пользователей
+          schema:
+            $ref: '#/definitions/models.ProfileList'
+        "400":
+          description: Неверные параметры запроса
+          schema:
+            $ref: '#/definitions/models.ErrorResponse'
+        "401":
+          description: Неавторизованный доступ
+          schema:
+            $ref: '#/definitions/models.ErrorResponse'
+        "500":
+          description: Внутренняя ошибка сервера
+          schema:
+            $ref: '#/definitions/models.ErrorResponse'
+      security:
+      - BearerAuth: []
+      summary: Получить список пользователей
+      tags:
+      - Users
+  /users/{id}:
+    get:
+      consumes:
+      - application/json
+      description: Возвращает профиль пользователя по указанному идентификатору
+      parameters:
+      - description: ID пользователя
+        format: uuid
+        in: path
+        name: id
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Профиль пользователя
+          schema:
+            $ref: '#/definitions/models.User'
+        "400":
+          description: Неверный ID пользователя
+          schema:
+            $ref: '#/definitions/models.ErrorResponse'
+        "401":
+          description: Неавторизованный доступ
+          schema:
+            $ref: '#/definitions/models.ErrorResponse'
+        "404":
+          description: Пользователь не найден
+          schema:
+            $ref: '#/definitions/models.ErrorResponse'
+        "500":
+          description: Внутренняя ошибка сервера
+          schema:
+            $ref: '#/definitions/models.ErrorResponse'
+      security:
+      - BearerAuth: []
+      summary: Получить пользователя по ID
+      tags:
+      - Users
+  /users/edit:
+    patch:
+      consumes:
+      - application/json
+      description: Обновляет данные профиля текущего пользователя. Поддерживает частичное
+        обновление.
+      parameters:
+      - description: Данные для обновления
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/models.UserUpdateRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Обновленный профиль пользователя
+          schema:
+            $ref: '#/definitions/models.User'
+        "400":
+          description: Неверные данные запроса
+          schema:
+            $ref: '#/definitions/models.ErrorResponse'
+        "401":
+          description: Неавторизованный доступ
+          schema:
+            $ref: '#/definitions/models.ErrorResponse'
+        "403":
+          description: Доступ запрещен
+          schema:
+            $ref: '#/definitions/models.ErrorResponse'
+        "500":
+          description: Внутренняя ошибка сервера
+          schema:
+            $ref: '#/definitions/models.ErrorResponse'
+      security:
+      - BearerAuth: []
+      summary: Обновить профиль пользователя
+      tags:
+      - Users
+  /users/files/avatar:
+    delete:
+      consumes:
+      - application/json
+      description: Удаляет аватар текущего пользователя. После удаления будет установлен
+        аватар по умолчанию.
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Сообщение об успешном удалении
+          schema:
+            $ref: '#/definitions/models.SuccessResponse'
+        "400":
+          description: У пользователя нет аватара
+          schema:
+            $ref: '#/definitions/models.Error'
+        "401":
+          description: Неавторизованный доступ
+          schema:
+            $ref: '#/definitions/models.Error'
+        "404":
+          description: Пользователь не найден
+          schema:
+            $ref: '#/definitions/models.Error'
+        "500":
+          description: Внутренняя ошибка сервера
+          schema:
+            $ref: '#/definitions/models.Error'
+      security:
+      - BearerAuth: []
+      summary: Удалить аватар пользователя
+      tags:
+      - Users/Files
+    post:
+      consumes:
+      - multipart/form-data
+      description: 'Загружает аватар для текущего пользователя. Поддерживаемые форматы:
+        JPG, PNG, GIF. Максимальный размер: 5MB.'
+      parameters:
+      - description: Файл аватара (макс. 5MB)
+        in: formData
+        name: avatar
+        required: true
+        type: file
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Информация о загруженном файле
+          schema:
+            $ref: '#/definitions/models.FileUploadResponse'
+        "400":
+          description: Неверный запрос или файл слишком большой
+          schema:
+            $ref: '#/definitions/models.Error'
+        "401":
+          description: Неавторизованный доступ
+          schema:
+            $ref: '#/definitions/models.Error'
+        "413":
+          description: Файл превышает максимальный размер
+          schema:
+            $ref: '#/definitions/models.Error'
+        "500":
+          description: Внутренняя ошибка сервера
+          schema:
+            $ref: '#/definitions/models.Error'
+      security:
+      - BearerAuth: []
+      summary: Загрузить аватар пользователя
+      tags:
+      - Users/Files
+  /users/files/resume:
+    delete:
+      consumes:
+      - application/json
+      description: Удаляет резюме текущего пользователя. После удаления поле resume_id
+        будет очищено.
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Сообщение об успешном удалении
+          schema:
+            $ref: '#/definitions/models.SuccessResponse'
+        "400":
+          description: У пользователя нет резюме
+          schema:
+            $ref: '#/definitions/models.Error'
+        "401":
+          description: Неавторизованный доступ
+          schema:
+            $ref: '#/definitions/models.Error'
+        "404":
+          description: Пользователь не найден
+          schema:
+            $ref: '#/definitions/models.Error'
+        "500":
+          description: Внутренняя ошибка сервера
+          schema:
+            $ref: '#/definitions/models.Error'
+      security:
+      - BearerAuth: []
+      summary: Удалить резюме пользователя
+      tags:
+      - Users/Files
+    post:
+      consumes:
+      - multipart/form-data
+      description: 'Загружает резюме для текущего пользователя. Поддерживаемые форматы:
+        PDF, DOC, DOCX. Максимальный размер: 10MB.'
+      parameters:
+      - description: Файл резюме (макс. 10MB)
+        in: formData
+        name: resume
+        required: true
+        type: file
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Информация о загруженном файле
+          schema:
+            $ref: '#/definitions/models.FileUploadResponse'
+        "400":
+          description: Неверный запрос или файл слишком большой
+          schema:
+            $ref: '#/definitions/models.Error'
+        "401":
+          description: Неавторизованный доступ
+          schema:
+            $ref: '#/definitions/models.Error'
+        "413":
+          description: Файл превышает максимальный размер
+          schema:
+            $ref: '#/definitions/models.Error'
+        "500":
+          description: Внутренняя ошибка сервера
+          schema:
+            $ref: '#/definitions/models.Error'
+      security:
+      - BearerAuth: []
+      summary: Загрузить резюме пользователя
+      tags:
+      - Users/Files
+  /users/me:
+    get:
+      consumes:
+      - application/json
+      description: Возвращает профиль текущего аутентифицированного пользователя
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Профиль пользователя
+          schema:
+            $ref: '#/definitions/models.User'
+        "401":
+          description: Неавторизованный доступ
+          schema:
+            $ref: '#/definitions/models.ErrorResponse'
+        "404":
+          description: Пользователь не найден
+          schema:
+            $ref: '#/definitions/models.ErrorResponse'
+        "500":
+          description: Внутренняя ошибка сервера
+          schema:
+            $ref: '#/definitions/models.ErrorResponse'
+      security:
+      - BearerAuth: []
+      summary: Получить текущего пользователя
+      tags:
+      - Users
+  /vacancy:
+    get:
+      consumes:
+      - application/json
+      description: Возвращает список вакансий с поддержкой пагинации и фильтрации
+      parameters:
+      - default: 1
+        description: Номер страницы
+        in: query
+        minimum: 1
+        name: page
+        type: integer
+      - default: 10
+        description: Количество элементов на странице
+        in: query
+        maximum: 100
+        minimum: 1
+        name: limit
+        type: integer
+      - description: Фильтр по ID компании
+        in: query
+        name: company_id
+        type: string
+      - description: Фильтр по статусу позиции
+        in: query
+        name: position_status
+        type: string
+      - description: Фильтр по формату работы
+        in: query
+        name: work_format
+        type: string
+      - description: Фильтр по графику работы
+        in: query
+        name: schedule
+        type: string
+      - description: Минимальная зарплата
+        in: query
+        name: min_salary
+        type: integer
+      - description: Максимальная зарплата
+        in: query
+        name: max_salary
+        type: integer
+      - description: Минимальный опыт работы (лет)
+        in: query
+        name: min_experience
+        type: integer
+      - description: Максимальный опыт работы (лет)
+        in: query
+        name: max_experience
+        type: integer
+      - description: Поиск по названию вакансии
+        in: query
+        name: search_title
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Список вакансий
+          schema:
+            $ref: '#/definitions/models.VacancyList'
+        "400":
+          description: Неверные параметры запроса
+          schema:
+            $ref: '#/definitions/models.ErrorResponse'
+        "401":
+          description: Неавторизованный доступ
+          schema:
+            $ref: '#/definitions/models.ErrorResponse'
+        "500":
+          description: Внутренняя ошибка сервера
+          schema:
+            $ref: '#/definitions/models.ErrorResponse'
+      security:
+      - BearerAuth: []
+      summary: Получить список вакансий
+      tags:
+      - Vacancies
+  /vacancy/{id}:
+    get:
+      consumes:
+      - application/json
+      description: Возвращает информацию о вакансии по указанному идентификатору
+      parameters:
+      - description: ID вакансии
+        format: uuid
+        in: path
+        name: id
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Информация о вакансии
+          schema:
+            $ref: '#/definitions/models.Vacancy'
+        "400":
+          description: Неверный ID вакансии
+          schema:
+            $ref: '#/definitions/models.ErrorResponse'
+        "401":
+          description: Неавторизованный доступ
+          schema:
+            $ref: '#/definitions/models.ErrorResponse'
+        "404":
+          description: Вакансия не найдена
+          schema:
+            $ref: '#/definitions/models.ErrorResponse'
+        "500":
+          description: Внутренняя ошибка сервера
+          schema:
+            $ref: '#/definitions/models.ErrorResponse'
+      security:
+      - BearerAuth: []
+      summary: Получить вакансию по ID
+      tags:
+      - Vacancies
+  /vacancy/{id}/files/attachment:
+    delete:
+      consumes:
+      - application/json
+      description: Удаляет прикрепленный файл вакансии
+      parameters:
+      - description: ID вакансии
+        in: path
+        name: id
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Сообщение об успешном удалении
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "400":
+          description: У вакансии нет вложения
+          schema:
+            $ref: '#/definitions/models.ErrorResponse'
+        "401":
+          description: Неавторизованный доступ
+          schema:
+            $ref: '#/definitions/models.ErrorResponse'
+        "403":
+          description: Доступ запрещен
+          schema:
+            $ref: '#/definitions/models.ErrorResponse'
+        "404":
+          description: Вакансия не найдена
+          schema:
+            $ref: '#/definitions/models.ErrorResponse'
+        "500":
+          description: Внутренняя ошибка сервера
+          schema:
+            $ref: '#/definitions/models.ErrorResponse'
+      security:
+      - BearerAuth: []
+      summary: Удалить вложение вакансии
+      tags:
+      - Vacancies
+    post:
+      consumes:
+      - multipart/form-data
+      description: Загружает прикрепленный файл для вакансии
+      parameters:
+      - description: ID вакансии
+        in: path
+        name: id
+        required: true
+        type: string
+      - description: Файл вложения (макс. 10MB)
+        in: formData
+        name: attachment
+        required: true
+        type: file
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Информация о загруженном файле
+          schema:
+            $ref: '#/definitions/models.FileUploadResponse'
+        "400":
+          description: Неверный запрос или файл слишком большой
+          schema:
+            $ref: '#/definitions/models.ErrorResponse'
+        "401":
+          description: Неавторизованный доступ
+          schema:
+            $ref: '#/definitions/models.ErrorResponse'
+        "403":
+          description: Доступ запрещен
+          schema:
+            $ref: '#/definitions/models.ErrorResponse'
+        "500":
+          description: Внутренняя ошибка сервера
+          schema:
+            $ref: '#/definitions/models.ErrorResponse'
+      security:
+      - BearerAuth: []
+      summary: Загрузить вложение вакансии
+      tags:
+      - Vacancies
+securityDefinitions:
+  BearerAuth:
+    description: 'JWT токен в формате: "Bearer {token}"'
+    in: header
+    name: Authorization
+    type: apiKey
+  RoleAuth:
+    description: Роль пользователя
+    in: header
+    name: X-User-Role
+    type: apiKey
+swagger: "2.0"

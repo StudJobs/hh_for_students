@@ -105,17 +105,6 @@ func (s *authService) ValidateToken(ctx context.Context, token string) (bool, st
 	return resp.Valid, resp.UserUuid, convertRoleFromGRPC(resp.Role), nil
 }
 
-func (s *authService) Logout(ctx context.Context, userID string) error {
-	log.Printf("AuthService: Logout attempt for userID: %s", userID)
-
-	if _, err := s.client.Logout(ctx, &authv1.LogoutRequest{UserUuid: userID}); err != nil {
-		log.Printf("AuthService: Logout failed for user %s: %v", userID, err)
-		return err
-	}
-
-	return nil
-}
-
 func (s *authService) DeleteUser(ctx context.Context, userID string) error {
 	log.Printf("AuthService: DeleteUser attempt for userID: %s", userID)
 

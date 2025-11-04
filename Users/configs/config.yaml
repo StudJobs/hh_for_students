@@ -7,6 +7,3 @@ database:
 
 grpc:
   port: "50052"
-
-jwt:
-  expiration_hours: 1

@@ -15,6 +15,8 @@ func convertRoleToGRPC(role string) (authv1.Role, error) {
 		return authv1.Role_ROLE_DEVELOPER, nil
 	case "ROLE_EMPLOYER":
 		return authv1.Role_ROLE_EMPLOYER, nil
+	case "ROLE_COMPANY_OWNER":
+		return authv1.Role_ROLE_COMPANY_OWNER, nil
 	default:
 		return authv1.Role_ROLE_UNSPECIFIED, status.Error(codes.InvalidArgument, "invalid role")
 	}
@@ -29,6 +31,8 @@ func convertRoleFromGRPC(role authv1.Role) string {
 		return "ROLE_DEVELOPER"
 	case authv1.Role_ROLE_EMPLOYER:
 		return "ROLE_EMPLOYER"
+	case authv1.Role_ROLE_COMPANY_OWNER:
+		return "ROLE_COMPANY_OWNER"
 	default:
 		return "ROLE_UNSPECIFIED"
 	}

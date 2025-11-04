@@ -48,6 +48,7 @@ func (s *usersService) GetUser(ctx context.Context, userID string) (*usersv1.Pro
 }
 
 func (s *usersService) GetUsers(ctx context.Context, req *usersv1.GetAllProfilesRequest) (*usersv1.ProfileList, error) {
+	log.Printf("UsersService: GetUsers attempt with category: %s", req.ProfessionCategory)
 
 	resp, err := s.client.GetAllProfiles(ctx, req)
 	if err != nil {

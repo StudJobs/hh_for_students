@@ -3,7 +3,6 @@ package handlers
 import (
 	"context"
 	usersv1 "github.com/StudJobs/proto_srtucture/gen/go/proto/users/v1"
-
 	"github.com/gofiber/fiber/v2"
 	"github.com/studjobs/hh_for_students/api-gateway/internal/models"
 	"google.golang.org/grpc/codes"
@@ -12,10 +11,20 @@ import (
 )
 
 // Login обрабатывает вход пользователя
+// @Summary Аутентификация пользователя
+// @Description Выполняет вход пользователя в систему и возвращает JWT токен
+// @Tags Auth
+// @Accept json
+// @Produce json
+// @Param request body models.LoginRequest true "Данные для входа"
+// @Success 200 {object} models.AuthResponse "Успешная аутентификация"
+// @Failure 400 {object} models.ErrorResponse "Неверный запрос"
+// @Failure 401 {object} models.ErrorResponse "Неверные учетные данные"
+// @Failure 500 {object} models.ErrorResponse "Внутренняя ошибка сервера"
+// @Router /auth/login [post]
 func (h *Handler) Login(c *fiber.Ctx) error {
 	var req models.LoginRequest
 
-	// Парсим тело запроса
 	if err := c.BodyParser(&req); err != nil {
 		log.Printf("Login failed - body parse error: %v", err)
 		return c.Status(fiber.StatusBadRequest).JSON(models.Error{
@@ -26,7 +35,6 @@ func (h *Handler) Login(c *fiber.Ctx) error {
 
 	log.Printf("Login attempt for email: %s", req.Email)
 
-	// Валидация обязательных полей
 	if req.Email == "" || req.Password == "" || req.Role == "" {
 		log.Printf("Login failed - missing fields for email: %s", req.Email)
 		return c.Status(fiber.StatusBadRequest).JSON(models.Error{
@@ -37,7 +45,6 @@ func (h *Handler) Login(c *fiber.Ctx) error {
 
 	log.Printf("Calling API Gateway Login for email: %s, role: %s", req.Email, req.Role)
 
-	// Вызываем сервис (конвертация роли теперь в сервисе)
 	ctx := context.Background()
 	resp, err := h.apiService.Auth.Login(ctx, req.Email, req.Password, req.Role)
 
@@ -47,15 +54,24 @@ func (h *Handler) Login(c *fiber.Ctx) error {
 	}
 
 	log.Printf("Login successful for email: %s, user_uuid: %s", req.Email, resp.UserUUID)
-
 	return c.JSON(resp)
 }
 
 // Register обрабатывает регистрацию пользователя
+// @Summary Регистрация нового пользователя
+// @Description Создает нового пользователя и возвращает JWT токен
+// @Tags Auth
+// @Accept json
+// @Produce json
+// @Param request body models.SignUpRequest true "Данные для регистрации"
+// @Success 201 {object} models.AuthResponse "Пользователь успешно создан"
+// @Failure 400 {object} models.ErrorResponse "Неверный запрос"
+// @Failure 409 {object} models.ErrorResponse "Пользователь уже существует"
+// @Failure 500 {object} models.ErrorResponse "Внутренняя ошибка сервера"
+// @Router /auth/register [post]
 func (h *Handler) Register(c *fiber.Ctx) error {
 	var req models.SignUpRequest
 
-	// Парсим тело запроса
 	if err := c.BodyParser(&req); err != nil {
 		log.Printf("Register failed - body parse error: %v", err)
 		return c.Status(fiber.StatusBadRequest).JSON(models.Error{
@@ -66,7 +82,6 @@ func (h *Handler) Register(c *fiber.Ctx) error {
 
 	log.Printf("Register attempt for email: %s", req.Email)
 
-	// Валидация обязательных полей
 	if req.Email == "" || req.Password == "" || req.Role == "" {
 		log.Printf("Register failed - missing fields for email: %s", req.Email)
 		return c.Status(fiber.StatusBadRequest).JSON(models.Error{
@@ -75,7 +90,6 @@ func (h *Handler) Register(c *fiber.Ctx) error {
 		})
 	}
 
-	// Проверка минимальной длины пароля
 	if len(req.Password) < 6 {
 		log.Printf("Register failed - weak password for email: %s", req.Email)
 		return c.Status(fiber.StatusBadRequest).JSON(models.Error{
@@ -86,7 +100,6 @@ func (h *Handler) Register(c *fiber.Ctx) error {
 
 	log.Printf("Calling API Gateway Register for email: %s, role: %s", req.Email, req.Role)
 
-	// Вызываем сервис (конвертация роли теперь в сервисе)
 	resp, err := h.apiService.Auth.Register(c.Context(), req.Email, req.Password, req.Role)
 
 	if err != nil {
@@ -94,42 +107,54 @@ func (h *Handler) Register(c *fiber.Ctx) error {
 		return h.handleAuthError(c, err)
 	}
 
-	if _, err = h.apiService.User.CreateUser(c.Context(), &usersv1.NewProfileRequest{
-		Profile: &usersv1.Profile{
-			Id:    resp.UserUUID,
-			Email: req.Email,
-			Age:   18,
-		},
-	}); err != nil {
-		log.Printf("API Gateway Create failed for email %s: %v", req.Email, err)
+	if resp.Role == "ROLE_COMPANY_OWNER" {
+		if _, err = h.apiService.Company.CreateCompany(c.Context(), &models.Company{
+			ID: resp.UserUUID,
+		}); err != nil {
+			log.Printf("API Gateway Create failed for email %s: %v", req.Email, err)
 
-		if err1 := h.apiService.Auth.DeleteUser(c.Context(), resp.UserUUID); err1 != nil {
-			log.Printf("API Gateway LogOut failed for email %s: %v", req.Email, err1)
+			if err1 := h.apiService.Company.DeleteCompany(c.Context(), resp.UserUUID); err1 != nil {
+				log.Printf("API Gateway LogOut failed for email %s: %v", req.Email, err1)
+				return h.handleAuthError(c, err)
+			}
+
 			return h.handleAuthError(c, err)
 		}
+	} else {
+		if _, err = h.apiService.User.CreateUser(c.Context(), &usersv1.NewProfileRequest{
+			Profile: &usersv1.Profile{
+				Id:    resp.UserUUID,
+				Email: req.Email,
+				Age:   18,
+			},
+		}); err != nil {
+			log.Printf("API Gateway Create failed for email %s: %v", req.Email, err)
 
-		return h.handleAuthError(c, err)
+			if err1 := h.apiService.Auth.DeleteUser(c.Context(), resp.UserUUID); err1 != nil {
+				log.Printf("API Gateway LogOut failed for email %s: %v", req.Email, err1)
+				return h.handleAuthError(c, err)
+			}
+
+			return h.handleAuthError(c, err)
+		}
 	}
 
 	log.Printf("Register successful for email: %s, user_uuid: %s", req.Email, resp.UserUUID)
-
 	return c.Status(fiber.StatusCreated).JSON(resp)
 }
 
-func (h *Handler) Logout(c *fiber.Ctx) error {
-	userID := getUserIDFromContext(c)
-	log.Printf("Logout attempt for User: %s", userID)
-
-	if err := h.apiService.Auth.Logout(c.Context(), userID); err != nil {
-		log.Printf("API Gateway Logout failed for user %s: %v", userID, err)
-		return h.handleAuthError(c, err)
-	}
-
-	log.Printf("Logout successful for user: %s", userID)
-	return c.Status(fiber.StatusNoContent).JSON(models.Error{})
-}
-
-// parseToken проверяет валидность токена
+// ParseToken проверяет валидность токена
+// @Summary Проверка токена
+// @Description Проверяет валидность JWT токена и возвращает информацию о пользователе
+// @Tags Auth
+// @Accept json
+// @Produce json
+// @Security BearerAuth
+// @Success 200 {object} map[string]interface{} "Информация о токене"
+// @Failure 400 {object} models.ErrorResponse "Отсутствует токен"
+// @Failure 401 {object} models.ErrorResponse "Неверный токен"
+// @Failure 500 {object} models.ErrorResponse "Внутренняя ошибка сервера"
+// @Router /auth/parse-token [get]
 func (h *Handler) parseToken(c *fiber.Ctx) error {
 	token := c.Get("Authorization")
 	if token == "" {
@@ -140,14 +165,12 @@ func (h *Handler) parseToken(c *fiber.Ctx) error {
 		})
 	}
 
-	// Убираем "Bearer " префикс если есть
 	if len(token) > 7 && token[:7] == "Bearer " {
 		token = token[7:]
 	}
 
 	log.Printf("ParseToken attempt for token: %s...", token[:min(10, len(token))])
 
-	// Вызываем сервис для проверки токена
 	valid, userUUID, role, err := h.apiService.Auth.ValidateToken(context.Background(), token)
 	if err != nil {
 		log.Printf("ParseToken failed: %v", err)

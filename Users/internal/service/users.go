@@ -4,10 +4,11 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"log"
+
 	usersv1 "github.com/StudJobs/proto_srtucture/gen/go/proto/users/v1"
 	"github.com/google/uuid"
 	"github.com/studjobs/hh_for_students/users/internal/repository"
-	"log"
 )
 
 type UsersService struct {
@@ -21,11 +22,11 @@ func NewUsersService(repo *repository.Repository) *UsersService {
 func (s *UsersService) CreateProfile(ctx context.Context, profile *usersv1.Profile) (*usersv1.Profile, error) {
 	log.Printf("Service: Creating new profile for email: %s", profile.Email)
 
-	// Валидация данных профиля
-	//if err := s.validateProfile(profile); err != nil {
-	//	log.Printf("Service: Profile validation failed for email %s: %v", profile.Email, err)
-	//	return nil, err
-	//}
+	// Генерируем UUID если не указан
+	if profile.Id == "" {
+		profile.Id = uuid.New().String()
+		log.Printf("Service: Generated UUID for new profile: %s", profile.Id)
+	}
 
 	log.Printf("Service: Creating profile in repository for email: %s", profile.Email)
 	createdProfile, err := s.repo.Users.CreateProfile(ctx, profile)
@@ -46,12 +47,6 @@ func (s *UsersService) UpdateProfile(ctx context.Context, id string, profile *us
 		log.Printf("Service: Invalid UUID format for ID: %s", id)
 		return nil, fmt.Errorf("%w: invalid uuid format", ErrInvalidProfileData)
 	}
-
-	// Валидация данных профиля
-	//if err := s.validateProfile(profile); err != nil {
-	//	log.Printf("Service: Profile validation failed for ID %s: %v", id, err)
-	//	return nil, err
-	//}
 
 	log.Printf("Service: Updating profile in repository for ID: %s", id)
 	updatedProfile, err := s.repo.Users.UpdateProfile(ctx, id, profile)
@@ -133,35 +128,4 @@ func (s *UsersService) ListProfiles(ctx context.Context, professionCategory stri
 
 	log.Printf("Service: Retrieved %d profiles successfully", len(profiles.Profiles))
 	return profiles, nil
-}
-
-// validateProfile выполняет валидацию данных профиля
-func (s *UsersService) validateProfile(profile *usersv1.Profile) error {
-	log.Printf("Service: Validating profile data for email: %s", profile.Email)
-
-	if profile.FirstName == "" {
-		return fmt.Errorf("%w: first_name is required", ErrInvalidProfileData)
-	}
-	if profile.LastName == "" {
-		return fmt.Errorf("%w: last_name is required", ErrInvalidProfileData)
-	}
-	if profile.Age < 17 || profile.Age > 100 {
-		return fmt.Errorf("%w: age must be between 17 and 100", ErrInvalidProfileData)
-	}
-	if profile.Email == "" {
-		return fmt.Errorf("%w: email is required", ErrInvalidProfileData)
-	}
-	if len(profile.Description) > 512 {
-		return fmt.Errorf("%w: description must be less than 512 characters", ErrInvalidProfileData)
-	}
-
-	// Валидация resume_id если он указан
-	if profile.ResumeId != "" {
-		if _, err := uuid.Parse(profile.ResumeId); err != nil {
-			return fmt.Errorf("%w: invalid resume_id uuid format", ErrInvalidProfileData)
-		}
-	}
-
-	log.Printf("Service: Profile validation successful for email: %s", profile.Email)
-	return nil
 }
