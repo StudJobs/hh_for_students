@@ -1,5 +1,0 @@
-__pycache__/
-.app/minio/.env
-.venv/
-.idea/
-.pgdata/
