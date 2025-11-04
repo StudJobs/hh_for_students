@@ -36,3 +36,32 @@ type ErrorResponse struct {
 	Code    string            `json:"code" example:"INVALID_INPUT"`
 	Details []ValidationError `json:"details,omitempty"`
 }
+
+// SuccessResponse универсальный успешный ответ
+// @Description Успешный ответ API
+type SuccessResponse struct {
+	Message string `json:"message" example:"Operation completed successfully"`
+}
+
+// VacancyAttachmentResponse ответ с вложением вакансии
+// @Description Ответ с информацией о вложении вакансии
+type VacancyAttachmentResponse struct {
+	AttachmentID  *string `json:"attachment_id,omitempty" example:"attach-123"`
+	AttachmentURL *string `json:"attachment_url,omitempty" example:"https://cdn.example.com/vacancies/attach-123.pdf"`
+}
+
+// FileValidationRequest запрос на валидацию файла
+// @Description Запрос на проверку возможности загрузки файла
+type FileValidationRequest struct {
+	FileName string `json:"file_name" example:"document.pdf"`
+	FileSize int64  `json:"file_size" example:"1048576"`
+	FileType string `json:"file_type" example:"application/pdf"`
+}
+
+// FileValidationResponse ответ валидации файла
+// @Description Ответ с результатом проверки файла
+type FileValidationResponse struct {
+	Valid   bool     `json:"valid" example:"true"`
+	Message string   `json:"message,omitempty" example:"File validation successful"`
+	Errors  []string `json:"errors,omitempty" example:"File size too large"`
+}

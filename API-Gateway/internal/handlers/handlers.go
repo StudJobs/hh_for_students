@@ -67,9 +67,9 @@ func (h *Handler) initRoutes() {
 
 	// === User File routes ===
 	userFiles := users.Group("/files")
-	userFiles.Post("/avatar", h.UploadUserAvatar, OwnerOrRoleMiddleware(ID, ROLE_DEVELOPER, ROLE_STUDENT))
+	userFiles.Post("/avatar", h.UploadUserAvatar, OwnerOrRoleMiddleware(ID, ROLE_DEVELOPER, ROLE_STUDENT, ROLE_HR, ROLE_COMPANY))
 	userFiles.Post("/resume", h.UploadUserResume, OwnerOrRoleMiddleware(ID, ROLE_DEVELOPER, ROLE_STUDENT))
-	userFiles.Delete("/avatar", h.DeleteUserAvatar, OwnerOrRoleMiddleware(ID, ROLE_DEVELOPER, ROLE_STUDENT))
+	userFiles.Delete("/avatar", h.DeleteUserAvatar, OwnerOrRoleMiddleware(ID, ROLE_DEVELOPER, ROLE_STUDENT, ROLE_HR, ROLE_COMPANY))
 	userFiles.Delete("/resume", h.DeleteUserResume, OwnerOrRoleMiddleware(ID, ROLE_DEVELOPER, ROLE_STUDENT))
 
 	// === User Achievement routes ===

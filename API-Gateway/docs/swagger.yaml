@@ -118,6 +118,16 @@ definitions:
       value:
         type: string
     type: object
+  models.Error:
+    description: Стандартная модель ошибки API
+    properties:
+      code:
+        example: VALIDATION_ERROR
+        type: string
+      message:
+        example: Invalid request parameters
+        type: string
+    type: object
   models.ErrorResponse:
     description: Расширенный ответ с ошибкой
     properties:
@@ -136,29 +146,44 @@ definitions:
         type: string
     type: object
   models.FileInfo:
+    description: Детальная информация о загруженном файле
     properties:
       category:
-        description: '"avatar", "resume", "logo", etc.'
+        enum:
+        - avatar
+        - resume
+        - logo
+        - document
+        - attachment
+        example: avatar
         type: string
       direct_url:
-        description: Прямая ссылка через бекенд
+        example: https://cdn.example.com/avatars/avatar_12345.jpg
         type: string
       id:
+        example: 550e8400-e29b-41d4-a716-446655440000
         type: string
       name:
+        example: avatar_12345.jpg
         type: string
       type:
-        description: '"image", "document", "other"'
+        enum:
+        - image
+        - document
+        - other
+        example: image
         type: string
       url:
-        description: Presigned URL для фронта
+        example: https://api.example.com/files/user123/avatar_12345.jpg
         type: string
     type: object
   models.FileUploadResponse:
+    description: Ответ после успешной загрузки файла
     properties:
       file_info:
         $ref: '#/definitions/models.FileInfo'
       message:
+        example: File uploaded successfully
         type: string
     type: object
   models.LoginRequest:
@@ -225,6 +250,13 @@ definitions:
     - email
     - password
     - role
+    type: object
+  models.SuccessResponse:
+    description: Успешный ответ API
+    properties:
+      message:
+        example: Operation completed successfully
+        type: string
     type: object
   models.UploadUrlResponse:
     description: URL для загрузки файла в S3
@@ -681,9 +713,11 @@ paths:
     post:
       consumes:
       - multipart/form-data
-      description: Загружает документ для компании текущего пользователя
+      description: 'Загружает документ для компании текущего пользователя. Поддерживаемые
+        форматы: PDF, DOC, DOCX, XLS, XLSX. Максимальный размер: 20MB.'
       parameters:
       - description: ID компании
+        example: '"comp-123"'
         in: path
         name: id
         required: true
@@ -703,31 +737,41 @@ paths:
         "400":
           description: Неверный запрос или файл слишком большой
           schema:
-            $ref: '#/definitions/models.ErrorResponse'
+            $ref: '#/definitions/models.Error'
         "401":
           description: Неавторизованный доступ
           schema:
-            $ref: '#/definitions/models.ErrorResponse'
+            $ref: '#/definitions/models.Error'
         "403":
           description: Доступ запрещен
           schema:
-            $ref: '#/definitions/models.ErrorResponse'
+            $ref: '#/definitions/models.Error'
+        "404":
+          description: Компания не найдена
+          schema:
+            $ref: '#/definitions/models.Error'
+        "413":
+          description: Файл превышает максимальный размер
+          schema:
+            $ref: '#/definitions/models.Error'
         "500":
           description: Внутренняя ошибка сервера
           schema:
-            $ref: '#/definitions/models.ErrorResponse'
+            $ref: '#/definitions/models.Error'
       security:
       - BearerAuth: []
       summary: Загрузить документ компании
       tags:
-      - Files
+      - Companies/Files
   /company/{id}/files/logo:
     delete:
       consumes:
       - application/json
-      description: Удаляет логотип компании текущего пользователя
+      description: Удаляет логотип компании текущего пользователя. После удаления
+        будет установлен логотип по умолчанию.
       parameters:
       - description: ID компании
+        example: '"comp-123"'
         in: path
         name: id
         required: true
@@ -738,40 +782,40 @@ paths:
         "200":
           description: Сообщение об успешном удалении
           schema:
-            additionalProperties:
-              type: string
-            type: object
+            $ref: '#/definitions/models.SuccessResponse'
         "400":
           description: У компании нет логотипа
           schema:
-            $ref: '#/definitions/models.ErrorResponse'
+            $ref: '#/definitions/models.Error'
         "401":
           description: Неавторизованный доступ
           schema:
-            $ref: '#/definitions/models.ErrorResponse'
+            $ref: '#/definitions/models.Error'
         "403":
           description: Доступ запрещен
           schema:
-            $ref: '#/definitions/models.ErrorResponse'
+            $ref: '#/definitions/models.Error'
         "404":
           description: Компания не найдена
           schema:
-            $ref: '#/definitions/models.ErrorResponse'
+            $ref: '#/definitions/models.Error'
         "500":
           description: Внутренняя ошибка сервера
           schema:
-            $ref: '#/definitions/models.ErrorResponse'
+            $ref: '#/definitions/models.Error'
       security:
       - BearerAuth: []
       summary: Удалить логотип компании
       tags:
-      - Files
+      - Companies/Files
     post:
       consumes:
       - multipart/form-data
-      description: Загружает логотип для компании текущего пользователя
+      description: 'Загружает логотип для компании текущего пользователя. Поддерживаемые
+        форматы: JPG, PNG, SVG. Максимальный размер: 5MB.'
       parameters:
       - description: ID компании
+        example: '"comp-123"'
         in: path
         name: id
         required: true
@@ -791,24 +835,32 @@ paths:
         "400":
           description: Неверный запрос или файл слишком большой
           schema:
-            $ref: '#/definitions/models.ErrorResponse'
+            $ref: '#/definitions/models.Error'
         "401":
           description: Неавторизованный доступ
           schema:
-            $ref: '#/definitions/models.ErrorResponse'
+            $ref: '#/definitions/models.Error'
         "403":
           description: Доступ запрещен
           schema:
-            $ref: '#/definitions/models.ErrorResponse'
+            $ref: '#/definitions/models.Error'
+        "404":
+          description: Компания не найдена
+          schema:
+            $ref: '#/definitions/models.Error'
+        "413":
+          description: Файл превышает максимальный размер
+          schema:
+            $ref: '#/definitions/models.Error'
         "500":
           description: Внутренняя ошибка сервера
           schema:
-            $ref: '#/definitions/models.ErrorResponse'
+            $ref: '#/definitions/models.Error'
       security:
       - BearerAuth: []
       summary: Загрузить логотип компании
       tags:
-      - Files
+      - Companies/Files
   /company/me:
     get:
       consumes:
@@ -843,14 +895,17 @@ paths:
     get:
       consumes:
       - application/json
-      description: Перенаправляет на presigned URL для скачивания файла
+      description: Перенаправляет на presigned URL для скачивания файла. Используется
+        для отображения изображений и файлов напрямую в браузере.
       parameters:
       - description: ID сущности (пользователь, компания, вакансия)
+        example: '"user-123"'
         in: path
         name: entity_id
         required: true
         type: string
       - description: Имя файла
+        example: '"avatar.jpg"'
         in: path
         name: file_name
         required: true
@@ -865,11 +920,11 @@ paths:
         "404":
           description: Файл не найден
           schema:
-            $ref: '#/definitions/models.ErrorResponse'
+            $ref: '#/definitions/models.Error'
         "500":
           description: Внутренняя ошибка сервера
           schema:
-            $ref: '#/definitions/models.ErrorResponse'
+            $ref: '#/definitions/models.Error'
       summary: Прямая загрузка файла
       tags:
       - Files
@@ -1466,41 +1521,41 @@ paths:
     delete:
       consumes:
       - application/json
-      description: Удаляет аватар текущего пользователя
+      description: Удаляет аватар текущего пользователя. После удаления будет установлен
+        аватар по умолчанию.
       produces:
       - application/json
       responses:
         "200":
           description: Сообщение об успешном удалении
           schema:
-            additionalProperties:
-              type: string
-            type: object
+            $ref: '#/definitions/models.SuccessResponse'
         "400":
           description: У пользователя нет аватара
           schema:
-            $ref: '#/definitions/models.ErrorResponse'
+            $ref: '#/definitions/models.Error'
         "401":
           description: Неавторизованный доступ
           schema:
-            $ref: '#/definitions/models.ErrorResponse'
+            $ref: '#/definitions/models.Error'
         "404":
           description: Пользователь не найден
           schema:
-            $ref: '#/definitions/models.ErrorResponse'
+            $ref: '#/definitions/models.Error'
         "500":
           description: Внутренняя ошибка сервера
           schema:
-            $ref: '#/definitions/models.ErrorResponse'
+            $ref: '#/definitions/models.Error'
       security:
       - BearerAuth: []
       summary: Удалить аватар пользователя
       tags:
-      - Files
+      - Users/Files
     post:
       consumes:
       - multipart/form-data
-      description: Загружает аватар для текущего пользователя
+      description: 'Загружает аватар для текущего пользователя. Поддерживаемые форматы:
+        JPG, PNG, GIF. Максимальный размер: 5MB.'
       parameters:
       - description: Файл аватара (макс. 5MB)
         in: formData
@@ -1517,59 +1572,63 @@ paths:
         "400":
           description: Неверный запрос или файл слишком большой
           schema:
-            $ref: '#/definitions/models.ErrorResponse'
+            $ref: '#/definitions/models.Error'
         "401":
           description: Неавторизованный доступ
           schema:
-            $ref: '#/definitions/models.ErrorResponse'
+            $ref: '#/definitions/models.Error'
+        "413":
+          description: Файл превышает максимальный размер
+          schema:
+            $ref: '#/definitions/models.Error'
         "500":
           description: Внутренняя ошибка сервера
           schema:
-            $ref: '#/definitions/models.ErrorResponse'
+            $ref: '#/definitions/models.Error'
       security:
       - BearerAuth: []
       summary: Загрузить аватар пользователя
       tags:
-      - Files
+      - Users/Files
   /users/files/resume:
     delete:
       consumes:
       - application/json
-      description: Удаляет резюме текущего пользователя
+      description: Удаляет резюме текущего пользователя. После удаления поле resume_id
+        будет очищено.
       produces:
       - application/json
       responses:
         "200":
           description: Сообщение об успешном удалении
           schema:
-            additionalProperties:
-              type: string
-            type: object
+            $ref: '#/definitions/models.SuccessResponse'
         "400":
           description: У пользователя нет резюме
           schema:
-            $ref: '#/definitions/models.ErrorResponse'
+            $ref: '#/definitions/models.Error'
         "401":
           description: Неавторизованный доступ
           schema:
-            $ref: '#/definitions/models.ErrorResponse'
+            $ref: '#/definitions/models.Error'
         "404":
           description: Пользователь не найден
           schema:
-            $ref: '#/definitions/models.ErrorResponse'
+            $ref: '#/definitions/models.Error'
         "500":
           description: Внутренняя ошибка сервера
           schema:
-            $ref: '#/definitions/models.ErrorResponse'
+            $ref: '#/definitions/models.Error'
       security:
       - BearerAuth: []
       summary: Удалить резюме пользователя
       tags:
-      - Files
+      - Users/Files
     post:
       consumes:
       - multipart/form-data
-      description: Загружает резюме для текущего пользователя
+      description: 'Загружает резюме для текущего пользователя. Поддерживаемые форматы:
+        PDF, DOC, DOCX. Максимальный размер: 10MB.'
       parameters:
       - description: Файл резюме (макс. 10MB)
         in: formData
@@ -1586,20 +1645,24 @@ paths:
         "400":
           description: Неверный запрос или файл слишком большой
           schema:
-            $ref: '#/definitions/models.ErrorResponse'
+            $ref: '#/definitions/models.Error'
         "401":
           description: Неавторизованный доступ
           schema:
-            $ref: '#/definitions/models.ErrorResponse'
+            $ref: '#/definitions/models.Error'
+        "413":
+          description: Файл превышает максимальный размер
+          schema:
+            $ref: '#/definitions/models.Error'
         "500":
           description: Внутренняя ошибка сервера
           schema:
-            $ref: '#/definitions/models.ErrorResponse'
+            $ref: '#/definitions/models.Error'
       security:
       - BearerAuth: []
       summary: Загрузить резюме пользователя
       tags:
-      - Files
+      - Users/Files
   /users/me:
     get:
       consumes:

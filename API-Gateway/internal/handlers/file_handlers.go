@@ -8,17 +8,17 @@ import (
 	"log"
 )
 
-// ServeFileDirect отдает файл напрямую через бекенд (для изображений)
+// ServeFileDirect отдает файл напрямую через бекенд
 // @Summary Прямая загрузка файла
-// @Description Перенаправляет на presigned URL для скачивания файла
+// @Description Перенаправляет на presigned URL для скачивания файла. Используется для отображения изображений и файлов напрямую в браузере.
 // @Tags Files
 // @Accept json
 // @Produce json
-// @Param entity_id path string true "ID сущности (пользователь, компания, вакансия)"
-// @Param file_name path string true "Имя файла"
+// @Param entity_id path string true "ID сущности (пользователь, компания, вакансия)" example("user-123")
+// @Param file_name path string true "Имя файла" example("avatar.jpg")
 // @Success 302 {string} string "Перенаправление на URL файла"
-// @Failure 404 {object} models.ErrorResponse "Файл не найден"
-// @Failure 500 {object} models.ErrorResponse "Внутренняя ошибка сервера"
+// @Failure 404 {object} models.Error "Файл не найден"
+// @Failure 500 {object} models.Error "Внутренняя ошибка сервера"
 // @Router /files/{entity_id}/{file_name} [get]
 func (h *Handler) ServeFileDirect(c *fiber.Ctx) error {
 	entityID := c.Params("entity_id")
@@ -40,16 +40,17 @@ func (h *Handler) ServeFileDirect(c *fiber.Ctx) error {
 
 // UploadUserAvatar загружает аватар пользователя
 // @Summary Загрузить аватар пользователя
-// @Description Загружает аватар для текущего пользователя
-// @Tags Files
+// @Description Загружает аватар для текущего пользователя. Поддерживаемые форматы: JPG, PNG, GIF. Максимальный размер: 5MB.
+// @Tags Users/Files
 // @Accept multipart/form-data
 // @Produce json
 // @Security BearerAuth
 // @Param avatar formData file true "Файл аватара (макс. 5MB)"
 // @Success 200 {object} models.FileUploadResponse "Информация о загруженном файле"
-// @Failure 400 {object} models.ErrorResponse "Неверный запрос или файл слишком большой"
-// @Failure 401 {object} models.ErrorResponse "Неавторизованный доступ"
-// @Failure 500 {object} models.ErrorResponse "Внутренняя ошибка сервера"
+// @Failure 400 {object} models.Error "Неверный запрос или файл слишком большой"
+// @Failure 401 {object} models.Error "Неавторизованный доступ"
+// @Failure 413 {object} models.Error "Файл превышает максимальный размер"
+// @Failure 500 {object} models.Error "Внутренняя ошибка сервера"
 // @Router /users/files/avatar [post]
 func (h *Handler) UploadUserAvatar(c *fiber.Ctx) error {
 	userID := getUserIDFromContext(c)
@@ -106,16 +107,17 @@ func (h *Handler) UploadUserAvatar(c *fiber.Ctx) error {
 
 // UploadUserResume загружает резюме пользователя
 // @Summary Загрузить резюме пользователя
-// @Description Загружает резюме для текущего пользователя
-// @Tags Files
+// @Description Загружает резюме для текущего пользователя. Поддерживаемые форматы: PDF, DOC, DOCX. Максимальный размер: 10MB.
+// @Tags Users/Files
 // @Accept multipart/form-data
 // @Produce json
 // @Security BearerAuth
 // @Param resume formData file true "Файл резюме (макс. 10MB)"
 // @Success 200 {object} models.FileUploadResponse "Информация о загруженном файле"
-// @Failure 400 {object} models.ErrorResponse "Неверный запрос или файл слишком большой"
-// @Failure 401 {object} models.ErrorResponse "Неавторизованный доступ"
-// @Failure 500 {object} models.ErrorResponse "Внутренняя ошибка сервера"
+// @Failure 400 {object} models.Error "Неверный запрос или файл слишком большой"
+// @Failure 401 {object} models.Error "Неавторизованный доступ"
+// @Failure 413 {object} models.Error "Файл превышает максимальный размер"
+// @Failure 500 {object} models.Error "Внутренняя ошибка сервера"
 // @Router /users/files/resume [post]
 func (h *Handler) UploadUserResume(c *fiber.Ctx) error {
 	userID := getUserIDFromContext(c)
@@ -172,16 +174,16 @@ func (h *Handler) UploadUserResume(c *fiber.Ctx) error {
 
 // DeleteUserAvatar удаляет аватар пользователя
 // @Summary Удалить аватар пользователя
-// @Description Удаляет аватар текущего пользователя
-// @Tags Files
+// @Description Удаляет аватар текущего пользователя. После удаления будет установлен аватар по умолчанию.
+// @Tags Users/Files
 // @Accept json
 // @Produce json
 // @Security BearerAuth
-// @Success 200 {object} map[string]string "Сообщение об успешном удалении"
-// @Failure 400 {object} models.ErrorResponse "У пользователя нет аватара"
-// @Failure 401 {object} models.ErrorResponse "Неавторизованный доступ"
-// @Failure 404 {object} models.ErrorResponse "Пользователь не найден"
-// @Failure 500 {object} models.ErrorResponse "Внутренняя ошибка сервера"
+// @Success 200 {object} models.SuccessResponse "Сообщение об успешном удалении"
+// @Failure 400 {object} models.Error "У пользователя нет аватара"
+// @Failure 401 {object} models.Error "Неавторизованный доступ"
+// @Failure 404 {object} models.Error "Пользователь не найден"
+// @Failure 500 {object} models.Error "Внутренняя ошибка сервера"
 // @Router /users/files/avatar [delete]
 func (h *Handler) DeleteUserAvatar(c *fiber.Ctx) error {
 	userID := getUserIDFromContext(c)
@@ -224,23 +226,23 @@ func (h *Handler) DeleteUserAvatar(c *fiber.Ctx) error {
 	}
 
 	log.Printf("DeleteUserAvatar: Successfully deleted avatar for user: %s", userID)
-	return c.JSON(fiber.Map{
-		"message": "Avatar deleted successfully",
+	return c.JSON(models.SuccessResponse{
+		Message: "Avatar deleted successfully",
 	})
 }
 
 // DeleteUserResume удаляет резюме пользователя
 // @Summary Удалить резюме пользователя
-// @Description Удаляет резюме текущего пользователя
-// @Tags Files
+// @Description Удаляет резюме текущего пользователя. После удаления поле resume_id будет очищено.
+// @Tags Users/Files
 // @Accept json
 // @Produce json
 // @Security BearerAuth
-// @Success 200 {object} map[string]string "Сообщение об успешном удалении"
-// @Failure 400 {object} models.ErrorResponse "У пользователя нет резюме"
-// @Failure 401 {object} models.ErrorResponse "Неавторизованный доступ"
-// @Failure 404 {object} models.ErrorResponse "Пользователь не найден"
-// @Failure 500 {object} models.ErrorResponse "Внутренняя ошибка сервера"
+// @Success 200 {object} models.SuccessResponse "Сообщение об успешном удалении"
+// @Failure 400 {object} models.Error "У пользователя нет резюме"
+// @Failure 401 {object} models.Error "Неавторизованный доступ"
+// @Failure 404 {object} models.Error "Пользователь не найден"
+// @Failure 500 {object} models.Error "Внутренняя ошибка сервера"
 // @Router /users/files/resume [delete]
 func (h *Handler) DeleteUserResume(c *fiber.Ctx) error {
 	userID := getUserIDFromContext(c)
@@ -283,25 +285,27 @@ func (h *Handler) DeleteUserResume(c *fiber.Ctx) error {
 	}
 
 	log.Printf("DeleteUserResume: Successfully deleted resume for user: %s", userID)
-	return c.JSON(fiber.Map{
-		"message": "Resume deleted successfully",
+	return c.JSON(models.SuccessResponse{
+		Message: "Resume deleted successfully",
 	})
 }
 
 // UploadCompanyLogo загружает логотип компании
 // @Summary Загрузить логотип компании
-// @Description Загружает логотип для компании текущего пользователя
-// @Tags Files
+// @Description Загружает логотип для компании текущего пользователя. Поддерживаемые форматы: JPG, PNG, SVG. Максимальный размер: 5MB.
+// @Tags Companies/Files
 // @Accept multipart/form-data
 // @Produce json
 // @Security BearerAuth
-// @Param id path string true "ID компании"
+// @Param id path string true "ID компании" example("comp-123")
 // @Param logo formData file true "Файл логотипа (макс. 5MB)"
 // @Success 200 {object} models.FileUploadResponse "Информация о загруженном файле"
-// @Failure 400 {object} models.ErrorResponse "Неверный запрос или файл слишком большой"
-// @Failure 401 {object} models.ErrorResponse "Неавторизованный доступ"
-// @Failure 403 {object} models.ErrorResponse "Доступ запрещен"
-// @Failure 500 {object} models.ErrorResponse "Внутренняя ошибка сервера"
+// @Failure 400 {object} models.Error "Неверный запрос или файл слишком большой"
+// @Failure 401 {object} models.Error "Неавторизованный доступ"
+// @Failure 403 {object} models.Error "Доступ запрещен"
+// @Failure 404 {object} models.Error "Компания не найдена"
+// @Failure 413 {object} models.Error "Файл превышает максимальный размер"
+// @Failure 500 {object} models.Error "Внутренняя ошибка сервера"
 // @Router /company/{id}/files/logo [post]
 func (h *Handler) UploadCompanyLogo(c *fiber.Ctx) error {
 	companyID := c.Params("id")
@@ -355,18 +359,20 @@ func (h *Handler) UploadCompanyLogo(c *fiber.Ctx) error {
 
 // UploadCompanyDocument загружает документ компании
 // @Summary Загрузить документ компании
-// @Description Загружает документ для компании текущего пользователя
-// @Tags Files
+// @Description Загружает документ для компании текущего пользователя. Поддерживаемые форматы: PDF, DOC, DOCX, XLS, XLSX. Максимальный размер: 20MB.
+// @Tags Companies/Files
 // @Accept multipart/form-data
 // @Produce json
 // @Security BearerAuth
-// @Param id path string true "ID компании"
+// @Param id path string true "ID компании" example("comp-123")
 // @Param document formData file true "Файл документа (макс. 20MB)"
 // @Success 200 {object} models.FileUploadResponse "Информация о загруженном файле"
-// @Failure 400 {object} models.ErrorResponse "Неверный запрос или файл слишком большой"
-// @Failure 401 {object} models.ErrorResponse "Неавторизованный доступ"
-// @Failure 403 {object} models.ErrorResponse "Доступ запрещен"
-// @Failure 500 {object} models.ErrorResponse "Внутренняя ошибка сервера"
+// @Failure 400 {object} models.Error "Неверный запрос или файл слишком большой"
+// @Failure 401 {object} models.Error "Неавторизованный доступ"
+// @Failure 403 {object} models.Error "Доступ запрещен"
+// @Failure 404 {object} models.Error "Компания не найдена"
+// @Failure 413 {object} models.Error "Файл превышает максимальный размер"
+// @Failure 500 {object} models.Error "Внутренняя ошибка сервера"
 // @Router /company/{id}/files/documents [post]
 func (h *Handler) UploadCompanyDocument(c *fiber.Ctx) error {
 	companyID := c.Params("id")
@@ -412,18 +418,18 @@ func (h *Handler) UploadCompanyDocument(c *fiber.Ctx) error {
 
 // DeleteCompanyLogo удаляет логотип компании
 // @Summary Удалить логотип компании
-// @Description Удаляет логотип компании текущего пользователя
-// @Tags Files
+// @Description Удаляет логотип компании текущего пользователя. После удаления будет установлен логотип по умолчанию.
+// @Tags Companies/Files
 // @Accept json
 // @Produce json
 // @Security BearerAuth
-// @Param id path string true "ID компании"
-// @Success 200 {object} map[string]string "Сообщение об успешном удалении"
-// @Failure 400 {object} models.ErrorResponse "У компании нет логотипа"
-// @Failure 401 {object} models.ErrorResponse "Неавторизованный доступ"
-// @Failure 403 {object} models.ErrorResponse "Доступ запрещен"
-// @Failure 404 {object} models.ErrorResponse "Компания не найдена"
-// @Failure 500 {object} models.ErrorResponse "Внутренняя ошибка сервера"
+// @Param id path string true "ID компании" example("comp-123")
+// @Success 200 {object} models.SuccessResponse "Сообщение об успешном удалении"
+// @Failure 400 {object} models.Error "У компании нет логотипа"
+// @Failure 401 {object} models.Error "Неавторизованный доступ"
+// @Failure 403 {object} models.Error "Доступ запрещен"
+// @Failure 404 {object} models.Error "Компания не найдена"
+// @Failure 500 {object} models.Error "Внутренняя ошибка сервера"
 // @Router /company/{id}/files/logo [delete]
 func (h *Handler) DeleteCompanyLogo(c *fiber.Ctx) error {
 	companyID := c.Params("id")
@@ -464,8 +470,8 @@ func (h *Handler) DeleteCompanyLogo(c *fiber.Ctx) error {
 	}
 
 	log.Printf("DeleteCompanyLogo: Successfully deleted logo for company: %s", companyID)
-	return c.JSON(fiber.Map{
-		"message": "Company logo deleted successfully",
+	return c.JSON(models.SuccessResponse{
+		Message: "Company logo deleted successfully",
 	})
 }
 

@@ -547,7 +547,7 @@ const docTemplate = `{
                         "BearerAuth": []
                     }
                 ],
-                "description": "Загружает документ для компании текущего пользователя",
+                "description": "Загружает документ для компании текущего пользователя. Поддерживаемые форматы: PDF, DOC, DOCX, XLS, XLSX. Максимальный размер: 20MB.",
                 "consumes": [
                     "multipart/form-data"
                 ],
@@ -555,12 +555,13 @@ const docTemplate = `{
                     "application/json"
                 ],
                 "tags": [
-                    "Files"
+                    "Companies/Files"
                 ],
                 "summary": "Загрузить документ компании",
                 "parameters": [
                     {
                         "type": "string",
+                        "example": "\"comp-123\"",
                         "description": "ID компании",
                         "name": "id",
                         "in": "path",
@@ -584,25 +585,37 @@ const docTemplate = `{
                     "400": {
                         "description": "Неверный запрос или файл слишком большой",
                         "schema": {
-                            "$ref": "#/definitions/models.ErrorResponse"
+                            "$ref": "#/definitions/models.Error"
                         }
                     },
                     "401": {
                         "description": "Неавторизованный доступ",
                         "schema": {
-                            "$ref": "#/definitions/models.ErrorResponse"
+                            "$ref": "#/definitions/models.Error"
                         }
                     },
                     "403": {
                         "description": "Доступ запрещен",
                         "schema": {
-                            "$ref": "#/definitions/models.ErrorResponse"
+                            "$ref": "#/definitions/models.Error"
+                        }
+                    },
+                    "404": {
+                        "description": "Компания не найдена",
+                        "schema": {
+                            "$ref": "#/definitions/models.Error"
+                        }
+                    },
+                    "413": {
+                        "description": "Файл превышает максимальный размер",
+                        "schema": {
+                            "$ref": "#/definitions/models.Error"
                         }
                     },
                     "500": {
                         "description": "Внутренняя ошибка сервера",
                         "schema": {
-                            "$ref": "#/definitions/models.ErrorResponse"
+                            "$ref": "#/definitions/models.Error"
                         }
                     }
                 }
@@ -615,7 +628,7 @@ const docTemplate = `{
                         "BearerAuth": []
                     }
                 ],
-                "description": "Загружает логотип для компании текущего пользователя",
+                "description": "Загружает логотип для компании текущего пользователя. Поддерживаемые форматы: JPG, PNG, SVG. Максимальный размер: 5MB.",
                 "consumes": [
                     "multipart/form-data"
                 ],
@@ -623,12 +636,13 @@ const docTemplate = `{
                     "application/json"
                 ],
                 "tags": [
-                    "Files"
+                    "Companies/Files"
                 ],
                 "summary": "Загрузить логотип компании",
                 "parameters": [
                     {
                         "type": "string",
+                        "example": "\"comp-123\"",
                         "description": "ID компании",
                         "name": "id",
                         "in": "path",
@@ -652,25 +666,37 @@ const docTemplate = `{
                     "400": {
                         "description": "Неверный запрос или файл слишком большой",
                         "schema": {
-                            "$ref": "#/definitions/models.ErrorResponse"
+                            "$ref": "#/definitions/models.Error"
                         }
                     },
                     "401": {
                         "description": "Неавторизованный доступ",
                         "schema": {
-                            "$ref": "#/definitions/models.ErrorResponse"
+                            "$ref": "#/definitions/models.Error"
                         }
                     },
                     "403": {
                         "description": "Доступ запрещен",
                         "schema": {
-                            "$ref": "#/definitions/models.ErrorResponse"
+                            "$ref": "#/definitions/models.Error"
+                        }
+                    },
+                    "404": {
+                        "description": "Компания не найдена",
+                        "schema": {
+                            "$ref": "#/definitions/models.Error"
+                        }
+                    },
+                    "413": {
+                        "description": "Файл превышает максимальный размер",
+                        "schema": {
+                            "$ref": "#/definitions/models.Error"
                         }
                     },
                     "500": {
                         "description": "Внутренняя ошибка сервера",
                         "schema": {
-                            "$ref": "#/definitions/models.ErrorResponse"
+                            "$ref": "#/definitions/models.Error"
                         }
                     }
                 }
@@ -681,7 +707,7 @@ const docTemplate = `{
                         "BearerAuth": []
                     }
                 ],
-                "description": "Удаляет логотип компании текущего пользователя",
+                "description": "Удаляет логотип компании текущего пользователя. После удаления будет установлен логотип по умолчанию.",
                 "consumes": [
                     "application/json"
                 ],
@@ -689,12 +715,13 @@ const docTemplate = `{
                     "application/json"
                 ],
                 "tags": [
-                    "Files"
+                    "Companies/Files"
                 ],
                 "summary": "Удалить логотип компании",
                 "parameters": [
                     {
                         "type": "string",
+                        "example": "\"comp-123\"",
                         "description": "ID компании",
                         "name": "id",
                         "in": "path",
@@ -705,40 +732,37 @@ const docTemplate = `{
                     "200": {
                         "description": "Сообщение об успешном удалении",
                         "schema": {
-                            "type": "object",
-                            "additionalProperties": {
-                                "type": "string"
-                            }
+                            "$ref": "#/definitions/models.SuccessResponse"
                         }
                     },
                     "400": {
                         "description": "У компании нет логотипа",
                         "schema": {
-                            "$ref": "#/definitions/models.ErrorResponse"
+                            "$ref": "#/definitions/models.Error"
                         }
                     },
                     "401": {
                         "description": "Неавторизованный доступ",
                         "schema": {
-                            "$ref": "#/definitions/models.ErrorResponse"
+                            "$ref": "#/definitions/models.Error"
                         }
                     },
                     "403": {
                         "description": "Доступ запрещен",
                         "schema": {
-                            "$ref": "#/definitions/models.ErrorResponse"
+                            "$ref": "#/definitions/models.Error"
                         }
                     },
                     "404": {
                         "description": "Компания не найдена",
                         "schema": {
-                            "$ref": "#/definitions/models.ErrorResponse"
+                            "$ref": "#/definitions/models.Error"
                         }
                     },
                     "500": {
                         "description": "Внутренняя ошибка сервера",
                         "schema": {
-                            "$ref": "#/definitions/models.ErrorResponse"
+                            "$ref": "#/definitions/models.Error"
                         }
                     }
                 }
@@ -746,7 +770,7 @@ const docTemplate = `{
         },
         "/files/{entity_id}/{file_name}": {
             "get": {
-                "description": "Перенаправляет на presigned URL для скачивания файла",
+                "description": "Перенаправляет на presigned URL для скачивания файла. Используется для отображения изображений и файлов напрямую в браузере.",
                 "consumes": [
                     "application/json"
                 ],
@@ -760,6 +784,7 @@ const docTemplate = `{
                 "parameters": [
                     {
                         "type": "string",
+                        "example": "\"user-123\"",
                         "description": "ID сущности (пользователь, компания, вакансия)",
                         "name": "entity_id",
                         "in": "path",
@@ -767,6 +792,7 @@ const docTemplate = `{
                     },
                     {
                         "type": "string",
+                        "example": "\"avatar.jpg\"",
                         "description": "Имя файла",
                         "name": "file_name",
                         "in": "path",
@@ -783,13 +809,13 @@ const docTemplate = `{
                     "404": {
                         "description": "Файл не найден",
                         "schema": {
-                            "$ref": "#/definitions/models.ErrorResponse"
+                            "$ref": "#/definitions/models.Error"
                         }
                     },
                     "500": {
                         "description": "Внутренняя ошибка сервера",
                         "schema": {
-                            "$ref": "#/definitions/models.ErrorResponse"
+                            "$ref": "#/definitions/models.Error"
                         }
                     }
                 }
@@ -1650,7 +1676,7 @@ const docTemplate = `{
                         "BearerAuth": []
                     }
                 ],
-                "description": "Загружает аватар для текущего пользователя",
+                "description": "Загружает аватар для текущего пользователя. Поддерживаемые форматы: JPG, PNG, GIF. Максимальный размер: 5MB.",
                 "consumes": [
                     "multipart/form-data"
                 ],
@@ -1658,7 +1684,7 @@ const docTemplate = `{
                     "application/json"
                 ],
                 "tags": [
-                    "Files"
+                    "Users/Files"
                 ],
                 "summary": "Загрузить аватар пользователя",
                 "parameters": [
@@ -1680,19 +1706,25 @@ const docTemplate = `{
                     "400": {
                         "description": "Неверный запрос или файл слишком большой",
                         "schema": {
-                            "$ref": "#/definitions/models.ErrorResponse"
+                            "$ref": "#/definitions/models.Error"
                         }
                     },
                     "401": {
                         "description": "Неавторизованный доступ",
                         "schema": {
-                            "$ref": "#/definitions/models.ErrorResponse"
+                            "$ref": "#/definitions/models.Error"
+                        }
+                    },
+                    "413": {
+                        "description": "Файл превышает максимальный размер",
+                        "schema": {
+                            "$ref": "#/definitions/models.Error"
                         }
                     },
                     "500": {
                         "description": "Внутренняя ошибка сервера",
                         "schema": {
-                            "$ref": "#/definitions/models.ErrorResponse"
+                            "$ref": "#/definitions/models.Error"
                         }
                     }
                 }
@@ -1703,7 +1735,7 @@ const docTemplate = `{
                         "BearerAuth": []
                     }
                 ],
-                "description": "Удаляет аватар текущего пользователя",
+                "description": "Удаляет аватар текущего пользователя. После удаления будет установлен аватар по умолчанию.",
                 "consumes": [
                     "application/json"
                 ],
@@ -1711,41 +1743,38 @@ const docTemplate = `{
                     "application/json"
                 ],
                 "tags": [
-                    "Files"
+                    "Users/Files"
                 ],
                 "summary": "Удалить аватар пользователя",
                 "responses": {
                     "200": {
                         "description": "Сообщение об успешном удалении",
                         "schema": {
-                            "type": "object",
-                            "additionalProperties": {
-                                "type": "string"
-                            }
+                            "$ref": "#/definitions/models.SuccessResponse"
                         }
                     },
                     "400": {
                         "description": "У пользователя нет аватара",
                         "schema": {
-                            "$ref": "#/definitions/models.ErrorResponse"
+                            "$ref": "#/definitions/models.Error"
                         }
                     },
                     "401": {
                         "description": "Неавторизованный доступ",
                         "schema": {
-                            "$ref": "#/definitions/models.ErrorResponse"
+                            "$ref": "#/definitions/models.Error"
                         }
                     },
                     "404": {
                         "description": "Пользователь не найден",
                         "schema": {
-                            "$ref": "#/definitions/models.ErrorResponse"
+                            "$ref": "#/definitions/models.Error"
                         }
                     },
                     "500": {
                         "description": "Внутренняя ошибка сервера",
                         "schema": {
-                            "$ref": "#/definitions/models.ErrorResponse"
+                            "$ref": "#/definitions/models.Error"
                         }
                     }
                 }
@@ -1758,7 +1787,7 @@ const docTemplate = `{
                         "BearerAuth": []
                     }
                 ],
-                "description": "Загружает резюме для текущего пользователя",
+                "description": "Загружает резюме для текущего пользователя. Поддерживаемые форматы: PDF, DOC, DOCX. Максимальный размер: 10MB.",
                 "consumes": [
                     "multipart/form-data"
                 ],
@@ -1766,7 +1795,7 @@ const docTemplate = `{
                     "application/json"
                 ],
                 "tags": [
-                    "Files"
+                    "Users/Files"
                 ],
                 "summary": "Загрузить резюме пользователя",
                 "parameters": [
@@ -1788,19 +1817,25 @@ const docTemplate = `{
                     "400": {
                         "description": "Неверный запрос или файл слишком большой",
                         "schema": {
-                            "$ref": "#/definitions/models.ErrorResponse"
+                            "$ref": "#/definitions/models.Error"
                         }
                     },
                     "401": {
                         "description": "Неавторизованный доступ",
                         "schema": {
-                            "$ref": "#/definitions/models.ErrorResponse"
+                            "$ref": "#/definitions/models.Error"
+                        }
+                    },
+                    "413": {
+                        "description": "Файл превышает максимальный размер",
+                        "schema": {
+                            "$ref": "#/definitions/models.Error"
                         }
                     },
                     "500": {
                         "description": "Внутренняя ошибка сервера",
                         "schema": {
-                            "$ref": "#/definitions/models.ErrorResponse"
+                            "$ref": "#/definitions/models.Error"
                         }
                     }
                 }
@@ -1811,7 +1846,7 @@ const docTemplate = `{
                         "BearerAuth": []
                     }
                 ],
-                "description": "Удаляет резюме текущего пользователя",
+                "description": "Удаляет резюме текущего пользователя. После удаления поле resume_id будет очищено.",
                 "consumes": [
                     "application/json"
                 ],
@@ -1819,41 +1854,38 @@ const docTemplate = `{
                     "application/json"
                 ],
                 "tags": [
-                    "Files"
+                    "Users/Files"
                 ],
                 "summary": "Удалить резюме пользователя",
                 "responses": {
                     "200": {
                         "description": "Сообщение об успешном удалении",
                         "schema": {
-                            "type": "object",
-                            "additionalProperties": {
-                                "type": "string"
-                            }
+                            "$ref": "#/definitions/models.SuccessResponse"
                         }
                     },
                     "400": {
                         "description": "У пользователя нет резюме",
                         "schema": {
-                            "$ref": "#/definitions/models.ErrorResponse"
+                            "$ref": "#/definitions/models.Error"
                         }
                     },
                     "401": {
                         "description": "Неавторизованный доступ",
                         "schema": {
-                            "$ref": "#/definitions/models.ErrorResponse"
+                            "$ref": "#/definitions/models.Error"
                         }
                     },
                     "404": {
                         "description": "Пользователь не найден",
                         "schema": {
-                            "$ref": "#/definitions/models.ErrorResponse"
+                            "$ref": "#/definitions/models.Error"
                         }
                     },
                     "500": {
                         "description": "Внутренняя ошибка сервера",
                         "schema": {
-                            "$ref": "#/definitions/models.ErrorResponse"
+                            "$ref": "#/definitions/models.Error"
                         }
                     }
                 }
@@ -2454,6 +2486,20 @@ const docTemplate = `{
                 }
             }
         },
+        "models.Error": {
+            "description": "Стандартная модель ошибки API",
+            "type": "object",
+            "properties": {
+                "code": {
+                    "type": "string",
+                    "example": "VALIDATION_ERROR"
+                },
+                "message": {
+                    "type": "string",
+                    "example": "Invalid request parameters"
+                }
+            }
+        },
         "models.ErrorResponse": {
             "description": "Расширенный ответ с ошибкой",
             "type": "object",
@@ -2479,40 +2525,57 @@ const docTemplate = `{
             }
         },
         "models.FileInfo": {
+            "description": "Детальная информация о загруженном файле",
             "type": "object",
             "properties": {
                 "category": {
-                    "description": "\"avatar\", \"resume\", \"logo\", etc.",
-                    "type": "string"
+                    "type": "string",
+                    "enum": [
+                        "avatar",
+                        "resume",
+                        "logo",
+                        "document",
+                        "attachment"
+                    ],
+                    "example": "avatar"
                 },
                 "direct_url": {
-                    "description": "Прямая ссылка через бекенд",
-                    "type": "string"
+                    "type": "string",
+                    "example": "https://cdn.example.com/avatars/avatar_12345.jpg"
                 },
                 "id": {
-                    "type": "string"
+                    "type": "string",
+                    "example": "550e8400-e29b-41d4-a716-446655440000"
                 },
                 "name": {
-                    "type": "string"
+                    "type": "string",
+                    "example": "avatar_12345.jpg"
                 },
                 "type": {
-                    "description": "\"image\", \"document\", \"other\"",
-                    "type": "string"
+                    "type": "string",
+                    "enum": [
+                        "image",
+                        "document",
+                        "other"
+                    ],
+                    "example": "image"
                 },
                 "url": {
-                    "description": "Presigned URL для фронта",
-                    "type": "string"
+                    "type": "string",
+                    "example": "https://api.example.com/files/user123/avatar_12345.jpg"
                 }
             }
         },
         "models.FileUploadResponse": {
+            "description": "Ответ после успешной загрузки файла",
             "type": "object",
             "properties": {
                 "file_info": {
                     "$ref": "#/definitions/models.FileInfo"
                 },
                 "message": {
-                    "type": "string"
+                    "type": "string",
+                    "example": "File uploaded successfully"
                 }
             }
         },
@@ -2602,6 +2665,16 @@ const docTemplate = `{
                         "ROLE_COMPANY"
                     ],
                     "example": "ROLE_STUDENT"
+                }
+            }
+        },
+        "models.SuccessResponse": {
+            "description": "Успешный ответ API",
+            "type": "object",
+            "properties": {
+                "message": {
+                    "type": "string",
+                    "example": "Operation completed successfully"
                 }
             }
         },
