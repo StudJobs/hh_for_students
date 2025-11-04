@@ -1,5 +1,5 @@
 database:
-  host: "localhost"
+  host: "DB_HOST_EXAMPLE"
   port: "5432"
   username: "postgres"
   name: "users"

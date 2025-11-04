@@ -6,5 +6,8 @@
 .env.local
 .env.*.local
 
+config.yaml
+config.yml
+
 # Logs
 *.log

@@ -2,8 +2,8 @@ server:
   port: "8000"
 
 grpc:
-  auth_address: "localhost:50051"
-  users_address: "localhost:50052"
-  user_ach_address: "localhost:50053"
-  vacancy_address: "localhost:50054"
-  company_address: "localhost:50055"
+  auth_address: "DB_HOST_EXAMPLE:50051"
+  users_address: "DB_HOST_EXAMPLE:50052"
+  user_ach_address: "DB_HOST_EXAMPLE:50053"
+  vacancy_address: "DB_HOST_EXAMPLE:50054"
+  company_address: "DB_HOST_EXAMPLE:50055"

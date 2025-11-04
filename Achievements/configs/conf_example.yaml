@@ -1,5 +1,5 @@
 database:
-  host: "localhost"
+  host: "DB_HOST_EXAMPLE"
   port: "5432"
   username: "postgres"
   name: "S3"
@@ -9,8 +9,8 @@ grpc:
   port: "50053"
 
 minio:
-  endpoint: "localhost:9000"
-  access_key: "minioadmin"
-  secret_key: "minioadmin"
+  endpoint: "DB_HOST_EXAMPLE:9000"
+  access_key: "ACCESS_KEY_EXAMPLE"
+  secret_key: "SECRET_KEY_EXAMPLE"
   use_ssl: false
   bucket: "achievements"
