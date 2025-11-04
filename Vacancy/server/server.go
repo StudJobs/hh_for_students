@@ -5,7 +5,7 @@ import (
 	"log"
 	"net"
 
-	achievementv1 "github.com/StudJobs/proto_srtucture/gen/go/proto/achievement/v1"
+	vacancyv1 "github.com/StudJobs/proto_srtucture/gen/go/proto/vacancy/v1"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/health"
 	healthpb "google.golang.org/grpc/health/grpc_health_v1"
@@ -18,18 +18,18 @@ type Server struct {
 	healthServer *health.Server
 }
 
-func New(port string, achievementService achievementv1.AchievementServiceServer) *Server {
+func New(port string, vacancyService vacancyv1.VacancyServiceServer) *Server {
 	grpcServer := grpc.NewServer()
 
 	// Регистрация сервисов
-	achievementv1.RegisterAchievementServiceServer(grpcServer, achievementService)
+	vacancyv1.RegisterVacancyServiceServer(grpcServer, vacancyService)
 
 	// Создание и настройка health сервера
 	healthServer := health.NewServer()
 	healthpb.RegisterHealthServer(grpcServer, healthServer)
 
 	// Установка статусов сервисов
-	healthServer.SetServingStatus("achievement.v1", healthpb.HealthCheckResponse_SERVING)
+	healthServer.SetServingStatus("vacancy.v1", healthpb.HealthCheckResponse_SERVING)
 	healthServer.SetServingStatus("", healthpb.HealthCheckResponse_SERVING) // Общий статус сервера
 
 	// Включение reflection для тестирования
@@ -62,24 +62,11 @@ func (s *Server) GracefulStop() {
 
 	// Установка статуса NOT_SERVING перед остановкой
 	if s.healthServer != nil {
-		s.healthServer.SetServingStatus("achievement.v1", healthpb.HealthCheckResponse_NOT_SERVING)
+		s.healthServer.SetServingStatus("vacancy.v1", healthpb.HealthCheckResponse_NOT_SERVING)
 		s.healthServer.SetServingStatus("", healthpb.HealthCheckResponse_NOT_SERVING)
 	}
 
 	s.grpcServer.GracefulStop()
-	log.Println("gRPC server stopped")
-}
-
-// Shutdown немедленная остановка сервера
-func (s *Server) Shutdown() {
-	log.Println("Shutting down gRPC server immediately...")
-
-	if s.healthServer != nil {
-		s.healthServer.SetServingStatus("achievement.v1", healthpb.HealthCheckResponse_NOT_SERVING)
-		s.healthServer.SetServingStatus("", healthpb.HealthCheckResponse_NOT_SERVING)
-	}
-
-	s.grpcServer.Stop()
 	log.Println("gRPC server stopped")
 }
 
@@ -90,7 +77,15 @@ func (s *Server) SetServiceStatus(service string, status healthpb.HealthCheckRes
 	}
 }
 
-// GetHealthServer возвращает health server для кастомной логики
-func (s *Server) GetHealthServer() *health.Server {
-	return s.healthServer
+// Shutdown немедленная остановка сервера
+func (s *Server) Shutdown() {
+	log.Println("Shutting down gRPC server immediately...")
+
+	if s.healthServer != nil {
+		s.healthServer.SetServingStatus("vacancy.v1", healthpb.HealthCheckResponse_NOT_SERVING)
+		s.healthServer.SetServingStatus("", healthpb.HealthCheckResponse_NOT_SERVING)
+	}
+
+	s.grpcServer.Stop()
+	log.Println("gRPC server stopped")
 }
