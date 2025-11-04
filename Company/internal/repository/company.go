@@ -5,12 +5,13 @@ import (
 	"database/sql"
 	"errors"
 	"fmt"
+	"log"
+	"time"
+
 	"github.com/Masterminds/squirrel"
 	commonv1 "github.com/StudJobs/proto_srtucture/gen/go/proto/common/v1"
 	companyv1 "github.com/StudJobs/proto_srtucture/gen/go/proto/company/v1"
 	"github.com/jackc/pgx/v4/pgxpool"
-	"log"
-	"time"
 )
 
 var (
@@ -30,8 +31,7 @@ func NewCompanyRepository(db *pgxpool.Pool) *CompanyRepository {
 	}
 }
 
-// Публичные методы
-
+// GetCompany возвращает компанию по ID
 func (r *CompanyRepository) GetCompany(ctx context.Context, id string) (*companyv1.Company, error) {
 	log.Printf("Repository: Getting company with ID: %s", id)
 
@@ -53,6 +53,7 @@ func (r *CompanyRepository) GetCompany(ctx context.Context, id string) (*company
 	return company, nil
 }
 
+// GetAllCompanies возвращает список компаний с фильтрацией и пагинацией
 func (r *CompanyRepository) GetAllCompanies(ctx context.Context, city, companyType string, page, limit int32) (*companyv1.CompanyList, error) {
 	log.Printf("Repository: Getting all companies - page: %d, limit: %d, city: '%s', type: '%s'",
 		page, limit, city, companyType)
@@ -93,7 +94,7 @@ func (r *CompanyRepository) GetAllCompanies(ctx context.Context, city, companyTy
 		return nil, fmt.Errorf("error iterating rows: %w", err)
 	}
 
-	// Get total count
+	// Получаем общее количество
 	countQuery, countArgs, err := r.buildCompanyCountBuilder(city, companyType).ToSql()
 	if err != nil {
 		log.Printf("Repository: Failed to build count query: %v", err)
@@ -114,20 +115,23 @@ func (r *CompanyRepository) GetAllCompanies(ctx context.Context, city, companyTy
 	}, nil
 }
 
+// CreateCompany создает новую компанию
 func (r *CompanyRepository) CreateCompany(ctx context.Context, company *companyv1.Company) (*companyv1.Company, error) {
 	log.Printf("Repository: Creating company with name: %s", company.Name)
 
 	query, args, err := r.sb.
 		Insert(COMPANY_TABLE).
-		Columns("name", "description", "city", "site", "company_type").
+		Columns("id", "name", "description", "city", "site", "company_type", "logo_id").
 		Values(
+			company.Id,
 			company.Name,
 			company.Description,
 			company.City,
 			company.Site,
 			getCompanyTypeValue(company.Type),
+			company.LogoId,
 		).
-		Suffix("RETURNING id, name, description, city, site, company_type, created_at").
+		Suffix("RETURNING id, name, description, city, site, company_type, logo_id, created_at").
 		ToSql()
 	if err != nil {
 		log.Printf("Repository: Failed to build create company query: %v", err)
@@ -144,6 +148,7 @@ func (r *CompanyRepository) CreateCompany(ctx context.Context, company *companyv
 	return createdCompany, nil
 }
 
+// UpdateCompany обновляет компанию (PATCH)
 func (r *CompanyRepository) UpdateCompany(ctx context.Context, id string, company *companyv1.Company) (*companyv1.Company, error) {
 	log.Printf("Repository: PATCH updating company with ID: %s", id)
 
@@ -170,9 +175,13 @@ func (r *CompanyRepository) UpdateCompany(ctx context.Context, id string, compan
 	if company.Type != nil && company.Type.Value != "" {
 		updateBuilder = updateBuilder.Set("company_type", company.Type.Value)
 	}
+	// Обновляем logo_id если он передан
+	if company.LogoId != "" {
+		updateBuilder = updateBuilder.Set("logo_id", company.LogoId)
+	}
 
 	query, args, err := updateBuilder.
-		Suffix("RETURNING id, name, description, city, site, company_type, created_at").
+		Suffix("RETURNING id, name, description, city, site, company_type, logo_id, created_at").
 		ToSql()
 	if err != nil {
 		log.Printf("Repository: Failed to build update company query: %v", err)
@@ -189,6 +198,7 @@ func (r *CompanyRepository) UpdateCompany(ctx context.Context, id string, compan
 	return updatedCompany, nil
 }
 
+// DeleteCompany удаляет компанию (soft delete)
 func (r *CompanyRepository) DeleteCompany(ctx context.Context, id string) error {
 	log.Printf("Repository: Deleting company with ID: %s", id)
 
@@ -226,7 +236,7 @@ func scanCompanyRow(scanner interface {
 	Scan(dest ...interface{}) error
 }) (*companyv1.Company, error) {
 	var company companyv1.Company
-	var description, city, site, companyType sql.NullString
+	var description, city, site, companyType, logoId sql.NullString
 	var createdAt time.Time
 
 	err := scanner.Scan(
@@ -236,6 +246,7 @@ func scanCompanyRow(scanner interface {
 		&city,
 		&site,
 		&companyType,
+		&logoId,
 		&createdAt,
 	)
 	if err != nil {
@@ -246,6 +257,7 @@ func scanCompanyRow(scanner interface {
 	company.Description = nullStringToString(description)
 	company.City = nullStringToString(city)
 	company.Site = nullStringToString(site)
+	company.LogoId = nullStringToString(logoId)
 
 	// Обрабатываем company_type
 	if companyType.Valid {
@@ -274,7 +286,7 @@ func nullStringToString(nullStr sql.NullString) string {
 // buildCompanyQueryBuilder создает базовый query builder для компаний
 func (r *CompanyRepository) buildCompanyQueryBuilder(city, companyType string) squirrel.SelectBuilder {
 	queryBuilder := r.sb.
-		Select("id", "name", "description", "city", "site", "company_type", "created_at").
+		Select("id", "name", "description", "city", "site", "company_type", "logo_id", "created_at").
 		From(COMPANY_TABLE).
 		Where("deleted_at IS NULL")
 

@@ -21,6 +21,7 @@ const (
 	ROLE_DEVELOPER Role = "ROLE_DEVELOPER"
 	ROLE_STUDENT   Role = "ROLE_STUDENT"
 	ROLE_HR        Role = "ROLE_EMPLOYER"
+	ROLE_COMPANY   Role = "ROLE_COMPANY_OWNER"
 
 	ID string = "id"
 )
@@ -31,7 +32,9 @@ func AuthMiddleware(apiService *services.ApiGateway) fiber.Handler {
 		// Пропускаем auth endpoints и health check
 		if c.Path() == "/api/v1/auth/login" ||
 			c.Path() == "/api/v1/auth/register" ||
-			c.Path() == "/health" {
+			c.Path() == "/health" ||
+			strings.HasPrefix(c.Path(), "/swagger/") ||
+			strings.HasPrefix(c.Path(), "/docs/") {
 			return c.Next()
 		}
 
@@ -74,6 +77,8 @@ func AuthMiddleware(apiService *services.ApiGateway) fiber.Handler {
 		// Конвертируем строку роли в тип Role
 		var userRole Role
 		switch role {
+		case "ROLE_COMPANY_OWNER":
+			userRole = ROLE_COMPANY
 		case "ROLE_DEVELOPER":
 			userRole = ROLE_DEVELOPER
 		case "ROLE_STUDENT":

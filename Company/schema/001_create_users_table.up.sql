@@ -5,6 +5,7 @@ CREATE TABLE companies (
     city VARCHAR(100),
     site VARCHAR(255),
     company_type VARCHAR(100),
+    logo_id TEXT,
 
     created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
     updated_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
@@ -15,3 +16,4 @@ CREATE INDEX idx_companies_city ON companies(city);
 CREATE INDEX idx_companies_company_type ON companies(company_type);
 CREATE INDEX idx_companies_created_at ON companies(created_at);
 CREATE INDEX idx_companies_deleted_at ON companies(deleted_at) WHERE deleted_at IS NULL;
+CREATE INDEX idx_companies_logo_id ON companies(logo_id) WHERE logo_id IS NOT NULL;

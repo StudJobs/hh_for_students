@@ -4,11 +4,11 @@ import (
 	"context"
 	"database/sql"
 	"fmt"
-	commonv1 "github.com/StudJobs/proto_srtucture/gen/go/proto/common/v1"
 	"log"
 	"time"
 
 	"github.com/Masterminds/squirrel"
+	commonv1 "github.com/StudJobs/proto_srtucture/gen/go/proto/common/v1"
 	vacancyv1 "github.com/StudJobs/proto_srtucture/gen/go/proto/vacancy/v1"
 	"github.com/jackc/pgx/v4/pgxpool"
 )
@@ -28,7 +28,7 @@ func NewVacancyRepository(db *pgxpool.Pool) *VacancyRepository {
 func (r *VacancyRepository) GetVacancy(ctx context.Context, id string) (*vacancyv1.Vacancy, error) {
 	log.Printf("Repository: Getting vacancy with ID: %s", id)
 
-	query, args, err := r.buildVacancyQueryBuilder("", "").
+	query, args, err := r.buildVacancyQueryBuilder("", "", "", "", 0, 0, 0, 0, "").
 		Where(squirrel.Eq{"id": id}).
 		ToSql()
 	if err != nil {
@@ -46,14 +46,18 @@ func (r *VacancyRepository) GetVacancy(ctx context.Context, id string) (*vacancy
 	return vacancy, nil
 }
 
-func (r *VacancyRepository) GetAllVacancies(ctx context.Context, companyID, positionStatus string, page, limit int32) (*vacancyv1.VacancyList, error) {
-	log.Printf("Repository: Getting all vacancies - page: %d, limit: %d, company: '%s', status: '%s'",
-		page, limit, companyID, positionStatus)
+func (r *VacancyRepository) GetAllVacancies(ctx context.Context, companyID, positionStatus, workFormat, schedule string,
+	minSalary, maxSalary, minExperience, maxExperience int32,
+	searchTitle string, page, limit int32) (*vacancyv1.VacancyList, error) {
+
+	log.Printf("Repository: Getting all vacancies - page: %d, limit: %d, company: '%s', status: '%s', work_format: '%s', schedule: '%s', salary: %d-%d, experience: %d-%d, search: '%s'",
+		page, limit, companyID, positionStatus, workFormat, schedule, minSalary, maxSalary, minExperience, maxExperience, searchTitle)
 
 	// Расчет offset
 	offset := (page - 1) * limit
 
-	query, args, err := r.buildVacancyQueryBuilder(companyID, positionStatus).
+	query, args, err := r.buildVacancyQueryBuilder(companyID, positionStatus, workFormat, schedule,
+		minSalary, maxSalary, minExperience, maxExperience, searchTitle).
 		OrderBy("created_at DESC").
 		Limit(uint64(limit)).
 		Offset(uint64(offset)).
@@ -87,7 +91,8 @@ func (r *VacancyRepository) GetAllVacancies(ctx context.Context, companyID, posi
 	}
 
 	// Get total count
-	countQuery, countArgs, err := r.buildVacancyCountBuilder(companyID, positionStatus).ToSql()
+	countQuery, countArgs, err := r.buildVacancyCountBuilder(companyID, positionStatus, workFormat, schedule,
+		minSalary, maxSalary, minExperience, maxExperience, searchTitle).ToSql()
 	if err != nil {
 		log.Printf("Repository: Failed to build count query: %v", err)
 		return nil, fmt.Errorf("failed to build count query: %w", err)
@@ -107,23 +112,33 @@ func (r *VacancyRepository) GetAllVacancies(ctx context.Context, companyID, posi
 	}, nil
 }
 
+func (r *VacancyRepository) GetHRVacancies(ctx context.Context, companyID, positionStatus, workFormat, schedule string,
+	minSalary, maxSalary, minExperience, maxExperience int32,
+	searchTitle string, page, limit int32) (*vacancyv1.VacancyList, error) {
+
+	// Для HR вакансий используем ту же логику, но можно добавить дополнительные фильтры если нужно
+	return r.GetAllVacancies(ctx, companyID, positionStatus, workFormat, schedule,
+		minSalary, maxSalary, minExperience, maxExperience, searchTitle, page, limit)
+}
+
 func (r *VacancyRepository) CreateVacancy(ctx context.Context, vacancy *vacancyv1.Vacancy) (*vacancyv1.Vacancy, error) {
 	log.Printf("Repository: Creating vacancy with title: %s", vacancy.Title)
 
 	query, args, err := r.sb.
 		Insert(VACANCY_TABLE).
 		Columns("title", "experience", "salary", "position_status",
-			"schedule", "work_format", "company_id").
+			"schedule", "work_format", "company_id", "attachment_id").
 		Values(
 			vacancy.Title,
 			vacancy.Experience,
 			vacancy.Salary,
 			vacancy.PositionStatus,
-			vacancy.Schedule,   // string
-			vacancy.WorkFormat, // string
+			vacancy.Schedule,
+			vacancy.WorkFormat,
 			vacancy.CompanyId,
+			vacancy.AttachmentId,
 		).
-		Suffix("RETURNING id, title, experience, salary, position_status, schedule, work_format, company_id, created_at").
+		Suffix("RETURNING id, title, experience, salary, position_status, schedule, work_format, company_id, attachment_id, created_at").
 		ToSql()
 	if err != nil {
 		log.Printf("Repository: Failed to build create vacancy query: %v", err)
@@ -164,17 +179,20 @@ func (r *VacancyRepository) UpdateVacancy(ctx context.Context, id string, vacanc
 		updateBuilder = updateBuilder.Set("position_status", vacancy.PositionStatus)
 	}
 	if vacancy.Schedule != "" {
-		updateBuilder = updateBuilder.Set("schedule", vacancy.Schedule) // string
+		updateBuilder = updateBuilder.Set("schedule", vacancy.Schedule)
 	}
 	if vacancy.WorkFormat != "" {
-		updateBuilder = updateBuilder.Set("work_format", vacancy.WorkFormat) // string
+		updateBuilder = updateBuilder.Set("work_format", vacancy.WorkFormat)
 	}
 	if vacancy.CompanyId != "" {
 		updateBuilder = updateBuilder.Set("company_id", vacancy.CompanyId)
 	}
+	if vacancy.AttachmentId != "" {
+		updateBuilder = updateBuilder.Set("attachment_id", vacancy.AttachmentId)
+	}
 
 	query, args, err := updateBuilder.
-		Suffix("RETURNING id, title, experience, salary, position_status, schedule, work_format, company_id, created_at").
+		Suffix("RETURNING id, title, experience, salary, position_status, schedule, work_format, company_id, attachment_id, created_at").
 		ToSql()
 	if err != nil {
 		log.Printf("Repository: Failed to build update vacancy query: %v", err)
@@ -259,39 +277,8 @@ func (r *VacancyRepository) DeleteVacancy(ctx context.Context, id string) error 
 	}
 
 	log.Printf("Repository: Successfully deleted vacancy with ID: %s, rows affected: %d", id, rowsAffected)
-
 	return nil
 }
-
-//func (r *VacancyRepository) DeleteVacancy(ctx context.Context, id string) error {
-//	log.Printf("Repository: Deleting vacancy with ID: %s", id)
-//
-//	query, args, err := r.sb.
-//		Update(VACANCY_TABLE).
-//		Set("deleted_at", squirrel.Expr("NOW()")).
-//		Where(squirrel.Eq{"id": id}).
-//		Where("deleted_at IS NULL").
-//		ToSql()
-//	if err != nil {
-//		log.Printf("Repository: Failed to build delete vacancy query: %v", err)
-//		return fmt.Errorf("failed to build query: %w", err)
-//	}
-//
-//	result, err := r.db.Exec(ctx, query, args...)
-//	if err != nil {
-//		log.Printf("Repository: Failed to delete vacancy with ID %s: %v", id, err)
-//		return fmt.Errorf("failed to delete vacancy: %w", err)
-//	}
-//
-//	rowsAffected := result.RowsAffected()
-//	if rowsAffected == 0 {
-//		log.Printf("Repository: Vacancy not found for deletion with ID: %s", id)
-//		return ErrVacancyNotFound
-//	}
-//
-//	log.Printf("Repository: Successfully deleted vacancy with ID: %s, rows affected: %d", id, rowsAffected)
-//	return nil
-//}
 
 // scanVacancyRow сканирует строку из БД в Vacancy объект
 func scanVacancyRow(scanner interface {
@@ -299,6 +286,7 @@ func scanVacancyRow(scanner interface {
 }) (*vacancyv1.Vacancy, error) {
 	var vacancy vacancyv1.Vacancy
 	var workFormat sql.NullString
+	var attachmentID sql.NullString
 	var createdAt time.Time
 
 	err := scanner.Scan(
@@ -307,10 +295,11 @@ func scanVacancyRow(scanner interface {
 		&vacancy.Experience,
 		&vacancy.Salary,
 		&vacancy.PositionStatus,
-		&vacancy.Schedule, // string
-		&workFormat,       // sql.NullString
+		&vacancy.Schedule,
+		&workFormat,
 		&vacancy.CompanyId,
-		&createdAt, // time.Time
+		&attachmentID,
+		&createdAt,
 	)
 	if err != nil {
 		return nil, err
@@ -318,6 +307,7 @@ func scanVacancyRow(scanner interface {
 
 	// Обрабатываем nullable поля
 	vacancy.WorkFormat = nullStringToString(workFormat)
+	vacancy.AttachmentId = nullStringToString(attachmentID)
 	vacancy.CreateAt = timeToString(createdAt)
 
 	return &vacancy, nil
@@ -336,11 +326,14 @@ func timeToString(t time.Time) string {
 	return t.Format(time.RFC3339)
 }
 
-// buildVacancyQueryBuilder создает базовый query builder для вакансий
-func (r *VacancyRepository) buildVacancyQueryBuilder(companyID, positionStatus string) squirrel.SelectBuilder {
+// buildVacancyQueryBuilder создает базовый query builder для вакансий с фильтрами
+func (r *VacancyRepository) buildVacancyQueryBuilder(companyID, positionStatus, workFormat, schedule string,
+	minSalary, maxSalary, minExperience, maxExperience int32,
+	searchTitle string) squirrel.SelectBuilder {
+
 	queryBuilder := r.sb.
 		Select("id", "title", "experience", "salary", "position_status",
-			"schedule", "work_format", "company_id", "created_at").
+			"schedule", "work_format", "company_id", "attachment_id", "created_at").
 		From(VACANCY_TABLE).
 		Where("deleted_at IS NULL")
 
@@ -350,12 +343,36 @@ func (r *VacancyRepository) buildVacancyQueryBuilder(companyID, positionStatus s
 	if positionStatus != "" {
 		queryBuilder = queryBuilder.Where(squirrel.Eq{"position_status": positionStatus})
 	}
+	if workFormat != "" {
+		queryBuilder = queryBuilder.Where(squirrel.Eq{"work_format": workFormat})
+	}
+	if schedule != "" {
+		queryBuilder = queryBuilder.Where(squirrel.Eq{"schedule": schedule})
+	}
+	if minSalary > 0 {
+		queryBuilder = queryBuilder.Where(squirrel.GtOrEq{"salary": minSalary})
+	}
+	if maxSalary > 0 {
+		queryBuilder = queryBuilder.Where(squirrel.LtOrEq{"salary": maxSalary})
+	}
+	if minExperience > 0 {
+		queryBuilder = queryBuilder.Where(squirrel.GtOrEq{"experience": minExperience})
+	}
+	if maxExperience > 0 {
+		queryBuilder = queryBuilder.Where(squirrel.LtOrEq{"experience": maxExperience})
+	}
+	if searchTitle != "" {
+		queryBuilder = queryBuilder.Where(squirrel.ILike{"title": "%" + searchTitle + "%"})
+	}
 
 	return queryBuilder
 }
 
-// buildVacancyCountBuilder создает builder для подсчета вакансий
-func (r *VacancyRepository) buildVacancyCountBuilder(companyID, positionStatus string) squirrel.SelectBuilder {
+// buildVacancyCountBuilder создает builder для подсчета вакансий с фильтрами
+func (r *VacancyRepository) buildVacancyCountBuilder(companyID, positionStatus, workFormat, schedule string,
+	minSalary, maxSalary, minExperience, maxExperience int32,
+	searchTitle string) squirrel.SelectBuilder {
+
 	countBuilder := r.sb.
 		Select("COUNT(*)").
 		From(VACANCY_TABLE).
@@ -366,6 +383,27 @@ func (r *VacancyRepository) buildVacancyCountBuilder(companyID, positionStatus s
 	}
 	if positionStatus != "" {
 		countBuilder = countBuilder.Where(squirrel.Eq{"position_status": positionStatus})
+	}
+	if workFormat != "" {
+		countBuilder = countBuilder.Where(squirrel.Eq{"work_format": workFormat})
+	}
+	if schedule != "" {
+		countBuilder = countBuilder.Where(squirrel.Eq{"schedule": schedule})
+	}
+	if minSalary > 0 {
+		countBuilder = countBuilder.Where(squirrel.GtOrEq{"salary": minSalary})
+	}
+	if maxSalary > 0 {
+		countBuilder = countBuilder.Where(squirrel.LtOrEq{"salary": maxSalary})
+	}
+	if minExperience > 0 {
+		countBuilder = countBuilder.Where(squirrel.GtOrEq{"experience": minExperience})
+	}
+	if maxExperience > 0 {
+		countBuilder = countBuilder.Where(squirrel.LtOrEq{"experience": maxExperience})
+	}
+	if searchTitle != "" {
+		countBuilder = countBuilder.Where(squirrel.ILike{"title": "%" + searchTitle + "%"})
 	}
 
 	return countBuilder

@@ -13,8 +13,26 @@ type PaginationResponse struct {
 	CurrentPage int32 `json:"current_page"`
 }
 
-// Error HTTP модель
+// Error HTTP модель ошибки
+// @Description Стандартная модель ошибки API
 type Error struct {
-	Code    string `json:"code"`
-	Message string `json:"message"`
+	Code    string `json:"code" example:"VALIDATION_ERROR"`
+	Message string `json:"message" example:"Invalid request parameters"`
+}
+
+// ValidationError HTTP модель ошибки валидации
+// @Description Детализированная ошибка валидации
+type ValidationError struct {
+	Field   string `json:"field" example:"email"`
+	Message string `json:"message" example:"Email is required"`
+	Code    string `json:"code" example:"REQUIRED_FIELD"`
+}
+
+// ErrorResponse HTTP модель ответа с ошибкой
+// @Description Расширенный ответ с ошибкой
+type ErrorResponse struct {
+	Error   string            `json:"error" example:"Bad Request"`
+	Message string            `json:"message" example:"Invalid input data"`
+	Code    string            `json:"code" example:"INVALID_INPUT"`
+	Details []ValidationError `json:"details,omitempty"`
 }

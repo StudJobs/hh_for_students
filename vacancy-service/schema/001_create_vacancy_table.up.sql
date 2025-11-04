@@ -7,6 +7,7 @@ CREATE TABLE vacancies (
     schedule VARCHAR(64) NOT NULL DEFAULT 0,
     work_format VARCHAR(64),
     company_id UUID NOT NULL,
+    attachment_id VARCHAR(255),
 
     created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
     updated_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,

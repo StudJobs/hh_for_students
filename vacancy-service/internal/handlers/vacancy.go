@@ -113,7 +113,10 @@ func (h *VacancyHandler) GetVacancy(ctx context.Context, req *vacancyv1.GetVacan
 }
 
 func (h *VacancyHandler) GetAllVacancies(ctx context.Context, req *vacancyv1.GetAllVacanciesRequest) (*vacancyv1.VacancyList, error) {
-	log.Printf("Handlers: GetAllVacancies request received")
+	log.Printf("Handlers: GetAllVacancies request received with filters - company: %s, status: %s, work_format: %s, schedule: %s, salary: %d-%d, experience: %d-%d, search: %s",
+		req.GetCompanyId(), req.GetPositionStatus(), req.GetWorkFormat(), req.GetSchedule(),
+		req.GetMinSalary(), req.GetMaxSalary(), req.GetMinExperience(), req.GetMaxExperience(),
+		req.GetSearchTitle())
 
 	var page, limit int32 = 1, 10
 
@@ -126,16 +129,62 @@ func (h *VacancyHandler) GetAllVacancies(ctx context.Context, req *vacancyv1.Get
 		}
 	}
 
-	log.Printf("Handlers: GetAllVacancies - page: %d, limit: %d, company: %s, status: %s",
-		page, limit, req.GetCompanyId(), req.GetPositionStatus())
-
-	vacancies, err := h.service.Vacancy.GetAllVacancies(ctx, req.CompanyId, req.PositionStatus, page, limit)
+	vacancies, err := h.service.Vacancy.GetAllVacancies(ctx,
+		req.CompanyId,
+		req.PositionStatus,
+		req.WorkFormat,
+		req.Schedule,
+		req.MinSalary,
+		req.MaxSalary,
+		req.MinExperience,
+		req.MaxExperience,
+		req.SearchTitle,
+		page,
+		limit)
 	if err != nil {
 		log.Printf("Handlers: GetAllVacancies failed: %v", err)
 		return nil, status.Error(codes.Internal, "failed to get vacancies")
 	}
 
 	log.Printf("Handlers: GetAllVacancies completed successfully, returned %d vacancies", len(vacancies.Vacancies))
+	return vacancies, nil
+}
+
+func (h *VacancyHandler) GetHRVacancies(ctx context.Context, req *vacancyv1.GetHRVacanciesRequest) (*vacancyv1.VacancyList, error) {
+	log.Printf("Handlers: GetHRVacancies request received with filters - company: %s, status: %s, work_format: %s, schedule: %s, salary: %d-%d, experience: %d-%d, search: %s",
+		req.GetCompanyId(), req.GetPositionStatus(), req.GetWorkFormat(), req.GetSchedule(),
+		req.GetMinSalary(), req.GetMaxSalary(), req.GetMinExperience(), req.GetMaxExperience(),
+		req.GetSearchTitle())
+
+	var page, limit int32 = 1, 10
+
+	if req.Pagination != nil {
+		if req.Pagination.Page > 0 {
+			page = req.Pagination.Page
+		}
+		if req.Pagination.Limit > 0 {
+			limit = req.Pagination.Limit
+		}
+	}
+
+	vacancies, err := h.service.Vacancy.GetHRVacancies(ctx,
+		req.CompanyId,
+		req.PositionStatus,
+		req.WorkFormat,
+		req.Schedule,
+		req.MinSalary,
+		req.MaxSalary,
+		req.MinExperience,
+		req.MaxExperience,
+		req.SearchTitle,
+		page,
+		limit)
+	if err != nil {
+		log.Printf("Handlers: GetHRVacancies failed: %v", err)
+		return nil, status.Error(codes.Internal, "failed to get HR vacancies")
+	}
+
+	log.Printf("Handlers: GetHRVacancies completed successfully, returned %d vacancies", len(vacancies.Vacancies))
 	return vacancies, nil
 }
 

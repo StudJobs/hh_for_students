@@ -6,3 +6,4 @@ grpc:
   users_address: "localhost:50052"
   user_ach_address: "localhost:50053"
   vacancy_address: "localhost:50054"
+  company_address: "localhost:50055"

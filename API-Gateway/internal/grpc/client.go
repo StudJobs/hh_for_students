@@ -2,6 +2,8 @@ package grpc
 
 import (
 	"context"
+	companyv1 "github.com/StudJobs/proto_srtucture/gen/go/proto/company/v1"
+	vacancyv1 "github.com/StudJobs/proto_srtucture/gen/go/proto/vacancy/v1"
 	"log"
 	"time"
 
@@ -17,8 +19,8 @@ type Clients struct {
 	Auth        authv1.AuthServiceClient
 	Users       usersv1.UsersServiceClient
 	Achievement achievementv1.AchievementServiceClient
-
-	// Vacancy vacancyv1.VacancyServiceClient
+	Company     companyv1.CompanyServiceClient
+	Vacancy     vacancyv1.VacancyServiceClient
 }
 
 // Config конфигурация для gRPC подключений
@@ -27,6 +29,7 @@ type Config struct {
 	UsersAddress           string
 	UserAchievementAddress string
 	VacancyAddress         string
+	CompanyAddress         string
 	Timeout                time.Duration
 }
 
@@ -34,7 +37,7 @@ type Config struct {
 func NewClients(cfg Config) (*Clients, error) {
 	log.Printf("Initializing gRPC clients...")
 
-	// Создаем соединение с Auth сервисом
+	//// Создаем соединение с Auth сервисом
 	authConn, err := createConnection(cfg.AuthAddress, cfg.Timeout)
 	if err != nil {
 		return nil, err
@@ -42,6 +45,16 @@ func NewClients(cfg Config) (*Clients, error) {
 
 	// Создаем соединение с Users сервисом
 	usersConn, err := createConnection(cfg.UsersAddress, cfg.Timeout)
+	if err != nil {
+		return nil, err
+	}
+
+	companyConn, err := createConnection(cfg.CompanyAddress, cfg.Timeout)
+	if err != nil {
+		return nil, err
+	}
+
+	vacanyConn, err := createConnection(cfg.VacancyAddress, cfg.Timeout)
 	if err != nil {
 		return nil, err
 	}
@@ -55,6 +68,8 @@ func NewClients(cfg Config) (*Clients, error) {
 	clients := &Clients{
 		Auth:        authv1.NewAuthServiceClient(authConn),
 		Users:       usersv1.NewUsersServiceClient(usersConn),
+		Vacancy:     vacancyv1.NewVacancyServiceClient(vacanyConn),
+		Company:     companyv1.NewCompanyServiceClient(companyConn),
 		Achievement: achievementv1.NewAchievementServiceClient(achievementConn),
 	}
 

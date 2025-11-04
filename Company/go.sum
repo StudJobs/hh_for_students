@@ -7,8 +7,10 @@ github.com/Masterminds/squirrel v1.5.4 h1:uUcX/aBc8O7Fg9kaISIUsHXdKuqehiXAMQTYX8
 github.com/Masterminds/squirrel v1.5.4/go.mod h1:NNaOrjSoIDfDA40n7sr2tPNZRfjzjA400rg+riTZj10=
 github.com/Microsoft/go-winio v0.6.2 h1:F2VQgta7ecxGYO8k3ZZz3RS8fVIXVxONVUPlNERoyfY=
 github.com/Microsoft/go-winio v0.6.2/go.mod h1:yd8OoFMLzJbo9gZq8j5qaps8bJ9aShtEA8Ipt1oGCvU=
-github.com/StudJobs/proto_srtucture v0.0.0-20251103193904-78b01002ad8b h1:F4258EXtNqSwCRtzOrzRIZf8mqhey83cMfvJ36qjux4=
-github.com/StudJobs/proto_srtucture v0.0.0-20251103193904-78b01002ad8b/go.mod h1:pKJeIqXGsSLamBZkCv0y2dIm/x60Knjydfpl9Ebq82s=
+github.com/StudJobs/proto_srtucture v0.0.0-20251104061131-23462dc1720f h1:l8WLQCzVKteObD0sCG6U/5r1S6q0+pSS0qvAdk+gu24=
+github.com/StudJobs/proto_srtucture v0.0.0-20251104061131-23462dc1720f/go.mod h1:pKJeIqXGsSLamBZkCv0y2dIm/x60Knjydfpl9Ebq82s=
+github.com/StudJobs/proto_srtucture v0.0.0-20251104070934-c6e17fdcf4fe h1:NKo6mEpICU8tX02zRzV04WvxzNKhh3JjlQpUVqVZ7v0=
+github.com/StudJobs/proto_srtucture v0.0.0-20251104070934-c6e17fdcf4fe/go.mod h1:pKJeIqXGsSLamBZkCv0y2dIm/x60Knjydfpl9Ebq82s=
 github.com/cockroachdb/apd v1.1.0 h1:3LFP3629v+1aKXU5Q37mxmRxX/pIu1nijXydLShEq5I=
 github.com/cockroachdb/apd v1.1.0/go.mod h1:8Sl8LxpKi29FqWXR16WEFZRNSz3SoPzUzeMeY4+DwBQ=
 github.com/containerd/errdefs v1.0.0 h1:tg5yIfIlQIrxYtu9ajqY42W3lpS19XqdxRQeEwYG8PI=

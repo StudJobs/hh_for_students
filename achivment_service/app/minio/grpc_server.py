@@ -183,10 +183,10 @@ async def serve():
     
     server = aio.server()
     add_AchievementServiceServicer_to_server(grpc_service, server)
-    server.add_insecure_port('[::]:50051')
+    server.add_insecure_port('[::]:50053')
     
     await server.start()
-    print("🚀 Async GRPC Server running on port 50051")
+    print("🚀 Async GRPC Server running on port 50053")
     
     try:
         await server.wait_for_termination()

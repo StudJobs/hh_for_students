@@ -4,11 +4,12 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"log"
+
 	"github.com/Masterminds/squirrel"
 	commonv1 "github.com/StudJobs/proto_srtucture/gen/go/proto/common/v1"
 	usersv1 "github.com/StudJobs/proto_srtucture/gen/go/proto/users/v1"
 	"github.com/jackc/pgx/v4/pgxpool"
-	"log"
 )
 
 var (
@@ -32,7 +33,7 @@ func (r *UsersRepository) GetProfile(ctx context.Context, id string) (*usersv1.P
 	log.Printf("Repository: Getting profile with ID: %s", id)
 
 	query, args, err := r.sb.
-		Select("id", "first_name", "last_name", "age", "tg", "resume_id", "email", "description", "profession_category").
+		Select("id", "first_name", "last_name", "age", "tg", "resume_id", "avatar_id", "email", "description", "profession_category").
 		From(PROFILE_TABLE).
 		Where(squirrel.Eq{"id": id}).
 		Where("deleted_at IS NULL").
@@ -43,7 +44,7 @@ func (r *UsersRepository) GetProfile(ctx context.Context, id string) (*usersv1.P
 	}
 
 	var profile usersv1.Profile
-	var resumeId *string // Используем указатель для обработки NULL
+	var resumeId, avatarId *string // Используем указатели для обработки NULL
 
 	err = r.db.QueryRow(ctx, query, args...).Scan(
 		&profile.Id,
@@ -52,6 +53,7 @@ func (r *UsersRepository) GetProfile(ctx context.Context, id string) (*usersv1.P
 		&profile.Age,
 		&profile.Tg,
 		&resumeId, // Сканируем в указатель
+		&avatarId, // Сканируем в указатель
 		&profile.Email,
 		&profile.Description,
 		&profile.ProfessionCategory,
@@ -66,6 +68,11 @@ func (r *UsersRepository) GetProfile(ctx context.Context, id string) (*usersv1.P
 		profile.ResumeId = *resumeId
 	}
 
+	// Обрабатываем NULL avatar_id
+	if avatarId != nil {
+		profile.AvatarId = *avatarId
+	}
+
 	log.Printf("Repository: Successfully retrieved profile with ID: %s", id)
 	return &profile, nil
 }
@@ -78,7 +85,7 @@ func (r *UsersRepository) GetAllProfiles(ctx context.Context, professionCategory
 
 	// Базовый запрос
 	queryBuilder := r.sb.
-		Select("id", "first_name", "last_name", "age", "tg", "resume_id", "email", "description", "profession_category").
+		Select("id", "first_name", "last_name", "age", "tg", "resume_id", "avatar_id", "email", "description", "profession_category").
 		From(PROFILE_TABLE).
 		Where("deleted_at IS NULL").
 		OrderBy("created_at DESC").
@@ -107,7 +114,7 @@ func (r *UsersRepository) GetAllProfiles(ctx context.Context, professionCategory
 	var profiles []*usersv1.Profile
 	for rows.Next() {
 		var profile usersv1.Profile
-		var resumeId *string // Используем указатель для обработки NULL
+		var resumeId, avatarId *string // Используем указатели для обработки NULL
 
 		err := rows.Scan(
 			&profile.Id,
@@ -116,6 +123,7 @@ func (r *UsersRepository) GetAllProfiles(ctx context.Context, professionCategory
 			&profile.Age,
 			&profile.Tg,
 			&resumeId, // Сканируем в указатель
+			&avatarId, // Сканируем в указатель
 			&profile.Email,
 			&profile.Description,
 			&profile.ProfessionCategory,
@@ -128,6 +136,11 @@ func (r *UsersRepository) GetAllProfiles(ctx context.Context, professionCategory
 		// Обрабатываем NULL resume_id
 		if resumeId != nil {
 			profile.ResumeId = *resumeId
+		}
+
+		// Обрабатываем NULL avatar_id
+		if avatarId != nil {
+			profile.AvatarId = *avatarId
 		}
 
 		profiles = append(profiles, &profile)
@@ -184,14 +197,9 @@ func (r *UsersRepository) CreateProfile(ctx context.Context, profile *usersv1.Pr
 	// Строим INSERT запрос
 	insertBuilder := r.sb.
 		Insert(PROFILE_TABLE).
-		Columns("id, first_name", "last_name", "age", "tg", "email", "description", "profession_category")
+		Columns("id", "first_name", "last_name", "age", "tg", "email", "description", "profession_category")
 
-	// Добавляем resume_id только если он не пустой
-	if profile.ResumeId != "" {
-		insertBuilder = insertBuilder.Columns("resume_id")
-	}
-
-	// Добавляем значения
+	// Добавляем resume_id и avatar_id только если они не пустые
 	values := []interface{}{
 		profile.Id,
 		profile.FirstName,
@@ -203,14 +211,19 @@ func (r *UsersRepository) CreateProfile(ctx context.Context, profile *usersv1.Pr
 		profile.ProfessionCategory,
 	}
 
-	// Добавляем resume_id только если он не пустой
 	if profile.ResumeId != "" {
+		insertBuilder = insertBuilder.Columns("resume_id")
 		values = append(values, profile.ResumeId)
+	}
+
+	if profile.AvatarId != "" {
+		insertBuilder = insertBuilder.Columns("avatar_id")
+		values = append(values, profile.AvatarId)
 	}
 
 	query, args, err := insertBuilder.
 		Values(values...).
-		Suffix("RETURNING id, first_name, last_name, age, tg, resume_id, email, description, profession_category").
+		Suffix("RETURNING id, first_name, last_name, age, tg, resume_id, avatar_id, email, description, profession_category").
 		ToSql()
 	if err != nil {
 		log.Printf("Repository: Failed to build create profile query: %v", err)
@@ -218,7 +231,7 @@ func (r *UsersRepository) CreateProfile(ctx context.Context, profile *usersv1.Pr
 	}
 
 	var createdProfile usersv1.Profile
-	var resumeId *string // Используем указатель для обработки NULL
+	var resumeId, avatarId *string // Используем указатели для обработки NULL
 
 	err = r.db.QueryRow(ctx, query, args...).Scan(
 		&createdProfile.Id,
@@ -227,6 +240,7 @@ func (r *UsersRepository) CreateProfile(ctx context.Context, profile *usersv1.Pr
 		&createdProfile.Age,
 		&createdProfile.Tg,
 		&resumeId, // Сканируем в указатель
+		&avatarId, // Сканируем в указатель
 		&createdProfile.Email,
 		&createdProfile.Description,
 		&createdProfile.ProfessionCategory,
@@ -239,6 +253,11 @@ func (r *UsersRepository) CreateProfile(ctx context.Context, profile *usersv1.Pr
 	// Обрабатываем NULL resume_id
 	if resumeId != nil {
 		createdProfile.ResumeId = *resumeId
+	}
+
+	// Обрабатываем NULL avatar_id
+	if avatarId != nil {
+		createdProfile.AvatarId = *avatarId
 	}
 
 	log.Printf("Repository: Successfully created profile with ID: %s", createdProfile.Id)
@@ -268,9 +287,13 @@ func (r *UsersRepository) UpdateProfile(ctx context.Context, id string, profile 
 	if profile.Tg != "" {
 		updateBuilder = updateBuilder.Set("tg", profile.Tg)
 	}
-	// resume_id может быть пустым строкой - это нормально
+	// resume_id может быть пустой строкой - это нормально
 	if profile.ResumeId != "" {
 		updateBuilder = updateBuilder.Set("resume_id", profile.ResumeId)
+	}
+	// avatar_id может быть пустой строкой - это нормально
+	if profile.AvatarId != "" {
+		updateBuilder = updateBuilder.Set("avatar_id", profile.AvatarId)
 	}
 	if profile.Email != "" {
 		updateBuilder = updateBuilder.Set("email", profile.Email)
@@ -283,7 +306,7 @@ func (r *UsersRepository) UpdateProfile(ctx context.Context, id string, profile 
 	}
 
 	query, args, err := updateBuilder.
-		Suffix("RETURNING id, first_name, last_name, age, tg, resume_id, email, description, profession_category").
+		Suffix("RETURNING id, first_name, last_name, age, tg, resume_id, avatar_id, email, description, profession_category").
 		ToSql()
 	if err != nil {
 		log.Printf("Repository: Failed to build update profile query: %v", err)
@@ -291,7 +314,7 @@ func (r *UsersRepository) UpdateProfile(ctx context.Context, id string, profile 
 	}
 
 	var updatedProfile usersv1.Profile
-	var resumeId *string // Используем указатель для обработки NULL
+	var resumeId, avatarId *string // Используем указатели для обработки NULL
 
 	err = r.db.QueryRow(ctx, query, args...).Scan(
 		&updatedProfile.Id,
@@ -300,6 +323,7 @@ func (r *UsersRepository) UpdateProfile(ctx context.Context, id string, profile 
 		&updatedProfile.Age,
 		&updatedProfile.Tg,
 		&resumeId, // Сканируем в указатель
+		&avatarId, // Сканируем в указатель
 		&updatedProfile.Email,
 		&updatedProfile.Description,
 		&updatedProfile.ProfessionCategory,
@@ -312,6 +336,11 @@ func (r *UsersRepository) UpdateProfile(ctx context.Context, id string, profile 
 	// Обрабатываем NULL resume_id
 	if resumeId != nil {
 		updatedProfile.ResumeId = *resumeId
+	}
+
+	// Обрабатываем NULL avatar_id
+	if avatarId != nil {
+		updatedProfile.AvatarId = *avatarId
 	}
 
 	log.Printf("Repository: Successfully PATCH updated profile with ID: %s", updatedProfile.Id)
