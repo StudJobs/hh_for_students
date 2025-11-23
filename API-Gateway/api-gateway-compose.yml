@@ -1,7 +1,7 @@
 version: '3.8'
 
 services:
-  auth:
+  api-gateway:
     build:
       context: .
       dockerfile: Dockerfile
@@ -11,6 +11,8 @@ services:
 
     volumes:
       - ./configs:/configs
+    networks:  # ← ДОБАВЬТЕ ЭТОТ БЛОК
+      - microservices-net
 
 
 networks:

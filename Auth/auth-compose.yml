@@ -24,6 +24,9 @@ services:
     volumes:
       - ./configs:/configs
 
+    networks:
+      - microservices-net  # ← ДОБАВЬТЕ ЭТУ СТРОКУ
+
     healthcheck:
       test: ["CMD", "grpc_health_probe", "-addr=localhost:50051"]
       interval: 10s
@@ -44,6 +47,9 @@ services:
 
     volumes:
       - postgres_data_auth:/var/lib/postgresql/data
+      
+    networks:
+      - microservices-net  
 
     healthcheck:
       test: ["CMD-SHELL", "pg_isready -U postgres -d auth"]

@@ -7,16 +7,17 @@ services:
       dockerfile: Dockerfile
 
     ports:
-      - "50052:50052"
-
+      - "50054:50054"
+    networks:
+      - microservices-net
     depends_on:
       postgres_vacancy:
         condition: service_healthy
 
     environment:
       DB_PASS: ${DB_PASS}
-      DB_HOST: postgres
-      DB_PORT: 5436
+      DB_HOST: postgres_vacancy
+      DB_PORT: 5432
       DB_USER: postgres
       DB_NAME: vacancy
       DB_SSLMODE: disable 
@@ -37,7 +38,8 @@ services:
 
     volumes:
       - postgres_data_vacancy:/var/lib/postgresql/data
-
+    networks:
+      - microservices-net
     healthcheck:
       test: ["CMD-SHELL", "pg_isready -U postgres -d auth"]
       interval: 5s
