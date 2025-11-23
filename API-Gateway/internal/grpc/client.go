@@ -33,53 +33,50 @@ type Config struct {
 	Timeout                time.Duration
 }
 
-// NewClients создает и возвращает все gRPC клиенты
+// NewClients создаёт gRPC клиентов, пропуская отсутствующие адреса.
 func NewClients(cfg Config) (*Clients, error) {
 	log.Printf("Initializing gRPC clients...")
 
-	//// Создаем соединение с Auth сервисом
-	authConn, err := createConnection(cfg.AuthAddress, cfg.Timeout)
-	if err != nil {
-		return nil, err
+	clients := &Clients{}
+
+	// подключаем каждую зависимость только если адрес указан
+	if cfg.AuthAddress != "" {
+		if conn := mustConn(cfg.AuthAddress, cfg.Timeout); conn != nil {
+			clients.Auth = authv1.NewAuthServiceClient(conn)
+		}
 	}
 
-	// Создаем соединение с Users сервисом
-	usersConn, err := createConnection(cfg.UsersAddress, cfg.Timeout)
-	if err != nil {
-		return nil, err
+	if cfg.UsersAddress != "" {
+		if conn := mustConn(cfg.UsersAddress, cfg.Timeout); conn != nil {
+			clients.Users = usersv1.NewUsersServiceClient(conn)
+		}
 	}
 
-	companyConn, err := createConnection(cfg.CompanyAddress, cfg.Timeout)
-	if err != nil {
-		return nil, err
+	if cfg.CompanyAddress != "" {
+		if conn := mustConn(cfg.CompanyAddress, cfg.Timeout); conn != nil {
+			clients.Company = companyv1.NewCompanyServiceClient(conn)
+		}
 	}
 
-	vacanyConn, err := createConnection(cfg.VacancyAddress, cfg.Timeout)
-	if err != nil {
-		return nil, err
+	if cfg.VacancyAddress != "" {
+		if conn := mustConn(cfg.VacancyAddress, cfg.Timeout); conn != nil {
+			clients.Vacancy = vacancyv1.NewVacancyServiceClient(conn)
+		}
 	}
 
-	// Создаем соединение с Achievement сервисом
-	achievementConn, err := createConnection(cfg.UserAchievementAddress, cfg.Timeout)
-	if err != nil {
-		return nil, err
+	if cfg.UserAchievementAddress != "" {
+		if conn := mustConn(cfg.UserAchievementAddress, cfg.Timeout); conn != nil {
+			clients.Achievement = achievementv1.NewAchievementServiceClient(conn)
+		}
 	}
 
-	clients := &Clients{
-		Auth:        authv1.NewAuthServiceClient(authConn),
-		Users:       usersv1.NewUsersServiceClient(usersConn),
-		Vacancy:     vacancyv1.NewVacancyServiceClient(vacanyConn),
-		Company:     companyv1.NewCompanyServiceClient(companyConn),
-		Achievement: achievementv1.NewAchievementServiceClient(achievementConn),
-	}
-
-	log.Printf("✓ All gRPC clients initialized successfully")
+	log.Printf("✓ gRPC initialization completed (some services may be skipped)")
 	return clients, nil
 }
 
-// createConnection создает gRPC соединение
-func createConnection(address string, timeout time.Duration) (*grpc.ClientConn, error) {
-	log.Printf("Connecting to gRPC service at: %s", address)
+// mustConn — безопасное подключение: если адрес пустой или ошибка — вернёт nil.
+func mustConn(address string, timeout time.Duration) *grpc.ClientConn {
+	log.Printf("Connecting to gRPC service: %s", address)
 
 	ctx, cancel := context.WithTimeout(context.Background(), timeout)
 	defer cancel()
@@ -88,13 +85,14 @@ func createConnection(address string, timeout time.Duration) (*grpc.ClientConn, 
 		grpc.WithTransportCredentials(insecure.NewCredentials()),
 		grpc.WithBlock(),
 	)
+
 	if err != nil {
-		log.Printf("Failed to connect to %s: %v", address, err)
-		return nil, err
+		log.Printf("⚠ Failed to connect to %s: %v (skipping)", address, err)
+		return nil
 	}
 
 	log.Printf("✓ Connected to %s", address)
-	return conn, nil
+	return conn
 }
 
 // Close закрывает все соединения (если нужно будет добавить graceful shutdown)
