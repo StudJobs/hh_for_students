@@ -1,0 +1,53 @@
+version: '3.8'
+
+services:
+  vacancy:
+    build:
+      context: .
+      dockerfile: Dockerfile
+
+    ports:
+      - "50052:50052"
+
+    depends_on:
+      postgres_vacancy:
+        condition: service_healthy
+
+    environment:
+      DB_PASS: ${DB_PASS}
+      DB_HOST: postgres
+      DB_PORT: 5436
+      DB_USER: postgres
+      DB_NAME: vacancy
+      DB_SSLMODE: disable 
+
+    volumes:
+      - ./configs:/configs
+
+  postgres_vacancy:
+    image: postgres:15-alpine
+
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: ${DB_PASS}
+      POSTGRES_DB: vacancy
+
+    ports:
+      - "5432:5436"
+
+    volumes:
+      - postgres_data_vacancy:/var/lib/postgresql/data
+
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres -d auth"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
+volumes:
+  postgres_data_vacancy:
+
+
+networks:
+  microservices-net:
+    external: true 

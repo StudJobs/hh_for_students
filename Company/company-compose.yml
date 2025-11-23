@@ -1,7 +1,7 @@
 version: '3.8'
 
 services:
-  auth:
+  company:
     build:
       context: .
       dockerfile: Dockerfile
@@ -10,33 +10,33 @@ services:
       - "50052:50052"
 
     depends_on:
-      postgres:
+      postgres_company:
         condition: service_healthy
 
     environment:
       DB_PASS: ${DB_PASS}
       DB_HOST: postgres
-      DB_PORT: 5432
+      DB_PORT: 5434
       DB_USER: postgres
-      DB_NAME: auth
+      DB_NAME: company
       DB_SSLMODE: disable 
 
     volumes:
       - ./configs:/configs
 
-  postgres:
+  postgres_company:
     image: postgres:15-alpine
 
     environment:
       POSTGRES_USER: postgres
       POSTGRES_PASSWORD: ${DB_PASS}
-      POSTGRES_DB: auth
+      POSTGRES_DB: company
 
     ports:
-      - "5432:5432"
+      - "5434:5432"
 
     volumes:
-      - postgres_data:/var/lib/postgresql/data
+      - postgres_data_company:/var/lib/postgresql/data
 
     healthcheck:
       test: ["CMD-SHELL", "pg_isready -U postgres -d auth"]
@@ -45,4 +45,8 @@ services:
       retries: 5
 
 volumes:
-  postgres_data:
+  postgres_data_company:
+
+networks:
+  microservices-net:
+    external: true 

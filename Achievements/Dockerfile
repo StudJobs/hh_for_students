@@ -13,11 +13,12 @@ RUN CGO_ENABLED=0 GOOS=linux go build \
  -o app \
  ./cmd/main.go
 
-FROM scratch
+FROM alpine:latest
 
 COPY --from=build /app/configs /configs
+COPY --from=build /app/schema /schema
 COPY --from=build /app/app /app
 
-EXPOSE 8000
+EXPOSE 50053
 
 CMD ["/app"]

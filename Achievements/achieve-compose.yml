@@ -1,0 +1,55 @@
+services:
+  achieve:
+    build:
+      context: .
+      dockerfile: Dockerfile
+
+    ports:
+      - "50053:50053"
+
+    depends_on:
+      postgres_achieve:
+        condition: service_healthy
+
+    environment:
+      DB_PASS: ${DB_PASS}
+      DB_HOST: postgres_achieve
+      DB_PORT: 5432
+      DB_USER: postgres
+      DB_NAME: S3
+      DB_SSLMODE: disable 
+      MINIO_ENDPOINT: minio_s3:9000
+      MINIO_ACCESS_KEY: minioadmin
+      MINIO_SECRET_KEY: minioadmin
+      MINIO_USE_SSL: true
+      MINIO_BUCKET: achievements
+
+    volumes:
+      - ./configs:/configs
+
+  postgres_achieve:
+    image: postgres:15-alpine
+
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: ${DB_PASS}
+      POSTGRES_DB: S3
+
+    ports:
+      - "5437:5432"
+
+    volumes:
+      - postgres_data_achieve:/var/lib/postgresql/data
+
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres -d auth"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
+volumes:
+  postgres_data_achieve:
+
+networks:
+  microservices-net:
+    external: true 
