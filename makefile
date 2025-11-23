@@ -55,10 +55,10 @@ vacancy: company
 	@timeout 10 bash -c 'until ./grpcurl -plaintext localhost:50055 grpc.health.v1.Health/Check >/dev/null 2>&1; do sleep 2; echo "Waiting for vacancy..."; done'
 	@echo "✓ Vacancy service is healthy!"
 
-gateway: auth users achievement company vacancy
+gateway: auth
 	cd API-Gateway && docker-compose -f api-gateway-compose.yml up -d
 	@echo "Waiting for gateway service..."
-	@timeout 10 bash -c 'until curl -f http://localhost:8080/health >/dev/null 2>&1; do sleep 2; echo "Waiting for gateway..."; done'
+	@timeout 10 bash -c 'until curl -f http://localhost:8000/health >/dev/null 2>&1; do sleep 2; echo "Waiting for gateway..."; done'
 	@echo "✓ Gateway service is healthy!"
 
 # Управление

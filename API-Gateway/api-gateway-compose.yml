@@ -11,3 +11,8 @@ services:
 
     volumes:
       - ./configs:/configs
+
+
+networks:
+  microservices-net:
+    external: true 
