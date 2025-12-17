@@ -12,20 +12,20 @@ help:
 all: haproxy minio auth users achievement company vacancy gateway
 
 # Инфраструктурные сервисы
-haproxy:
-	cd devops && docker-compose -f haproxy-compose.yml up -d
-	@echo "Waiting for HAProxy..."
-	@timeout 30 bash -c 'until nc -z localhost 80 || nc -z localhost 443 || nc -z localhost 8443; do sleep 2; echo "Waiting for HAProxy..."; done'
-	@echo "✓ HAProxy is healthy!"
-
-minio: haproxy
-	cd devops && docker-compose -f minio-compose.yml up -d
-	@echo "Waiting for MinIO..."
-	@timeout 30 bash -c 'until curl -f http://localhost:9000/minio/health/live >/dev/null 2>&1; do sleep 2; echo "Waiting for MinIO..."; done'
-	@echo "✓ MinIO is healthy!"
+#haproxy:
+#	cd devops && docker-compose -f haproxy-compose.yml up -d
+#	@echo "Waiting for HAProxy..."
+#	@timeout 30 bash -c 'until nc -z localhost 80 || nc -z localhost 443 || nc -z localhost 8443; do sleep 2; echo "Waiting for HAProxy..."; done'
+#	@echo "✓ HAProxy is healthy!"
+#
+#minio: haproxy
+#	cd devops && docker-compose -f minio-compose.yml up -d
+#	@echo "Waiting for MinIO..."
+#	@timeout 30 bash -c 'until curl -f http://localhost:9000/minio/health/live >/dev/null 2>&1; do sleep 2; echo "Waiting for MinIO..."; done'
+#	@echo "✓ MinIO is healthy!"
 
 # Микросервисы с зависимостями и проверками через grpcurl
-auth: minio
+auth:
 	cd Auth && docker-compose -f auth-compose.yml up -d
 	@echo "Waiting for auth service..."
 	@timeout 10 bash -c 'until ./grpcurl -plaintext localhost:50051 grpc.health.v1.Health/Check >/dev/null 2>&1; do sleep 2; echo "Waiting for auth..."; done'
