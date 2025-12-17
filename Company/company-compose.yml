@@ -7,7 +7,7 @@ services:
       dockerfile: Dockerfile
 
     ports:
-      - "50052:50052"
+      - "50055:50055"
 
     depends_on:
       postgres_company:
@@ -15,8 +15,8 @@ services:
 
     environment:
       DB_PASS: ${DB_PASS}
-      DB_HOST: postgres
-      DB_PORT: 5434
+      DB_HOST: postgres_company
+      DB_PORT: 5432
       DB_USER: postgres
       DB_NAME: company
       DB_SSLMODE: disable 

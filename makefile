@@ -43,19 +43,20 @@ achievement: users
 	@timeout 10 bash -c 'until ./grpcurl -plaintext localhost:50053 grpc.health.v1.Health/Check >/dev/null 2>&1; do sleep 2; echo "Waiting for achievement..."; done'
 	@echo "✓ Achievement service is healthy!"
 
-company: achievement
-	cd Company && docker-compose -f company-compose.yml up -d
-	@echo "Waiting for company service..."
-	@timeout 10 bash -c 'until ./grpcurl -plaintext localhost:50054 grpc.health.v1.Health/Check >/dev/null 2>&1; do sleep 2; echo "Waiting for company..."; done'
-	@echo "✓ Company service is healthy!"
 
-vacancy: company
-	cd vacancy-service && docker-compose -f vacancy-compose.yml up -d
+vacancy:
+	cd Vacancy && docker-compose -f vacancy-compose.yml up -d
 	@echo "Waiting for vacancy service..."
-	@timeout 10 bash -c 'until ./grpcurl -plaintext localhost:50055 grpc.health.v1.Health/Check >/dev/null 2>&1; do sleep 2; echo "Waiting for vacancy..."; done'
+	@timeout 10 bash -c 'until ./grpcurl -plaintext localhost:50054 grpc.health.v1.Health/Check >/dev/null 2>&1; do sleep 2; echo "Waiting for vacancy..."; done'
 	@echo "✓ Vacancy service is healthy!"
 
-gateway: auth
+company: 
+	cd Company && docker-compose -f company-compose.yml up -d
+	@echo "Waiting for company service..."
+	@timeout 10 bash -c 'until ./grpcurl -plaintext localhost:50055 grpc.health.v1.Health/Check >/dev/null 2>&1; do sleep 2; echo "Waiting for company..."; done'
+	@echo "✓ Company service is healthy!"
+	
+gateway: auth vacancy
 	cd API-Gateway && docker-compose -f api-gateway-compose.yml up -d
 	@echo "Waiting for gateway service..."
 	@timeout 10 bash -c 'until curl -f http://localhost:8000/health >/dev/null 2>&1; do sleep 2; echo "Waiting for gateway..."; done'
