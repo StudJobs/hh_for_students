@@ -55,68 +55,73 @@ func (h *Handler) initRoutes() {
 
 	// === File routes ===
 	files := api.Group("/files")
-	files.Get("/:entity_id/:file_name", h.ServeFileDirect)
+	files.Get("/:entity_id/:file_name", RoleMiddleware(ROLE_DEVELOPER, ROLE_STUDENT, ROLE_HR, ROLE_COMPANY), h.ServeFileDirect)
 
 	// === User routes ===
 	users := api.Group("/users")
-	users.Get("/", h.GetUsers, RoleMiddleware(ROLE_DEVELOPER, ROLE_STUDENT, ROLE_HR, ROLE_COMPANY))
-	users.Get("/me", h.GetMe, RoleMiddleware(ROLE_DEVELOPER, ROLE_STUDENT))
-	users.Get("/:id", h.GetUser, RoleMiddleware(ROLE_DEVELOPER, ROLE_STUDENT, ROLE_HR))
-	users.Patch("/edit", h.UpdateUser, OwnerOrRoleMiddleware(ID, ROLE_DEVELOPER, ROLE_STUDENT))
-	users.Delete("/", h.DeleteUser, OwnerOrRoleMiddleware(ID, ROLE_DEVELOPER, ROLE_STUDENT))
+	// ПРАВИЛЬНО: Middleware идут до обработчика
+	users.Get("/", RoleMiddleware(ROLE_DEVELOPER, ROLE_STUDENT, ROLE_HR, ROLE_COMPANY), h.GetUsers)
+	users.Get("/me", RoleMiddleware(ROLE_DEVELOPER, ROLE_STUDENT), h.GetMe)
+	users.Get("/:id", RoleMiddleware(ROLE_DEVELOPER, ROLE_STUDENT, ROLE_HR), h.GetUser)
+	// Для /edit нет параметра :id, поэтому используем RoleMiddleware.
+	// Проверка, что юзер меняет именно себя, должна быть внутри h.UpdateUser.
+	users.Patch("/edit", RoleMiddleware(ROLE_DEVELOPER, ROLE_STUDENT), h.UpdateUser)
+	users.Delete("/", RoleMiddleware(ROLE_DEVELOPER, ROLE_STUDENT), h.DeleteUser)
 
 	// === User File routes ===
 	userFiles := users.Group("/files")
-	userFiles.Post("/avatar", h.UploadUserAvatar, OwnerOrRoleMiddleware(ID, ROLE_DEVELOPER, ROLE_STUDENT, ROLE_HR, ROLE_COMPANY))
-	userFiles.Post("/resume", h.UploadUserResume, OwnerOrRoleMiddleware(ID, ROLE_DEVELOPER, ROLE_STUDENT))
-	userFiles.Delete("/avatar", h.DeleteUserAvatar, OwnerOrRoleMiddleware(ID, ROLE_DEVELOPER, ROLE_STUDENT, ROLE_HR, ROLE_COMPANY))
-	userFiles.Delete("/resume", h.DeleteUserResume, OwnerOrRoleMiddleware(ID, ROLE_DEVELOPER, ROLE_STUDENT))
+	// Здесь нет параметра :id, подразумевается, что юзер загружает файлы для себя.
+	userFiles.Post("/avatar", RoleMiddleware(ROLE_DEVELOPER, ROLE_STUDENT), h.UploadUserAvatar)
+	userFiles.Post("/resume", RoleMiddleware(ROLE_DEVELOPER, ROLE_STUDENT), h.UploadUserResume)
+	userFiles.Delete("/avatar", RoleMiddleware(ROLE_DEVELOPER, ROLE_STUDENT), h.DeleteUserAvatar)
+	userFiles.Delete("/resume", RoleMiddleware(ROLE_DEVELOPER, ROLE_STUDENT), h.DeleteUserResume)
 
 	// === User Achievement routes ===
 	userAchievement := api.Group("/user/achievements")
-	userAchievement.Get("/", h.GetUserAchievements, RoleMiddleware(ROLE_DEVELOPER, ROLE_STUDENT, ROLE_HR))
-	userAchievement.Post("/", h.CreateUserAchievement, OwnerOrRoleMiddleware(ID, ROLE_DEVELOPER, ROLE_STUDENT))
-	userAchievement.Post("/:id/confirm", h.ConfirmAchievementUpload, OwnerOrRoleMiddleware(ID, ROLE_DEVELOPER, ROLE_STUDENT))
-	userAchievement.Get("/:id/download", h.GetAchievementDownloadUrl, OwnerOrRoleMiddleware(ID, ROLE_DEVELOPER, ROLE_STUDENT, ROLE_HR))
-	userAchievement.Delete("/:id", h.DeleteAchievement, OwnerOrRoleMiddleware(ID, ROLE_DEVELOPER, ROLE_STUDENT))
+	userAchievement.Get("/", RoleMiddleware(ROLE_DEVELOPER, ROLE_STUDENT, ROLE_HR), h.GetUserAchievements)
+	userAchievement.Post("/", RoleMiddleware(ROLE_DEVELOPER, ROLE_STUDENT), h.CreateUserAchievement)                                    // Нет :id
+	userAchievement.Post("/:id/confirm", OwnerOrRoleMiddleware(ID, ROLE_DEVELOPER, ROLE_STUDENT), h.ConfirmAchievementUpload)           // Есть :id
+	userAchievement.Get("/:id/download", OwnerOrRoleMiddleware(ID, ROLE_DEVELOPER, ROLE_STUDENT, ROLE_HR), h.GetAchievementDownloadUrl) // Есть :id
+	userAchievement.Delete("/:id", OwnerOrRoleMiddleware(ID, ROLE_DEVELOPER, ROLE_STUDENT), h.DeleteAchievement)                        // Есть :id
 
 	// === HR routes ===
 	profileHR := api.Group("/hr")
-	profileHR.Get("/me", h.GetMe, RoleMiddleware(ROLE_DEVELOPER, ROLE_HR))
-	profileHR.Patch("/edit", h.UpdateUser, OwnerOrRoleMiddleware(ID, ROLE_DEVELOPER, ROLE_HR))
-	profileHR.Delete("/", h.DeleteUser, OwnerOrRoleMiddleware(ID, ROLE_DEVELOPER, ROLE_HR))
+	profileHR.Get("/me", RoleMiddleware(ROLE_DEVELOPER, ROLE_HR), h.GetMe)
+	profileHR.Patch("/edit", RoleMiddleware(ROLE_DEVELOPER, ROLE_HR), h.UpdateUser)
+	profileHR.Delete("/", RoleMiddleware(ROLE_DEVELOPER, ROLE_HR), h.DeleteUser)
 
 	// === HR vacancy routes ===
 	HRVacancy := profileHR.Group("/vacancy")
-	HRVacancy.Get("/", h.GetHRVacancies, OwnerOrRoleMiddleware(ID, ROLE_DEVELOPER, ROLE_HR))
-	HRVacancy.Get("/:id", h.GetVacancy, OwnerOrRoleMiddleware(ID, ROLE_DEVELOPER, ROLE_HR))
-	HRVacancy.Post("/", h.CreateHRVacancy, OwnerOrRoleMiddleware(ID, ROLE_DEVELOPER, ROLE_HR))
-	HRVacancy.Patch("/:id", h.UpdateVacancy, OwnerOrRoleMiddleware(ID, ROLE_DEVELOPER, ROLE_HR))
-	HRVacancy.Delete("/:id", h.DeleteVacancy, OwnerOrRoleMiddleware(ID, ROLE_DEVELOPER, ROLE_HR))
+	// Подразумевается, что HR работает со своими вакансиями. Проверка на владение - внутри обработчиков.
+	HRVacancy.Get("/", RoleMiddleware(ROLE_DEVELOPER, ROLE_HR), h.GetHRVacancies)
+	HRVacancy.Get("/:id", OwnerOrRoleMiddleware(ID, ROLE_DEVELOPER, ROLE_HR), h.GetVacancy)
+	HRVacancy.Post("/", RoleMiddleware(ROLE_DEVELOPER, ROLE_HR), h.CreateHRVacancy)
+	HRVacancy.Patch("/:id", OwnerOrRoleMiddleware(ID, ROLE_DEVELOPER, ROLE_HR), h.UpdateVacancy)
+	HRVacancy.Delete("/:id", OwnerOrRoleMiddleware(ID, ROLE_DEVELOPER, ROLE_HR), h.DeleteVacancy)
 
-	api.Get("/positions", h.GetPositions, OwnerOrRoleMiddleware(ID, ROLE_DEVELOPER, ROLE_HR))
+	api.Get("/positions", OwnerOrRoleMiddleware(ID, ROLE_DEVELOPER, ROLE_HR), h.GetPositions)
 
 	// === Vacancy routes ===
 	vacancy := api.Group("/vacancy")
-	vacancy.Get("/", h.GetVacancies, RoleMiddleware(ROLE_DEVELOPER, ROLE_STUDENT, ROLE_HR))
-	vacancy.Get("/:id", h.GetVacancy, RoleMiddleware(ROLE_DEVELOPER, ROLE_STUDENT, ROLE_HR))
+	vacancy.Get("/", RoleMiddleware(ROLE_DEVELOPER, ROLE_STUDENT, ROLE_HR), h.GetVacancies)
+	vacancy.Get("/:id", RoleMiddleware(ROLE_DEVELOPER, ROLE_STUDENT, ROLE_HR), h.GetVacancy)
 
 	// === Vacancy File routes ===
 	vacancyFiles := vacancy.Group("/:id/files")
-	vacancyFiles.Post("/attachment", h.UploadVacancyAttachment, OwnerOrRoleMiddleware(ID, ROLE_DEVELOPER, ROLE_HR))
-	vacancyFiles.Delete("/attachment", h.DeleteVacancyAttachment, OwnerOrRoleMiddleware(ID, ROLE_DEVELOPER, ROLE_HR))
+	vacancyFiles.Post("/attachment", OwnerOrRoleMiddleware(ID, ROLE_DEVELOPER, ROLE_HR), h.UploadVacancyAttachment)
+	vacancyFiles.Delete("/attachment", OwnerOrRoleMiddleware(ID, ROLE_DEVELOPER, ROLE_HR), h.DeleteVacancyAttachment)
 
 	// === Company ===
 	company := api.Group("/company")
-	company.Get("/", h.GetCompanies, RoleMiddleware(ROLE_DEVELOPER, ROLE_STUDENT, ROLE_HR, ROLE_COMPANY))
-	company.Get("/me", h.GetCompanyMe, RoleMiddleware(ROLE_DEVELOPER, ROLE_COMPANY))
-	company.Get("/:id", h.GetCompanyByID, RoleMiddleware(ROLE_DEVELOPER, ROLE_STUDENT, ROLE_HR, ROLE_COMPANY))
-	company.Patch("/", h.UpdateCompany, OwnerOrRoleMiddleware(ID, ROLE_DEVELOPER, ROLE_COMPANY))
-	company.Delete("/", h.DeleteCompany, OwnerOrRoleMiddleware(ID, ROLE_DEVELOPER, ROLE_COMPANY))
+	company.Get("/", RoleMiddleware(ROLE_DEVELOPER, ROLE_STUDENT, ROLE_HR, ROLE_COMPANY), h.GetCompanies)
+	company.Get("/me", RoleMiddleware(ROLE_DEVELOPER, ROLE_COMPANY), h.GetCompanyMe)
+	company.Get("/:id", RoleMiddleware(ROLE_DEVELOPER, ROLE_STUDENT, ROLE_HR, ROLE_COMPANY), h.GetCompanyByID)
+	company.Patch("/", RoleMiddleware(ROLE_DEVELOPER, ROLE_COMPANY), h.UpdateCompany)  // Нет :id
+	company.Delete("/", RoleMiddleware(ROLE_DEVELOPER, ROLE_COMPANY), h.DeleteCompany) // Нет :id
 
 	// === Company File routes ===
 	companyFiles := company.Group("/:id/files")
-	companyFiles.Post("/logo", h.UploadCompanyLogo, OwnerOrRoleMiddleware(ID, ROLE_DEVELOPER, ROLE_COMPANY))
-	companyFiles.Post("/documents", h.UploadCompanyDocument, OwnerOrRoleMiddleware(ID, ROLE_DEVELOPER, ROLE_COMPANY))
-	companyFiles.Delete("/logo", h.DeleteCompanyLogo, OwnerOrRoleMiddleware(ID, ROLE_DEVELOPER, ROLE_COMPANY))
+	companyFiles.Post("/logo", OwnerOrRoleMiddleware(ID, ROLE_DEVELOPER, ROLE_COMPANY), h.UploadCompanyLogo)
+	companyFiles.Post("/documents", OwnerOrRoleMiddleware(ID, ROLE_DEVELOPER, ROLE_COMPANY), h.UploadCompanyDocument)
+	companyFiles.Delete("/logo", OwnerOrRoleMiddleware(ID, ROLE_DEVELOPER, ROLE_COMPANY), h.DeleteCompanyLogo)
 }

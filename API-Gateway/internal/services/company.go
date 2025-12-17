@@ -23,6 +23,7 @@ func (s *companyService) CreateCompany(ctx context.Context, company *models.Comp
 	log.Printf("CompanyService: CreateCompany attempt for name: %s", company.Name)
 
 	protoCompany := &companyv1.Company{
+		Id:          company.ID,
 		Name:        company.Name,
 		Description: company.Description,
 		City:        company.City,

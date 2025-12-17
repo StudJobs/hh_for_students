@@ -109,13 +109,18 @@ func (h *Handler) Register(c *fiber.Ctx) error {
 
 	if resp.Role == "ROLE_COMPANY_OWNER" {
 		if _, err = h.apiService.Company.CreateCompany(c.Context(), &models.Company{
-			ID: resp.UserUUID,
+			ID:   resp.UserUUID,
+			Name: "new",
 		}); err != nil {
 			log.Printf("API Gateway Create failed for email %s: %v", req.Email, err)
 
-			if err1 := h.apiService.Company.DeleteCompany(c.Context(), resp.UserUUID); err1 != nil {
-				log.Printf("API Gateway LogOut failed for email %s: %v", req.Email, err1)
-				return h.handleAuthError(c, err)
+			//if err1 := h.apiService.Company.DeleteCompany(c.Context(), resp.UserUUID); err1 != nil {
+			//	log.Printf("API Gateway delete company failed for email %s: %v", req.Email, err1)
+			//	return h.handleAuthError(c, err)
+			//}
+
+			if err2 := h.apiService.Auth.DeleteUser(c.Context(), resp.UserUUID); err2 != nil {
+				log.Printf("API Gateway LogOut company for email %s: %v", req.Email, err2)
 			}
 
 			return h.handleAuthError(c, err)

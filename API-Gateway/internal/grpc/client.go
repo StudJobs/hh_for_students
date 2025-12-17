@@ -69,8 +69,9 @@ func NewClients(cfg Config) (*Clients, error) {
 			clients.Achievement = achievementv1.NewAchievementServiceClient(conn)
 		}
 	}
-	cfg.Timeout = 30 * time.Second,
-	log.Printf("✓ gRPC initialization completed (some services may be skipped)")
+	cfg.Timeout = 30 * time.Second
+	log.Println("✓ gRPC initialization completed (some services may be skipped)")
+
 	return clients, nil
 }
 
@@ -88,11 +89,11 @@ func mustConn(address string, timeout time.Duration) *grpc.ClientConn {
 
 	if err != nil {
 		if ctx.Err() == context.DeadlineExceeded {
-            log.Printf("⏰ Timeout connecting to %s: %v (skipping)", address, err)
-        } else {
-            log.Printf("⚠ Failed to connect to %s: %v (skipping)", address, err)
-        }
-        return nil
+			log.Printf("⏰ Timeout connecting to %s: %v (skipping)", address, err)
+		} else {
+			log.Printf("⚠ Failed to connect to %s: %v (skipping)", address, err)
+		}
+		return nil
 		log.Printf("⚠ Failed to connect to %s: %v (skipping)", address, err)
 		return nil
 	}
