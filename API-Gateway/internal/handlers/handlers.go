@@ -71,10 +71,10 @@ func (h *Handler) initRoutes() {
 	// === User File routes ===
 	userFiles := users.Group("/files")
 	// Здесь нет параметра :id, подразумевается, что юзер загружает файлы для себя.
-	userFiles.Post("/avatar", RoleMiddleware(ROLE_DEVELOPER, ROLE_STUDENT), h.UploadUserAvatar)
-	userFiles.Post("/resume", RoleMiddleware(ROLE_DEVELOPER, ROLE_STUDENT), h.UploadUserResume)
-	userFiles.Delete("/avatar", RoleMiddleware(ROLE_DEVELOPER, ROLE_STUDENT), h.DeleteUserAvatar)
-	userFiles.Delete("/resume", RoleMiddleware(ROLE_DEVELOPER, ROLE_STUDENT), h.DeleteUserResume)
+	userFiles.Post("/avatar", RoleMiddleware(ROLE_DEVELOPER, ROLE_STUDENT, ROLE_HR), h.UploadUserAvatar)
+	userFiles.Post("/resume", RoleMiddleware(ROLE_DEVELOPER, ROLE_STUDENT, ROLE_HR), h.UploadUserResume)
+	userFiles.Delete("/avatar", RoleMiddleware(ROLE_DEVELOPER, ROLE_STUDENT, ROLE_HR), h.DeleteUserAvatar)
+	userFiles.Delete("/resume", RoleMiddleware(ROLE_DEVELOPER, ROLE_STUDENT, ROLE_HR), h.DeleteUserResume)
 
 	// === User Achievement routes ===
 	userAchievement := api.Group("/user/achievements")
