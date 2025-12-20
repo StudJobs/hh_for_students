@@ -19,7 +19,7 @@ type User interface {
 	UpdateProfile(ctx context.Context, id string, profile *usersv1.Profile) (*usersv1.Profile, error)
 	DeleteProfile(ctx context.Context, id string) error
 	GetProfile(ctx context.Context, id string) (*usersv1.Profile, error)
-	ListProfiles(ctx context.Context, professionCategory string, page, limit int32) (*usersv1.ProfileList, error)
+	ListProfiles(ctx context.Context, professionCategory string, page, limit int32, role string) (*usersv1.ProfileList, error)
 }
 
 type Service struct {

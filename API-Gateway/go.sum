@@ -8,6 +8,12 @@ github.com/PuerkitoBio/urlesc v0.0.0-20170810143723-de5bf2ad4578 h1:d+Bc7a5rLufV
 github.com/PuerkitoBio/urlesc v0.0.0-20170810143723-de5bf2ad4578/go.mod h1:uGdkoq3SwY9Y+13GIhn11/XLaGBb4BfwItxLd5jeuXE=
 github.com/StudJobs/proto_srtucture v0.0.0-20251104070934-c6e17fdcf4fe h1:NKo6mEpICU8tX02zRzV04WvxzNKhh3JjlQpUVqVZ7v0=
 github.com/StudJobs/proto_srtucture v0.0.0-20251104070934-c6e17fdcf4fe/go.mod h1:pKJeIqXGsSLamBZkCv0y2dIm/x60Knjydfpl9Ebq82s=
+github.com/StudJobs/proto_srtucture v0.0.0-20251220171541-04b3b8c1fc5d h1:oDdaWMdsJrOOCNTTx39GTIikmkxTxVlBZReq/uqn6Kg=
+github.com/StudJobs/proto_srtucture v0.0.0-20251220171541-04b3b8c1fc5d/go.mod h1:pKJeIqXGsSLamBZkCv0y2dIm/x60Knjydfpl9Ebq82s=
+github.com/StudJobs/proto_srtucture v0.0.0-20251220181349-ff0c6277646a h1:ULgyPBCRjBDoS1pnmnq2x1F/NijMwZ4MWgyIQMAgOuo=
+github.com/StudJobs/proto_srtucture v0.0.0-20251220181349-ff0c6277646a/go.mod h1:pKJeIqXGsSLamBZkCv0y2dIm/x60Knjydfpl9Ebq82s=
+github.com/StudJobs/proto_srtucture v0.0.0-20251220184306-ef11c3ba4b9e h1:eWErCPjIelhkgJbaUvliLwos63H/o0OvRnCqszJqe2o=
+github.com/StudJobs/proto_srtucture v0.0.0-20251220184306-ef11c3ba4b9e/go.mod h1:pKJeIqXGsSLamBZkCv0y2dIm/x60Knjydfpl9Ebq82s=
 github.com/agiledragon/gomonkey/v2 v2.3.1/go.mod h1:ap1AmDzcVOAz1YpeJ3TCzIgstoaWLA6jbbgxfB4w2iY=
 github.com/alecthomas/template v0.0.0-20190718012654-fb15b899a751 h1:JYp7IbQjafoB+tBA3gMyHYHrpOtNuDiK/uB5uXxq5wM=
 github.com/alecthomas/template v0.0.0-20190718012654-fb15b899a751/go.mod h1:LOuyumcjzFXgccqObfd/Ljyb9UuFJ6TxHnclSeseNhc=

@@ -34,12 +34,15 @@ func (h *Handler) GetUsers(c *fiber.Ctx) error {
 	limit, _ := strconv.Atoi(c.Query("limit", "10"))
 	category := c.Query("category", "")
 
+	//role := h.roleConvert(getRoleFromContext(c))
+
 	// Строим запрос к users service
 	req := &usersv1.GetAllProfilesRequest{
 		Pagination: &commonv1.Pagination{
 			Page:  int32(page),
 			Limit: int32(limit),
 		},
+		Role: "ROLE_STUDENT",
 	}
 
 	if category != "" {

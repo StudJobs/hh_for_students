@@ -131,6 +131,7 @@ func (h *Handler) Register(c *fiber.Ctx) error {
 				Id:    resp.UserUUID,
 				Email: req.Email,
 				Age:   18,
+				Role:  resp.Role,
 			},
 		}); err != nil {
 			log.Printf("API Gateway Create failed for email %s: %v", req.Email, err)

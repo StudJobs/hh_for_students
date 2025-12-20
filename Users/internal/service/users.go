@@ -107,7 +107,7 @@ func (s *UsersService) GetProfile(ctx context.Context, id string) (*usersv1.Prof
 	return profile, nil
 }
 
-func (s *UsersService) ListProfiles(ctx context.Context, professionCategory string, page, limit int32) (*usersv1.ProfileList, error) {
+func (s *UsersService) ListProfiles(ctx context.Context, professionCategory string, page, limit int32, role string) (*usersv1.ProfileList, error) {
 	log.Printf("Service: Listing profiles - page: %d, limit: %d, category: %s", page, limit, professionCategory)
 
 	if page < 1 {
@@ -120,7 +120,7 @@ func (s *UsersService) ListProfiles(ctx context.Context, professionCategory stri
 	}
 
 	log.Printf("Service: Getting profiles from repository")
-	profiles, err := s.repo.Users.GetAllProfiles(ctx, professionCategory, page, limit)
+	profiles, err := s.repo.Users.GetAllProfiles(ctx, professionCategory, page, limit, role)
 	if err != nil {
 		log.Printf("Service: Failed to list profiles: %v", err)
 		return nil, fmt.Errorf("failed to list profiles: %w", err)

@@ -77,7 +77,7 @@ func (r *UsersRepository) GetProfile(ctx context.Context, id string) (*usersv1.P
 	return &profile, nil
 }
 
-func (r *UsersRepository) GetAllProfiles(ctx context.Context, professionCategory string, page, limit int32) (*usersv1.ProfileList, error) {
+func (r *UsersRepository) GetAllProfiles(ctx context.Context, professionCategory string, page, limit int32, role string) (*usersv1.ProfileList, error) {
 	log.Printf("Repository: Getting all profiles - page: %d, limit: %d, category: '%s'", page, limit, professionCategory)
 
 	// Расчет offset
@@ -88,6 +88,7 @@ func (r *UsersRepository) GetAllProfiles(ctx context.Context, professionCategory
 		Select("id", "first_name", "last_name", "age", "tg", "resume_id", "avatar_id", "email", "description", "profession_category").
 		From(PROFILE_TABLE).
 		Where("deleted_at IS NULL").
+		Where(squirrel.Eq{"role": role}).
 		OrderBy("created_at DESC").
 		Limit(uint64(limit)).
 		Offset(uint64(offset))
@@ -197,7 +198,7 @@ func (r *UsersRepository) CreateProfile(ctx context.Context, profile *usersv1.Pr
 	// Строим INSERT запрос
 	insertBuilder := r.sb.
 		Insert(PROFILE_TABLE).
-		Columns("id", "first_name", "last_name", "age", "tg", "email", "description", "profession_category")
+		Columns("id", "first_name", "last_name", "age", "tg", "email", "description", "profession_category", "role")
 
 	// Добавляем resume_id и avatar_id только если они не пустые
 	values := []interface{}{
@@ -209,6 +210,7 @@ func (r *UsersRepository) CreateProfile(ctx context.Context, profile *usersv1.Pr
 		profile.Email,
 		profile.Description,
 		profile.ProfessionCategory,
+		profile.Role,
 	}
 
 	if profile.ResumeId != "" {

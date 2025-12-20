@@ -8,7 +8,7 @@ import (
 
 type Users interface {
 	GetProfile(ctx context.Context, id string) (*usersv1.Profile, error)
-	GetAllProfiles(ctx context.Context, professionCategory string, page, limit int32) (*usersv1.ProfileList, error)
+	GetAllProfiles(ctx context.Context, professionCategory string, page, limit int32, role string) (*usersv1.ProfileList, error)
 	CreateProfile(ctx context.Context, profile *usersv1.Profile) (*usersv1.Profile, error)
 	UpdateProfile(ctx context.Context, id string, profile *usersv1.Profile) (*usersv1.Profile, error)
 	DeleteProfile(ctx context.Context, id string) error

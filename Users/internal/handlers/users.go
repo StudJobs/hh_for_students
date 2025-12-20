@@ -126,10 +126,10 @@ func (h *UsersHandler) GetAllProfiles(ctx context.Context, req *usersv1.GetAllPr
 		}
 	}
 
-	log.Printf("Handlers: GetAllProfiles - page: %d, limit: %d, category: %s",
-		page, limit, req.GetProfessionCategory())
+	log.Printf("Handlers: GetAllProfiles - page: %d, limit: %d, category: %s, role: %s",
+		page, limit, req.GetProfessionCategory(), req.GetRole())
 
-	profiles, err := h.service.User.ListProfiles(ctx, req.ProfessionCategory, page, limit)
+	profiles, err := h.service.User.ListProfiles(ctx, req.ProfessionCategory, page, limit, req.Role)
 	if err != nil {
 		log.Printf("Handlers: GetAllProfiles failed: %v", err)
 		return nil, status.Error(codes.Internal, "failed to get profiles")

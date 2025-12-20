@@ -13,6 +13,8 @@ github.com/StudJobs/proto_srtucture v0.0.0-20251103193904-78b01002ad8b h1:F4258E
 github.com/StudJobs/proto_srtucture v0.0.0-20251103193904-78b01002ad8b/go.mod h1:pKJeIqXGsSLamBZkCv0y2dIm/x60Knjydfpl9Ebq82s=
 github.com/StudJobs/proto_srtucture v0.0.0-20251104070934-c6e17fdcf4fe h1:NKo6mEpICU8tX02zRzV04WvxzNKhh3JjlQpUVqVZ7v0=
 github.com/StudJobs/proto_srtucture v0.0.0-20251104070934-c6e17fdcf4fe/go.mod h1:pKJeIqXGsSLamBZkCv0y2dIm/x60Knjydfpl9Ebq82s=
+github.com/StudJobs/proto_srtucture v0.0.0-20251220184306-ef11c3ba4b9e h1:eWErCPjIelhkgJbaUvliLwos63H/o0OvRnCqszJqe2o=
+github.com/StudJobs/proto_srtucture v0.0.0-20251220184306-ef11c3ba4b9e/go.mod h1:pKJeIqXGsSLamBZkCv0y2dIm/x60Knjydfpl9Ebq82s=
 github.com/cockroachdb/apd v1.1.0 h1:3LFP3629v+1aKXU5Q37mxmRxX/pIu1nijXydLShEq5I=
 github.com/cockroachdb/apd v1.1.0/go.mod h1:8Sl8LxpKi29FqWXR16WEFZRNSz3SoPzUzeMeY4+DwBQ=
 github.com/containerd/errdefs v1.0.0 h1:tg5yIfIlQIrxYtu9ajqY42W3lpS19XqdxRQeEwYG8PI=

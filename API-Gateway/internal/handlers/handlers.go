@@ -86,6 +86,7 @@ func (h *Handler) initRoutes() {
 
 	// === HR routes ===
 	profileHR := api.Group("/hr")
+	profileHR.Get("/", RoleMiddleware(ROLE_DEVELOPER, ROLE_STUDENT, ROLE_HR, ROLE_COMPANY), h.GetUsers)
 	profileHR.Get("/me", RoleMiddleware(ROLE_DEVELOPER, ROLE_HR), h.GetMe)
 	profileHR.Patch("/edit", RoleMiddleware(ROLE_DEVELOPER, ROLE_HR), h.UpdateUser)
 	profileHR.Delete("/", RoleMiddleware(ROLE_DEVELOPER, ROLE_HR), h.DeleteUser)
@@ -124,4 +125,19 @@ func (h *Handler) initRoutes() {
 	companyFiles.Post("/logo", OwnerOrRoleMiddleware(ID, ROLE_DEVELOPER, ROLE_COMPANY), h.UploadCompanyLogo)
 	companyFiles.Post("/documents", OwnerOrRoleMiddleware(ID, ROLE_DEVELOPER, ROLE_COMPANY), h.UploadCompanyDocument)
 	companyFiles.Delete("/logo", OwnerOrRoleMiddleware(ID, ROLE_DEVELOPER, ROLE_COMPANY), h.DeleteCompanyLogo)
+}
+
+func (h *Handler) roleConvert(userRole Role) string {
+	switch userRole {
+	case ROLE_COMPANY:
+		return "ROLE_COMPANY_OWNER"
+	case ROLE_DEVELOPER:
+		return "ROLE_DEVELOPER"
+	case ROLE_STUDENT:
+		return "ROLE_STUDENT"
+	case ROLE_HR:
+		return "ROLE_EMPLOYER"
+	default:
+		return "ROLE_STUDENT"
+	}
 }

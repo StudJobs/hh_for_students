@@ -3,7 +3,6 @@ module github.com/studjobs/hh_for_students/api-gateway
 go 1.25.1
 
 require (
-	github.com/StudJobs/proto_srtucture v0.0.0-20251104070934-c6e17fdcf4fe
 	github.com/gofiber/fiber/v2 v2.52.9
 	github.com/google/uuid v1.6.0
 	github.com/spf13/viper v1.21.0
@@ -14,6 +13,7 @@ require (
 	github.com/KyleBanks/depth v1.2.1 // indirect
 	github.com/PuerkitoBio/purell v1.2.1 // indirect
 	github.com/PuerkitoBio/urlesc v0.0.0-20170810143723-de5bf2ad4578 // indirect
+	github.com/StudJobs/proto_srtucture v0.0.0-20251220184306-ef11c3ba4b9e // indirect
 	github.com/alecthomas/template v0.0.0-20190718012654-fb15b899a751 // indirect
 	github.com/andybalholm/brotli v1.2.0 // indirect
 	github.com/arsmn/fiber-swagger/v2 v2.31.1 // indirect
