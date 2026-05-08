@@ -34,14 +34,14 @@ services:
       POSTGRES_DB: vacancy
 
     ports:
-      - "5432:5436"
+      - "5436:5432"
 
     volumes:
       - postgres_data_vacancy:/var/lib/postgresql/data
     networks:
       - microservices-net
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U postgres -d auth"]
+      test: ["CMD-SHELL", "pg_isready -U postgres -d vacancy"]
       interval: 5s
       timeout: 5s
       retries: 5

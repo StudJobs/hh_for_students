@@ -1,0 +1,9 @@
+database:
+  host: "postgres_auth"
+  port: "5432"
+  username: "postgres"
+  name: "auth"
+  sslmode: "disable"
+
+grpc:
+  port: "50051"
