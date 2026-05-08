@@ -29,6 +29,7 @@ func (h *Handler) GetCompanies(c *fiber.Ctx) error {
 
 	page, _ := strconv.Atoi(c.Query("page", "1"))
 	limit, _ := strconv.Atoi(c.Query("limit", "10"))
+	page, limit = normalizePagination(page, limit)
 	city := c.Query("city", "")
 	companyType := c.Query("type", "")
 

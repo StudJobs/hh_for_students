@@ -48,9 +48,9 @@ func main() {
 	// Инициализация зависимостей
 	repo := repository.NewRepository(db)
 
-	jwtSecret := getEnv("JWT_SECRET", "default-secret-key-change-in-production")
-	if jwtSecret == "default-secret-key-change-in-production" {
-		log.Printf("warning: using default JWT secret, set JWT_SECRET environment variable")
+	jwtSecret := os.Getenv("JWT_SECRET")
+	if jwtSecret == "" {
+		log.Fatal("JWT_SECRET environment variable is required")
 	}
 	timeDuration, err := strconv.Atoi(getEnv("JWT_TIME_DURATION", "60"))
 	if err != nil {

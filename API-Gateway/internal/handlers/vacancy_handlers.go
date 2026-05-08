@@ -37,6 +37,7 @@ func (h *Handler) GetVacancies(c *fiber.Ctx) error {
 
 	page, _ := strconv.Atoi(c.Query("page", "1"))
 	limit, _ := strconv.Atoi(c.Query("limit", "10"))
+	page, limit = normalizePagination(page, limit)
 	companyID := c.Query("company_id", "")
 	positionStatus := c.Query("position_status", "")
 	workFormat := c.Query("work_format", "")
@@ -133,6 +134,7 @@ func (h *Handler) GetHRVacancies(c *fiber.Ctx) error {
 
 	page, _ := strconv.Atoi(c.Query("page", "1"))
 	limit, _ := strconv.Atoi(c.Query("limit", "10"))
+	page, limit = normalizePagination(page, limit)
 	companyID := c.Query("company_id", "")
 	positionStatus := c.Query("position_status", "")
 	workFormat := c.Query("work_format", "")

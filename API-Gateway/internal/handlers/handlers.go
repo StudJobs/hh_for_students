@@ -127,6 +127,25 @@ func (h *Handler) initRoutes() {
 	companyFiles.Delete("/logo", OwnerOrRoleMiddleware(ID, ROLE_DEVELOPER, ROLE_COMPANY), h.DeleteCompanyLogo)
 }
 
+const (
+	defaultPageSize = 10
+	maxPageSize     = 100
+)
+
+// normalizePagination clamps page/limit query params to safe ranges.
+func normalizePagination(page, limit int) (int, int) {
+	if page < 1 {
+		page = 1
+	}
+	if limit < 1 {
+		limit = defaultPageSize
+	}
+	if limit > maxPageSize {
+		limit = maxPageSize
+	}
+	return page, limit
+}
+
 func (h *Handler) roleConvert(userRole Role) string {
 	switch userRole {
 	case ROLE_COMPANY:

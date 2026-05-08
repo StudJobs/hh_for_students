@@ -32,6 +32,7 @@ func (h *Handler) GetUsers(c *fiber.Ctx) error {
 	// Получаем параметры пагинации
 	page, _ := strconv.Atoi(c.Query("page", "1"))
 	limit, _ := strconv.Atoi(c.Query("limit", "10"))
+	page, limit = normalizePagination(page, limit)
 	category := c.Query("category", "")
 
 	//role := h.roleConvert(getRoleFromContext(c))
