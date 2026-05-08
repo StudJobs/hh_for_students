@@ -30,6 +30,7 @@ func (s *vacancyService) CreateVacancy(ctx context.Context, vacancy *models.Vaca
 		Schedule:       vacancy.Schedule,
 		WorkFormat:     vacancy.WorkFormat,
 		CompanyId:      vacancy.CompanyID,
+		SkillSlugs:     vacancy.SkillSlugs,
 	}
 
 	// Добавляем AttachmentID если он есть
@@ -55,6 +56,7 @@ func (s *vacancyService) CreateVacancy(ctx context.Context, vacancy *models.Vaca
 		WorkFormat:     resp.WorkFormat,
 		CompanyID:      resp.CompanyId,
 		CreateAt:       resp.CreateAt,
+		SkillSlugs:     resp.SkillSlugs,
 	}
 
 	// Сохраняем AttachmentID из ответа
@@ -88,6 +90,7 @@ func (s *vacancyService) GetVacancy(ctx context.Context, id string) (*models.Vac
 		WorkFormat:     resp.WorkFormat,
 		CompanyID:      resp.CompanyId,
 		CreateAt:       resp.CreateAt,
+		SkillSlugs:     resp.SkillSlugs,
 	}
 
 	// Добавляем AttachmentID из ответа
@@ -145,6 +148,7 @@ func (s *vacancyService) GetAllVacancies(ctx context.Context, pagination *models
 			WorkFormat:     protoVacancy.WorkFormat,
 			CompanyID:      protoVacancy.CompanyId,
 			CreateAt:       protoVacancy.CreateAt,
+			SkillSlugs:     protoVacancy.SkillSlugs,
 		}
 
 		// Добавляем AttachmentID для каждой вакансии
@@ -217,6 +221,7 @@ func (s *vacancyService) GetHRVacancies(ctx context.Context, pagination *models.
 			WorkFormat:     protoVacancy.WorkFormat,
 			CompanyID:      protoVacancy.CompanyId,
 			CreateAt:       protoVacancy.CreateAt,
+			SkillSlugs:     protoVacancy.SkillSlugs,
 		}
 
 		// Добавляем AttachmentID для каждой вакансии
@@ -255,6 +260,7 @@ func (s *vacancyService) UpdateVacancy(ctx context.Context, id string, vacancy *
 		Schedule:       vacancy.Schedule,
 		WorkFormat:     vacancy.WorkFormat,
 		CompanyId:      vacancy.CompanyID,
+		SkillSlugs:     vacancy.SkillSlugs,
 	}
 
 	// Добавляем AttachmentID если он есть
@@ -281,6 +287,7 @@ func (s *vacancyService) UpdateVacancy(ctx context.Context, id string, vacancy *
 		WorkFormat:     resp.WorkFormat,
 		CompanyID:      resp.CompanyId,
 		CreateAt:       resp.CreateAt,
+		SkillSlugs:     resp.SkillSlugs,
 	}
 
 	// Сохраняем AttachmentID из ответа

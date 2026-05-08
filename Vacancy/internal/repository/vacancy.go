@@ -124,21 +124,28 @@ func (r *VacancyRepository) GetHRVacancies(ctx context.Context, companyID, posit
 func (r *VacancyRepository) CreateVacancy(ctx context.Context, vacancy *vacancyv1.Vacancy) (*vacancyv1.Vacancy, error) {
 	log.Printf("Repository: Creating vacancy with title: %s", vacancy.Title)
 
-	query, args, err := r.sb.
+	insertBuilder := r.sb.
 		Insert(VACANCY_TABLE).
 		Columns("title", "experience", "salary", "position_status",
-			"schedule", "work_format", "company_id", "attachment_id").
-		Values(
-			vacancy.Title,
-			vacancy.Experience,
-			vacancy.Salary,
-			vacancy.PositionStatus,
-			vacancy.Schedule,
-			vacancy.WorkFormat,
-			vacancy.CompanyId,
-			vacancy.AttachmentId,
-		).
-		Suffix("RETURNING id, title, experience, salary, position_status, schedule, work_format, company_id, attachment_id, created_at").
+			"schedule", "work_format", "company_id", "attachment_id")
+	values := []interface{}{
+		vacancy.Title,
+		vacancy.Experience,
+		vacancy.Salary,
+		vacancy.PositionStatus,
+		vacancy.Schedule,
+		vacancy.WorkFormat,
+		vacancy.CompanyId,
+		vacancy.AttachmentId,
+	}
+	if len(vacancy.SkillSlugs) > 0 {
+		insertBuilder = insertBuilder.Columns("skill_slugs")
+		values = append(values, vacancy.SkillSlugs)
+	}
+
+	query, args, err := insertBuilder.
+		Values(values...).
+		Suffix("RETURNING id, title, experience, salary, position_status, schedule, work_format, company_id, attachment_id, created_at, skill_slugs").
 		ToSql()
 	if err != nil {
 		log.Printf("Repository: Failed to build create vacancy query: %v", err)
@@ -190,9 +197,12 @@ func (r *VacancyRepository) UpdateVacancy(ctx context.Context, id string, vacanc
 	if vacancy.AttachmentId != "" {
 		updateBuilder = updateBuilder.Set("attachment_id", vacancy.AttachmentId)
 	}
+	if len(vacancy.SkillSlugs) > 0 {
+		updateBuilder = updateBuilder.Set("skill_slugs", vacancy.SkillSlugs)
+	}
 
 	query, args, err := updateBuilder.
-		Suffix("RETURNING id, title, experience, salary, position_status, schedule, work_format, company_id, attachment_id, created_at").
+		Suffix("RETURNING id, title, experience, salary, position_status, schedule, work_format, company_id, attachment_id, created_at, skill_slugs").
 		ToSql()
 	if err != nil {
 		log.Printf("Repository: Failed to build update vacancy query: %v", err)
@@ -288,6 +298,7 @@ func scanVacancyRow(scanner interface {
 	var workFormat sql.NullString
 	var attachmentID sql.NullString
 	var createdAt time.Time
+	var skillSlugs []string
 
 	err := scanner.Scan(
 		&vacancy.Id,
@@ -300,6 +311,7 @@ func scanVacancyRow(scanner interface {
 		&vacancy.CompanyId,
 		&attachmentID,
 		&createdAt,
+		&skillSlugs,
 	)
 	if err != nil {
 		return nil, err
@@ -309,6 +321,7 @@ func scanVacancyRow(scanner interface {
 	vacancy.WorkFormat = nullStringToString(workFormat)
 	vacancy.AttachmentId = nullStringToString(attachmentID)
 	vacancy.CreateAt = timeToString(createdAt)
+	vacancy.SkillSlugs = skillSlugs
 
 	return &vacancy, nil
 }
@@ -333,7 +346,7 @@ func (r *VacancyRepository) buildVacancyQueryBuilder(companyID, positionStatus, 
 
 	queryBuilder := r.sb.
 		Select("id", "title", "experience", "salary", "position_status",
-			"schedule", "work_format", "company_id", "attachment_id", "created_at").
+			"schedule", "work_format", "company_id", "attachment_id", "created_at", "skill_slugs").
 		From(VACANCY_TABLE).
 		Where("deleted_at IS NULL")
 

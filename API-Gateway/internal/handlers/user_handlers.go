@@ -81,6 +81,7 @@ func (h *Handler) GetUsers(c *fiber.Ctx) error {
 			Description:          profile.Description,
 			ProfessionCategory:   profile.ProfessionCategory,
 			EducationInstitution: profile.EducationInstitution,
+			SkillSlugs:           profile.SkillSlugs,
 		}
 	}
 
@@ -173,6 +174,7 @@ func (h *Handler) getUserWithFiles(c *fiber.Ctx, userID string) (*models.User, e
 		Description:          profile.Description,
 		ProfessionCategory:   profile.ProfessionCategory,
 		EducationInstitution: profile.EducationInstitution,
+		SkillSlugs:           profile.SkillSlugs,
 	}
 
 	// Обогащаем информацией о файлах
@@ -311,6 +313,9 @@ func (h *Handler) UpdateUser(c *fiber.Ctx) error {
 	if updateData.AvatarID != nil {
 		profile.AvatarId = *updateData.AvatarID
 	}
+	if updateData.SkillSlugs != nil {
+		profile.SkillSlugs = updateData.SkillSlugs
+	}
 
 	// Вызываем users service
 	updatedProfile, err := h.apiService.User.UpdateUser(c.Context(), &usersv1.UpdateProfileRequest{
@@ -335,6 +340,7 @@ func (h *Handler) UpdateUser(c *fiber.Ctx) error {
 		Description:          updatedProfile.Description,
 		ProfessionCategory:   updatedProfile.ProfessionCategory,
 		EducationInstitution: updatedProfile.EducationInstitution,
+		SkillSlugs:           updatedProfile.SkillSlugs,
 	}
 
 	// Обогащаем информацией о файлах

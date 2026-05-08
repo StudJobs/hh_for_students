@@ -10,9 +10,10 @@ type Vacancy struct {
 	Schedule       string  `json:"schedule"`
 	WorkFormat     string  `json:"work_format"`
 	CompanyID      string  `json:"company_id"`
-	CreateAt       string  `json:"create_at"`
-	AttachmentID   *string `json:"attachment_id,omitempty"`
-	AttachmentURL  *string `json:"attachment_url,omitempty"`
+	CreateAt       string   `json:"create_at"`
+	AttachmentID   *string  `json:"attachment_id,omitempty"`
+	AttachmentURL  *string  `json:"attachment_url,omitempty"`
+	SkillSlugs     []string `json:"skill_slugs,omitempty"`
 }
 
 // VacancyList представляет список вакансий с пагинацией
