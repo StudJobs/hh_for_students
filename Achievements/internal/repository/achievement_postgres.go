@@ -231,6 +231,40 @@ func (r *AchievementRepository) SetVerificationStatus(
 	return &achievement, nil
 }
 
+// CreateMicrotaskAchievement идемпотентно вставляет ачивку, созданную после approve микрозадачи.
+// Дедупликация по уникальному idx_achievements_s3_key (partial WHERE deleted_at IS NULL):
+// повторный вызов при ретрае не создаёт дубликат — DO NOTHING.
+//
+// Все обязательные поля приходят заполненными (verification_status=APPROVED, reviewed_by, type=5).
+// reviewed_at выставляется в NOW() прямо в SQL.
+func (r *AchievementRepository) CreateMicrotaskAchievement(ctx context.Context, a *AchievementDB) error {
+	reviewedBy := ""
+	if a.ReviewedBy != nil {
+		reviewedBy = *a.ReviewedBy
+	}
+	reviewComment := ""
+	if a.ReviewComment != nil {
+		reviewComment = *a.ReviewComment
+	}
+
+	query := `
+		INSERT INTO ` + ACHIEVEMENT_TABLE + ` (
+			name, user_uuid, file_name, file_type, file_size, s3_key, type,
+			verification_status, reviewed_by, reviewed_at, review_comment
+		)
+		VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, NOW(), $10)
+		ON CONFLICT (s3_key) WHERE deleted_at IS NULL DO NOTHING
+	`
+	if _, err := r.db.Exec(ctx, query,
+		a.Name, a.UserUUID, a.FileName, a.FileType, a.FileSize, a.S3Key, a.Type,
+		a.VerificationStatus, reviewedBy, reviewComment,
+	); err != nil {
+		log.Printf("Repository: CreateMicrotaskAchievement failed: %v", err)
+		return status.Error(codes.Internal, "failed to create microtask achievement")
+	}
+	return nil
+}
+
 // ListPending возвращает достижения в статусе PENDING (для очереди эксперта).
 func (r *AchievementRepository) ListPending(ctx context.Context, page, limit int32) ([]*AchievementDB, error) {
 	if page < 1 {

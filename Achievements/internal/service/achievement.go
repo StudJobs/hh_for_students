@@ -125,6 +125,52 @@ func (s *AchievementService) GetExpertQueue(ctx context.Context, page, limit int
 	return result, nil
 }
 
+// CreateMicrotaskAchievement создаёт сразу APPROVED-ачивку после approve микрозадачи.
+// Идемпотентно: повторный вызов с тем же microtask_id+user_uuid просто скипается.
+func (s *AchievementService) CreateMicrotaskAchievement(
+	ctx context.Context,
+	userUUID, microtaskID, microtaskTitle, solutionURL, reviewerUUID, reviewComment string,
+) error {
+	if userUUID == "" || microtaskID == "" {
+		return status.Error(codes.InvalidArgument, "user_uuid and microtask_id are required")
+	}
+
+	short := microtaskID
+	if len(short) > 6 {
+		short = short[:6]
+	}
+	titleClean := strings.TrimSpace(microtaskTitle)
+	var name string
+	if titleClean != "" {
+		name = fmt.Sprintf("Микрозадача: %s · #%s", titleClean, short)
+	} else {
+		name = fmt.Sprintf("Микрозадача #%s", short)
+	}
+
+	s3Key := fmt.Sprintf("microtask:%s:%s", microtaskID, userUUID)
+	reviewedBy := reviewerUUID
+	commentVal := reviewComment
+
+	a := &repository.AchievementDB{
+		Name:               name,
+		UserUUID:           userUUID,
+		FileName:           solutionURL,
+		FileType:           "external/url",
+		FileSize:           0,
+		S3Key:              s3Key,
+		Type:               5, // ACHIEVEMENT_TYPE_MICROTASK_RESULT
+		VerificationStatus: 3, // VERIFICATION_STATUS_APPROVED
+		ReviewedBy:         &reviewedBy,
+		ReviewComment:      &commentVal,
+	}
+
+	if err := s.repo.Achievement.CreateMicrotaskAchievement(ctx, a); err != nil {
+		return err
+	}
+	log.Printf("Service: CreateMicrotaskAchievement ok: user=%s, microtask=%s", userUUID, microtaskID)
+	return nil
+}
+
 // ReviewAchievement — эксперт принимает решение APPROVED(3) или REJECTED(4).
 func (s *AchievementService) ReviewAchievement(ctx context.Context, achievementID int64, reviewerUUID string, decision int32, comment string) error {
 	if achievementID <= 0 || reviewerUUID == "" {

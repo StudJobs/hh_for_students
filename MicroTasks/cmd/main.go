@@ -9,6 +9,7 @@ import (
 	"github.com/joho/godotenv"
 	"github.com/spf13/viper"
 
+	"github.com/studjobs/hh_for_students/microtasks/internal/achievementclient"
 	"github.com/studjobs/hh_for_students/microtasks/internal/handlers"
 	"github.com/studjobs/hh_for_students/microtasks/internal/repository"
 	"github.com/studjobs/hh_for_students/microtasks/internal/searchclient"
@@ -49,7 +50,10 @@ func main() {
 	searchCli := searchclient.New(getEnv("SEARCH_GRPC_ADDR", viper.GetString("clients.search_addr")))
 	defer searchCli.Close()
 
-	handler := handlers.New(svc, searchCli)
+	achievementsCli := achievementclient.New(getEnv("ACHIEVEMENTS_GRPC_ADDR", viper.GetString("clients.achievements_addr")))
+	defer achievementsCli.Close()
+
+	handler := handlers.New(svc, searchCli, achievementsCli)
 
 	grpcPort := getEnv("GRPC_PORT", viper.GetString("grpc.port"))
 	if grpcPort == "" {

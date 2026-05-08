@@ -91,6 +91,25 @@ func (h *Handler) GetExpertQueue(ctx context.Context, req *achievementv1.GetExpe
 	return &achievementv1.AchievementList{Achievements: out}, nil
 }
 
+// CreateMicrotaskAchievement — F5: автосоздание ачивки после approve микрозадачи.
+func (h *Handler) CreateMicrotaskAchievement(ctx context.Context, req *achievementv1.CreateMicrotaskAchievementRequest) (*commonv1.Empty, error) {
+	if req.GetUserUuid() == "" || req.GetMicrotaskId() == "" {
+		return nil, status.Error(codes.InvalidArgument, "user_uuid and microtask_id are required")
+	}
+	if err := h.service.Achievement.CreateMicrotaskAchievement(
+		ctx,
+		req.GetUserUuid(),
+		req.GetMicrotaskId(),
+		req.GetMicrotaskTitle(),
+		req.GetSolutionUrl(),
+		req.GetReviewerUuid(),
+		req.GetReviewComment(),
+	); err != nil {
+		return nil, err
+	}
+	return &commonv1.Empty{}, nil
+}
+
 // ReviewAchievement — эксперт принимает решение.
 func (h *Handler) ReviewAchievement(ctx context.Context, req *achievementv1.ReviewAchievementRequest) (*commonv1.Empty, error) {
 	if req.GetAchievementId() <= 0 || req.GetReviewerUuid() == "" {

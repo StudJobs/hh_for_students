@@ -16,6 +16,7 @@ type Achievement interface {
 	DeleteAchievement(ctx context.Context, userUUID, name string) error
 	SetVerificationStatus(ctx context.Context, id int64, newStatus, expectedStatus int32, reviewerUUID, comment string) (*AchievementDB, error)
 	ListPending(ctx context.Context, page, limit int32) ([]*AchievementDB, error)
+	CreateMicrotaskAchievement(ctx context.Context, a *AchievementDB) error
 }
 
 // S3 определяет методы для работы с файловым хранилищем

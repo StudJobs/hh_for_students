@@ -23,6 +23,7 @@ services:
       DB_NAME: microtasks
       DB_SSLMODE: disable
       SEARCH_GRPC_ADDR: search:50057
+      ACHIEVEMENTS_GRPC_ADDR: achieve:50053
 
     volumes:
       - ./configs:/configs

@@ -10,6 +10,7 @@ import (
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
 
+	"github.com/studjobs/hh_for_students/microtasks/internal/achievementclient"
 	"github.com/studjobs/hh_for_students/microtasks/internal/searchclient"
 	"github.com/studjobs/hh_for_students/microtasks/internal/service"
 )
@@ -17,12 +18,13 @@ import (
 type Handler struct {
 	microtaskv1.UnimplementedMicroTaskServiceServer
 
-	svc    *service.Service
-	search *searchclient.Client
+	svc          *service.Service
+	search       *searchclient.Client
+	achievements *achievementclient.Client
 }
 
-func New(svc *service.Service, search *searchclient.Client) *Handler {
-	return &Handler{svc: svc, search: search}
+func New(svc *service.Service, search *searchclient.Client, achievements *achievementclient.Client) *Handler {
+	return &Handler{svc: svc, search: search, achievements: achievements}
 }
 
 func (h *Handler) Create(ctx context.Context, req *microtaskv1.CreateMicroTaskRequest) (*microtaskv1.MicroTask, error) {
@@ -125,6 +127,17 @@ func (h *Handler) Review(ctx context.Context, req *microtaskv1.ReviewRequest) (*
 	if task != nil {
 		// При approve задача перешла в COMPLETED — переиндексируем.
 		h.search.IndexTask(ctx, task)
+
+		// F5: автопополнение портфолио. Best-effort, ошибки не пробрасываем.
+		h.achievements.CreateMicrotaskAchievement(
+			ctx,
+			sub.GetStudentId(),
+			task.GetId(),
+			task.GetTitle(),
+			sub.GetSolutionUrl(),
+			task.GetCompanyId(),
+			req.GetReviewComment(),
+		)
 	}
 	return sub, nil
 }
