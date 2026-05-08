@@ -174,9 +174,16 @@ func (h *Handler) ConfirmAchievementUpload(c *fiber.Ctx) error {
 		})
 	}
 
-	// Парсим тело запроса с S3 ключом
+	// Парсим тело запроса. В новой схеме клиент присылает полный meta из ответа Create
+	// (после успешного PUT в S3), потому что бэк не сохраняет meta до загрузки файла.
+	// Для обратной совместимости поддерживаем старый вариант с одним s3_key — тогда
+	// meta достаётся из БД (это сработает только если кто-то параллельно создал запись).
 	var confirmReq struct {
-		S3Key string `json:"s3_key"`
+		S3Key    string `json:"s3_key"`
+		FileName string `json:"file_name"`
+		FileType string `json:"file_type"`
+		FileSize int64  `json:"file_size"`
+		Type     int32  `json:"type"`
 	}
 	if err := c.BodyParser(&confirmReq); err != nil {
 		log.Printf("ConfirmAchievementUpload: Failed to parse request body: %v", err)
@@ -192,34 +199,43 @@ func (h *Handler) ConfirmAchievementUpload(c *fiber.Ctx) error {
 		})
 	}
 
-	// Получаем информацию о достижении (для метаданных)
-	// В реальном приложении эти данные должны сохраняться после CreateUserAchievement
-	achievements, err := h.apiService.Achievement.GetAllAchievements(c.Context(), userID)
-	if err != nil {
-		log.Printf("ConfirmAchievementUpload: Failed to get achievements for user %s: %v", userID, err)
-		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{
-			"error": "Failed to get achievement info",
-		})
-	}
-
-	// Находим нужное достижение по имени
 	var achievementMeta *models.AchievementMeta
-	for _, achievement := range achievements.Achievements {
-		if achievement.Name == achievementName {
-			achievementMeta = &achievement
-			break
+	if confirmReq.FileName != "" && confirmReq.FileType != "" && confirmReq.FileSize > 0 {
+		achievementMeta = &models.AchievementMeta{
+			Name:      achievementName,
+			UserUUID:  userID,
+			FileName:  confirmReq.FileName,
+			FileType:  confirmReq.FileType,
+			FileSize:  confirmReq.FileSize,
+			Type:      confirmReq.Type,
+			CreatedAt: time.Now().Format(time.RFC3339),
+		}
+	} else {
+		// Fallback: ищем уже сохранённую запись (на случай если клиент следует старому контракту)
+		achievements, err := h.apiService.Achievement.GetAllAchievements(c.Context(), userID)
+		if err != nil {
+			log.Printf("ConfirmAchievementUpload: Failed to get achievements for user %s: %v", userID, err)
+			return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{
+				"error": "Failed to get achievement info",
+			})
+		}
+		for _, achievement := range achievements.Achievements {
+			if achievement.Name == achievementName {
+				ach := achievement
+				achievementMeta = &ach
+				break
+			}
+		}
+		if achievementMeta == nil {
+			log.Printf("ConfirmAchievementUpload: Achievement not found and meta not provided: %s", achievementName)
+			return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{
+				"error": "Achievement metadata required (file_name, file_type, file_size)",
+			})
 		}
 	}
 
-	if achievementMeta == nil {
-		log.Printf("ConfirmAchievementUpload: Achievement not found: %s", achievementName)
-		return c.Status(fiber.StatusNotFound).JSON(fiber.Map{
-			"error": "Achievement not found",
-		})
-	}
-
 	// Добавляем метаданные с S3 ключом
-	err = h.apiService.Achievement.AddAchievementMeta(c.Context(), achievementMeta, confirmReq.S3Key)
+	err := h.apiService.Achievement.AddAchievementMeta(c.Context(), achievementMeta, confirmReq.S3Key)
 	if err != nil {
 		log.Printf("ConfirmAchievementUpload: Failed to confirm upload for achievement %s, user %s: %v",
 			achievementName, userID, err)
