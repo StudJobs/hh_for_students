@@ -3,6 +3,7 @@ package grpc
 import (
 	"context"
 	companyv1 "github.com/StudJobs/proto_srtucture/gen/go/proto/company/v1"
+	microtaskv1 "github.com/StudJobs/proto_srtucture/gen/go/proto/microtask/v1"
 	searchv1 "github.com/StudJobs/proto_srtucture/gen/go/proto/search/v1"
 	skillsv1 "github.com/StudJobs/proto_srtucture/gen/go/proto/skills/v1"
 	vacancyv1 "github.com/StudJobs/proto_srtucture/gen/go/proto/vacancy/v1"
@@ -25,6 +26,7 @@ type Clients struct {
 	Vacancy     vacancyv1.VacancyServiceClient
 	Skills      skillsv1.SkillsServiceClient
 	Search      searchv1.SearchServiceClient
+	MicroTasks  microtaskv1.MicroTaskServiceClient
 }
 
 // Config конфигурация для gRPC подключений
@@ -36,6 +38,7 @@ type Config struct {
 	CompanyAddress         string
 	SkillsAddress          string
 	SearchAddress          string
+	MicroTasksAddress      string
 	Timeout                time.Duration
 }
 
@@ -85,6 +88,12 @@ func NewClients(cfg Config) (*Clients, error) {
 	if cfg.SearchAddress != "" {
 		if conn := mustConn(cfg.SearchAddress, cfg.Timeout); conn != nil {
 			clients.Search = searchv1.NewSearchServiceClient(conn)
+		}
+	}
+
+	if cfg.MicroTasksAddress != "" {
+		if conn := mustConn(cfg.MicroTasksAddress, cfg.Timeout); conn != nil {
+			clients.MicroTasks = microtaskv1.NewMicroTaskServiceClient(conn)
 		}
 	}
 	log.Println("✓ gRPC initialization completed (some services may be skipped)")

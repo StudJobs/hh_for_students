@@ -35,6 +35,7 @@ func main() {
 	}
 	usersAddr := getEnv("USERS_GRPC_ADDR", viper.GetString("clients.users_addr"))
 	vacancyAddr := getEnv("VACANCY_GRPC_ADDR", viper.GetString("clients.vacancy_addr"))
+	microtasksAddr := getEnv("MICROTASKS_GRPC_ADDR", viper.GetString("clients.microtasks_addr"))
 	grpcPort := getEnv("GRPC_PORT", viper.GetString("grpc.port"))
 	if grpcPort == "" {
 		grpcPort = "50057"
@@ -45,7 +46,7 @@ func main() {
 		log.Fatalf("failed to init elasticsearch client: %s", err.Error())
 	}
 
-	c, err := clients.New(usersAddr, vacancyAddr)
+	c, err := clients.New(usersAddr, vacancyAddr, microtasksAddr)
 	if err != nil {
 		log.Fatalf("failed to init upstream gRPC clients: %s", err.Error())
 	}
@@ -63,7 +64,7 @@ func main() {
 
 	handler := handlers.New(srch, idx, rx)
 
-	log.Printf("Starting Search Service on gRPC port: %s (es=%s, users=%s, vacancy=%s)", grpcPort, esURL, usersAddr, vacancyAddr)
+	log.Printf("Starting Search Service on gRPC port: %s (es=%s, users=%s, vacancy=%s, microtasks=%s)", grpcPort, esURL, usersAddr, vacancyAddr, microtasksAddr)
 	grpcServer := server.New(grpcPort, handler)
 
 	go func() {

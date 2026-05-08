@@ -5,6 +5,7 @@ import (
 	"log"
 
 	commonv1 "github.com/StudJobs/proto_srtucture/gen/go/proto/common/v1"
+	microtaskv1 "github.com/StudJobs/proto_srtucture/gen/go/proto/microtask/v1"
 	searchv1 "github.com/StudJobs/proto_srtucture/gen/go/proto/search/v1"
 	usersv1 "github.com/StudJobs/proto_srtucture/gen/go/proto/users/v1"
 	vacancyv1 "github.com/StudJobs/proto_srtucture/gen/go/proto/vacancy/v1"
@@ -37,6 +38,12 @@ func (h *Handler) SearchVacancies(ctx context.Context, req *searchv1.SearchVacan
 	return h.searcher.SearchVacancies(ctx, req)
 }
 
+func (h *Handler) SearchMicroTasks(ctx context.Context, req *searchv1.SearchMicroTasksRequest) (*microtaskv1.MicroTaskList, error) {
+	log.Printf("Handler: SearchMicroTasks q=%q skills=%v reward>=%d status=%v company=%q",
+		req.GetQuery(), req.GetSkillSlugs(), req.GetRewardMin(), req.GetStatus(), req.GetCompanyId())
+	return h.searcher.SearchMicroTasks(ctx, req)
+}
+
 func (h *Handler) IndexProfile(ctx context.Context, req *searchv1.IndexProfileRequest) (*commonv1.Empty, error) {
 	if err := h.indexer.IndexProfile(ctx, req.GetProfile()); err != nil {
 		log.Printf("Handler: IndexProfile id=%s error: %v", req.GetProfile().GetId(), err)
@@ -67,14 +74,30 @@ func (h *Handler) DeleteVacancy(ctx context.Context, req *searchv1.DeleteDocumen
 	return &commonv1.Empty{}, nil
 }
 
+func (h *Handler) IndexMicroTask(ctx context.Context, req *searchv1.IndexMicroTaskRequest) (*commonv1.Empty, error) {
+	if err := h.indexer.IndexMicroTask(ctx, req.GetTask()); err != nil {
+		log.Printf("Handler: IndexMicroTask id=%s error: %v", req.GetTask().GetId(), err)
+		return nil, err
+	}
+	return &commonv1.Empty{}, nil
+}
+
+func (h *Handler) DeleteMicroTask(ctx context.Context, req *searchv1.DeleteDocumentRequest) (*commonv1.Empty, error) {
+	if err := h.indexer.DeleteMicroTask(ctx, req.GetId()); err != nil {
+		return nil, err
+	}
+	return &commonv1.Empty{}, nil
+}
+
 func (h *Handler) Reindex(ctx context.Context, req *searchv1.ReindexRequest) (*searchv1.ReindexResponse, error) {
 	log.Printf("Handler: Reindex recreate=%v", req.GetRecreateIndices())
-	profiles, vacancies, err := h.reindexer.Run(ctx, req.GetRecreateIndices())
+	profiles, vacancies, microtasks, err := h.reindexer.Run(ctx, req.GetRecreateIndices())
 	if err != nil {
 		return nil, err
 	}
 	return &searchv1.ReindexResponse{
-		IndexedProfiles:  profiles,
-		IndexedVacancies: vacancies,
+		IndexedProfiles:   profiles,
+		IndexedVacancies:  vacancies,
+		IndexedMicrotasks: microtasks,
 	}, nil
 }

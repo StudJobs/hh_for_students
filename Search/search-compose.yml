@@ -13,6 +13,7 @@ services:
       ELASTICSEARCH_URL: http://elasticsearch:9200
       USERS_GRPC_ADDR: user:50052
       VACANCY_GRPC_ADDR: vacancy:50054
+      MICROTASKS_GRPC_ADDR: microtasks:50058
       GRPC_PORT: "50057"
 
     volumes:

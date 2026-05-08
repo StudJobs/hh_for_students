@@ -4,6 +4,7 @@ import (
 	"context"
 	achievementv1 "github.com/StudJobs/proto_srtucture/gen/go/proto/achievement/v1"
 	companyv1 "github.com/StudJobs/proto_srtucture/gen/go/proto/company/v1"
+	microtaskv1 "github.com/StudJobs/proto_srtucture/gen/go/proto/microtask/v1"
 	searchv1 "github.com/StudJobs/proto_srtucture/gen/go/proto/search/v1"
 	skillsv1 "github.com/StudJobs/proto_srtucture/gen/go/proto/skills/v1"
 	vacancyv1 "github.com/StudJobs/proto_srtucture/gen/go/proto/vacancy/v1"
@@ -61,6 +62,23 @@ type SearchService interface {
 	SearchVacancies(ctx context.Context, query string, skillSlugs []string, salaryMin, experienceMax int32, companyID string, page, limit int32) (*vacancyv1.VacancyList, error)
 	// SearchVacanciesAsModel — то же, что SearchVacancies, но возвращает HTTP-модель.
 	SearchVacanciesAsModel(ctx context.Context, query string, skillSlugs []string, salaryMin, experienceMax int32, companyID string, page, limit int32) (*models.VacancyList, error)
+	// SearchMicroTasksAsModel ищет микрозадачи в ES и возвращает HTTP-модель.
+	SearchMicroTasksAsModel(ctx context.Context, query string, skillSlugs []string, rewardMin int32, status int32, companyID string, page, limit int32) (*models.MicroTaskList, error)
+}
+
+// MicroTaskService — обёртка над gRPC-клиентом микросервиса MicroTasks.
+type MicroTaskService interface {
+	Available() bool
+	Create(ctx context.Context, t *models.MicroTask) (*models.MicroTask, error)
+	Update(ctx context.Context, id string, t *models.MicroTask) (*models.MicroTask, error)
+	Delete(ctx context.Context, id string) error
+	Get(ctx context.Context, id string) (*models.MicroTask, error)
+	List(ctx context.Context, status int32, skillSlugs []string, page, limit int32) (*models.MicroTaskList, error)
+	ListByCompany(ctx context.Context, companyID string, page, limit int32) (*models.MicroTaskList, error)
+	Apply(ctx context.Context, taskID, studentID string) (*models.MicroTask, error)
+	Submit(ctx context.Context, taskID, studentID, solutionURL, comment string) (*models.Submission, error)
+	ListSubmissions(ctx context.Context, taskID, studentID string, page, limit int32) (*models.SubmissionList, error)
+	Review(ctx context.Context, submissionID string, status int32, reviewComment string) (*models.Submission, error)
 }
 
 type VacancyService interface {
@@ -81,13 +99,14 @@ type VacancyService interface {
 
 // ApiGateway объединяет все сервисы
 type ApiGateway struct {
-	Auth        AuthService
-	User        UsersService
+	Auth       AuthService
+	User       UsersService
 	Achievement AchievementService
-	Company     CompanyService
-	Vacancy     VacancyService
-	Skills      SkillsService
-	Search      SearchService
+	Company    CompanyService
+	Vacancy    VacancyService
+	Skills     SkillsService
+	Search     SearchService
+	MicroTasks MicroTaskService
 }
 
 // NewApiGateway создает новый экземпляр ApiGateway
@@ -99,14 +118,16 @@ func NewApiGateway(
 	vacancyClient vacancyv1.VacancyServiceClient,
 	skillsClient skillsv1.SkillsServiceClient,
 	searchClient searchv1.SearchServiceClient,
+	microtasksClient microtaskv1.MicroTaskServiceClient,
 ) *ApiGateway {
 	return &ApiGateway{
-		Auth:        NewAuthService(authClient),
-		User:        NewUsersService(usersClient),
+		Auth:       NewAuthService(authClient),
+		User:       NewUsersService(usersClient),
 		Achievement: NewAchievementService(achievementClient),
-		Company:     NewCompanyService(companyClient),
-		Vacancy:     NewVacancyService(vacancyClient),
-		Skills:      NewSkillsService(skillsClient),
-		Search:      NewSearchService(searchClient),
+		Company:    NewCompanyService(companyClient),
+		Vacancy:    NewVacancyService(vacancyClient),
+		Skills:     NewSkillsService(skillsClient),
+		Search:     NewSearchService(searchClient),
+		MicroTasks: NewMicroTaskService(microtasksClient),
 	}
 }

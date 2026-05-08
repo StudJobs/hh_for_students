@@ -39,6 +39,39 @@ const ProfilesMapping = `{
   }
 }`
 
+const MicroTasksMapping = `{
+  "settings": {
+    "analysis": {
+      "analyzer": {
+        "ru_text": {
+          "type": "custom",
+          "tokenizer": "standard",
+          "filter": ["lowercase", "russian_stop", "russian_stemmer"]
+        }
+      },
+      "filter": {
+        "russian_stop": {"type": "stop", "stopwords": "_russian_"},
+        "russian_stemmer": {"type": "stemmer", "language": "russian"}
+      }
+    }
+  },
+  "mappings": {
+    "properties": {
+      "id": {"type": "keyword"},
+      "company_id": {"type": "keyword"},
+      "title": {"type": "text", "analyzer": "ru_text"},
+      "description": {"type": "text", "analyzer": "ru_text"},
+      "reward": {"type": "integer"},
+      "deadline": {"type": "keyword"},
+      "skill_slugs": {"type": "keyword"},
+      "status": {"type": "integer"},
+      "assigned_to": {"type": "keyword"},
+      "created_at": {"type": "keyword"},
+      "updated_at": {"type": "keyword"}
+    }
+  }
+}`
+
 const VacanciesMapping = `{
   "settings": {
     "analysis": {

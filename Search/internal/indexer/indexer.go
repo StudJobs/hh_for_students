@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"fmt"
 
+	microtaskv1 "github.com/StudJobs/proto_srtucture/gen/go/proto/microtask/v1"
 	usersv1 "github.com/StudJobs/proto_srtucture/gen/go/proto/users/v1"
 	vacancyv1 "github.com/StudJobs/proto_srtucture/gen/go/proto/vacancy/v1"
 
@@ -83,6 +84,37 @@ func (i *Indexer) DeleteVacancy(ctx context.Context, id string) error {
 	return i.es.Delete(ctx, esclient.IndexVacancies, id)
 }
 
+func (i *Indexer) IndexMicroTask(ctx context.Context, t *microtaskv1.MicroTask) error {
+	if t == nil || t.GetId() == "" {
+		return fmt.Errorf("indexer: empty microtask")
+	}
+	doc := microTaskDoc{
+		ID:          t.GetId(),
+		CompanyID:   t.GetCompanyId(),
+		Title:       t.GetTitle(),
+		Description: t.GetDescription(),
+		Reward:      t.GetReward(),
+		Deadline:    t.GetDeadline(),
+		SkillSlugs:  t.GetSkillSlugs(),
+		Status:      int32(t.GetStatus()),
+		AssignedTo:  t.GetAssignedTo(),
+		CreatedAt:   t.GetCreatedAt(),
+		UpdatedAt:   t.GetUpdatedAt(),
+	}
+	if doc.SkillSlugs == nil {
+		doc.SkillSlugs = []string{}
+	}
+	body, err := json.Marshal(doc)
+	if err != nil {
+		return fmt.Errorf("indexer: marshal microtask: %w", err)
+	}
+	return i.es.Index(ctx, esclient.IndexMicroTasks, t.GetId(), body)
+}
+
+func (i *Indexer) DeleteMicroTask(ctx context.Context, id string) error {
+	return i.es.Delete(ctx, esclient.IndexMicroTasks, id)
+}
+
 type profileDoc struct {
 	ID                   string   `json:"id"`
 	FirstName            string   `json:"first_name"`
@@ -111,4 +143,18 @@ type vacancyDoc struct {
 	Salary         int32    `json:"salary"`
 	CreateAt       string   `json:"create_at"`
 	AttachmentID   string   `json:"attachment_id"`
+}
+
+type microTaskDoc struct {
+	ID          string   `json:"id"`
+	CompanyID   string   `json:"company_id"`
+	Title       string   `json:"title"`
+	Description string   `json:"description"`
+	Reward      int32    `json:"reward"`
+	Deadline    string   `json:"deadline"`
+	SkillSlugs  []string `json:"skill_slugs"`
+	Status      int32    `json:"status"`
+	AssignedTo  string   `json:"assigned_to"`
+	CreatedAt   string   `json:"created_at"`
+	UpdatedAt   string   `json:"updated_at"`
 }

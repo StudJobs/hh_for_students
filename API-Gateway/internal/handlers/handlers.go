@@ -119,6 +119,23 @@ func (h *Handler) initRoutes() {
 	skills.Get("/popular", RoleMiddleware(ROLE_DEVELOPER, ROLE_STUDENT, ROLE_HR, ROLE_COMPANY), h.PopularSkills)
 	skills.Get("/bulk", RoleMiddleware(ROLE_DEVELOPER, ROLE_STUDENT, ROLE_HR, ROLE_COMPANY), h.BulkSkills)
 
+	// === MicroTasks: студенческие операции ===
+	tasks := api.Group("/tasks")
+	tasks.Get("/", RoleMiddleware(ROLE_DEVELOPER, ROLE_STUDENT, ROLE_HR, ROLE_COMPANY), h.GetTasks)
+	tasks.Get("/my-submissions", RoleMiddleware(ROLE_DEVELOPER, ROLE_STUDENT), h.ListMySubmissions)
+	tasks.Get("/:id", RoleMiddleware(ROLE_DEVELOPER, ROLE_STUDENT, ROLE_HR, ROLE_COMPANY), h.GetTask)
+	tasks.Post("/:id/apply", RoleMiddleware(ROLE_DEVELOPER, ROLE_STUDENT), h.ApplyToTask)
+	tasks.Post("/:id/submit", RoleMiddleware(ROLE_DEVELOPER, ROLE_STUDENT), h.SubmitTask)
+
+	// === MicroTasks: HR-операции ===
+	hrTasks := profileHR.Group("/tasks")
+	hrTasks.Get("/", RoleMiddleware(ROLE_DEVELOPER, ROLE_HR, ROLE_COMPANY), h.GetHRTasks)
+	hrTasks.Post("/", RoleMiddleware(ROLE_DEVELOPER, ROLE_HR, ROLE_COMPANY), h.CreateHRTask)
+	hrTasks.Patch("/:id", RoleMiddleware(ROLE_DEVELOPER, ROLE_HR, ROLE_COMPANY), h.UpdateHRTask)
+	hrTasks.Delete("/:id", RoleMiddleware(ROLE_DEVELOPER, ROLE_HR, ROLE_COMPANY), h.DeleteHRTask)
+	hrTasks.Get("/:id/submissions", RoleMiddleware(ROLE_DEVELOPER, ROLE_HR, ROLE_COMPANY), h.ListTaskSubmissions)
+	hrTasks.Post("/submissions/:submission_id/review", RoleMiddleware(ROLE_DEVELOPER, ROLE_HR, ROLE_COMPANY), h.ReviewSubmission)
+
 	// === Company ===
 	company := api.Group("/company")
 	company.Get("/", RoleMiddleware(ROLE_DEVELOPER, ROLE_STUDENT, ROLE_HR, ROLE_COMPANY), h.GetCompanies)

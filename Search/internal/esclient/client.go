@@ -12,8 +12,9 @@ import (
 )
 
 const (
-	IndexProfiles  = "profiles"
-	IndexVacancies = "vacancies"
+	IndexProfiles   = "profiles"
+	IndexVacancies  = "vacancies"
+	IndexMicroTasks = "microtasks"
 )
 
 type Client struct {

@@ -1,4 +1,4 @@
-.PHONY: all infra gateway auth users achievement skills es search down clean help reindex
+.PHONY: all infra gateway auth users achievement skills es search microtasks down clean help reindex
 
 help:
 	@echo "Available commands:"
@@ -9,7 +9,7 @@ help:
 	@echo "  make status   - Show service status"
 
 # Запуск всего в правильном порядке
-all: haproxy minio es auth users achievement company vacancy skills search gateway
+all: haproxy minio es auth users achievement company vacancy skills search microtasks gateway
 
 # Elasticsearch — нужен Search-сервису и индексаторам в Users/Vacancy
 es:
@@ -75,6 +75,12 @@ search: es users vacancy
 	@timeout 60 bash -c 'until ./grpcurl -plaintext localhost:50057 grpc.health.v1.Health/Check >/dev/null 2>&1; do sleep 2; echo "Waiting for search..."; done'
 	@echo "✓ Search service is healthy!"
 
+microtasks: search
+	cd MicroTasks && docker-compose -f microtasks-compose.yml up -d
+	@echo "Waiting for microtasks service..."
+	@timeout 30 bash -c 'until ./grpcurl -plaintext localhost:50058 grpc.health.v1.Health/Check >/dev/null 2>&1; do sleep 2; echo "Waiting for microtasks..."; done'
+	@echo "✓ MicroTasks service is healthy!"
+
 # Холодная переиндексация PG → ES (вызывается после миграций или для первого старта).
 # Reindex RPC создаёт индексы (recreate=true) и перечитывает все профили/вакансии.
 reindex:
@@ -82,7 +88,7 @@ reindex:
 	./grpcurl -plaintext -d '{"recreate_indices": true}' localhost:50057 search.v1.SearchService/Reindex
 	@echo "✓ Reindex done"
 
-gateway: auth vacancy skills search
+gateway: auth vacancy skills search microtasks
 	cd API-Gateway && docker-compose -f api-gateway-compose.yml up -d
 	@echo "Waiting for gateway service..."
 	@timeout 10 bash -c 'until curl -f http://localhost:8000/health >/dev/null 2>&1; do sleep 2; echo "Waiting for gateway..."; done'
@@ -102,6 +108,7 @@ down:
 	docker-compose -f vacancy-service/vacancy-compose.yml down
 	docker-compose -f Skills/skills-compose.yml down
 	docker-compose -f Search/search-compose.yml down
+	docker-compose -f MicroTasks/microtasks-compose.yml down
 	@echo "✓ All services stopped"
 
 logs:

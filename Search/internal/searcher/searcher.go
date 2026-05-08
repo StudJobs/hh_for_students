@@ -6,6 +6,7 @@ import (
 	"fmt"
 
 	commonv1 "github.com/StudJobs/proto_srtucture/gen/go/proto/common/v1"
+	microtaskv1 "github.com/StudJobs/proto_srtucture/gen/go/proto/microtask/v1"
 	searchv1 "github.com/StudJobs/proto_srtucture/gen/go/proto/search/v1"
 	usersv1 "github.com/StudJobs/proto_srtucture/gen/go/proto/users/v1"
 	vacancyv1 "github.com/StudJobs/proto_srtucture/gen/go/proto/vacancy/v1"
@@ -173,6 +174,88 @@ func (s *Searcher) SearchVacancies(ctx context.Context, req *searchv1.SearchVaca
 	}, nil
 }
 
+func (s *Searcher) SearchMicroTasks(ctx context.Context, req *searchv1.SearchMicroTasksRequest) (*microtaskv1.MicroTaskList, error) {
+	page, limit := normalizePagination(req.GetPagination())
+
+	must := []map[string]any{}
+	filter := []map[string]any{}
+
+	if q := req.GetQuery(); q != "" {
+		must = append(must, map[string]any{
+			"multi_match": map[string]any{
+				"query":  q,
+				"fields": []string{"title^2", "description"},
+			},
+		})
+	}
+	for _, slug := range req.GetSkillSlugs() {
+		filter = append(filter, map[string]any{
+			"term": map[string]any{"skill_slugs": slug},
+		})
+	}
+	if r := req.GetRewardMin(); r > 0 {
+		filter = append(filter, map[string]any{
+			"range": map[string]any{"reward": map[string]any{"gte": r}},
+		})
+	}
+	if st := req.GetStatus(); st != microtaskv1.MicroTaskStatus_MICROTASK_STATUS_UNSPECIFIED {
+		filter = append(filter, map[string]any{
+			"term": map[string]any{"status": int32(st)},
+		})
+	}
+	if cid := req.GetCompanyId(); cid != "" {
+		filter = append(filter, map[string]any{
+			"term": map[string]any{"company_id": cid},
+		})
+	}
+
+	query := map[string]any{
+		"from": (page - 1) * limit,
+		"size": limit,
+		"query": map[string]any{
+			"bool": map[string]any{
+				"must":   must,
+				"filter": filter,
+			},
+		},
+	}
+	body, err := json.Marshal(query)
+	if err != nil {
+		return nil, fmt.Errorf("searcher: marshal microtasks query: %w", err)
+	}
+	raw, err := s.es.Search(ctx, esclient.IndexMicroTasks, body)
+	if err != nil {
+		return nil, err
+	}
+
+	var resp esResponse[microTaskSource]
+	if err := json.Unmarshal(raw, &resp); err != nil {
+		return nil, fmt.Errorf("searcher: unmarshal microtasks: %w", err)
+	}
+
+	out := make([]*microtaskv1.MicroTask, 0, len(resp.Hits.Hits))
+	for _, h := range resp.Hits.Hits {
+		out = append(out, &microtaskv1.MicroTask{
+			Id:          h.Source.ID,
+			CompanyId:   h.Source.CompanyID,
+			Title:       h.Source.Title,
+			Description: h.Source.Description,
+			Reward:      h.Source.Reward,
+			Deadline:    h.Source.Deadline,
+			SkillSlugs:  h.Source.SkillSlugs,
+			Status:      microtaskv1.MicroTaskStatus(h.Source.Status),
+			AssignedTo:  h.Source.AssignedTo,
+			CreatedAt:   h.Source.CreatedAt,
+			UpdatedAt:   h.Source.UpdatedAt,
+		})
+	}
+
+	return &microtaskv1.MicroTaskList{
+		Tasks:      out,
+		Pagination: paginationResponse(resp.Hits.Total.Value, page, limit),
+	}, nil
+}
+
 func buildQuery(must []map[string]any, page, limit int32) map[string]any {
 	if len(must) == 0 {
 		return map[string]any{
@@ -258,4 +341,18 @@ type vacancySource struct {
 	Salary         int32    `json:"salary"`
 	CreateAt       string   `json:"create_at"`
 	AttachmentID   string   `json:"attachment_id"`
+}
+
+type microTaskSource struct {
+	ID          string   `json:"id"`
+	CompanyID   string   `json:"company_id"`
+	Title       string   `json:"title"`
+	Description string   `json:"description"`
+	Reward      int32    `json:"reward"`
+	Deadline    string   `json:"deadline"`
+	SkillSlugs  []string `json:"skill_slugs"`
+	Status      int32    `json:"status"`
+	AssignedTo  string   `json:"assigned_to"`
+	CreatedAt   string   `json:"created_at"`
+	UpdatedAt   string   `json:"updated_at"`
 }

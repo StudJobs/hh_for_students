@@ -1,0 +1,70 @@
+version: '3.8'
+
+services:
+  microtasks:
+    build:
+      context: .
+      dockerfile: Dockerfile
+
+    restart: unless-stopped
+
+    ports:
+      - "50058:50058"
+
+    depends_on:
+      postgres_microtasks:
+        condition: service_healthy
+
+    environment:
+      DB_PASS: ${DB_PASS}
+      DB_HOST: postgres_microtasks
+      DB_PORT: 5432
+      DB_USER: postgres
+      DB_NAME: microtasks
+      DB_SSLMODE: disable
+      SEARCH_GRPC_ADDR: search:50057
+
+    volumes:
+      - ./configs:/configs
+
+    networks:
+      - microservices-net
+
+    healthcheck:
+      test: ["CMD", "grpc_health_probe", "-addr=localhost:50058"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 20s
+
+  postgres_microtasks:
+    image: postgres:15-alpine
+
+    restart: unless-stopped
+
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: ${DB_PASS}
+      POSTGRES_DB: microtasks
+
+    ports:
+      - "5439:5432"
+
+    volumes:
+      - postgres_data_microtasks:/var/lib/postgresql/data
+
+    networks:
+      - microservices-net
+
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres -d microtasks"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
+volumes:
+  postgres_data_microtasks:
+
+networks:
+  microservices-net:
+    external: true
