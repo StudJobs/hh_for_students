@@ -11,3 +11,8 @@ config.yml
 
 # Logs
 *.log
+
+# Local dev: minio data + generated TLS certs
+devops/minio-data/
+devops/certs/.minio/
+devops/certs/.haproxy/
