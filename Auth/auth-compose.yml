@@ -15,11 +15,13 @@ services:
 
     environment:
       DB_PASS: ${DB_PASS}
-      DB_HOST: postgres_auth 
+      DB_HOST: postgres_auth
       DB_PORT: 5432
       DB_USER: postgres
       DB_NAME: auth
-      DB_SSLMODE: disable 
+      DB_SSLMODE: disable
+      JWT_SECRET: ${JWT_SECRET}
+      JWT_TIME_DURATION: ${JWT_TIME_DURATION:-60}
 
     volumes:
       - ./configs:/configs
