@@ -33,7 +33,7 @@ func (r *UsersRepository) GetProfile(ctx context.Context, id string) (*usersv1.P
 	log.Printf("Repository: Getting profile with ID: %s", id)
 
 	query, args, err := r.sb.
-		Select("id", "first_name", "last_name", "age", "tg", "resume_id", "avatar_id", "email", "description", "profession_category").
+		Select("id", "first_name", "last_name", "age", "tg", "resume_id", "avatar_id", "email", "description", "profession_category", "education_institution").
 		From(PROFILE_TABLE).
 		Where(squirrel.Eq{"id": id}).
 		Where("deleted_at IS NULL").
@@ -44,7 +44,7 @@ func (r *UsersRepository) GetProfile(ctx context.Context, id string) (*usersv1.P
 	}
 
 	var profile usersv1.Profile
-	var resumeId, avatarId *string // Используем указатели для обработки NULL
+	var resumeId, avatarId, educationInstitution *string
 
 	err = r.db.QueryRow(ctx, query, args...).Scan(
 		&profile.Id,
@@ -52,25 +52,26 @@ func (r *UsersRepository) GetProfile(ctx context.Context, id string) (*usersv1.P
 		&profile.LastName,
 		&profile.Age,
 		&profile.Tg,
-		&resumeId, // Сканируем в указатель
-		&avatarId, // Сканируем в указатель
+		&resumeId,
+		&avatarId,
 		&profile.Email,
 		&profile.Description,
 		&profile.ProfessionCategory,
+		&educationInstitution,
 	)
 	if err != nil {
 		log.Printf("Repository: Failed to get profile with ID %s: %v", id, err)
 		return nil, fmt.Errorf("failed to get profile: %w", err)
 	}
 
-	// Обрабатываем NULL resume_id
 	if resumeId != nil {
 		profile.ResumeId = *resumeId
 	}
-
-	// Обрабатываем NULL avatar_id
 	if avatarId != nil {
 		profile.AvatarId = *avatarId
+	}
+	if educationInstitution != nil {
+		profile.EducationInstitution = *educationInstitution
 	}
 
 	log.Printf("Repository: Successfully retrieved profile with ID: %s", id)
@@ -85,7 +86,7 @@ func (r *UsersRepository) GetAllProfiles(ctx context.Context, professionCategory
 
 	// Базовый запрос
 	queryBuilder := r.sb.
-		Select("id", "first_name", "last_name", "age", "tg", "resume_id", "avatar_id", "email", "description", "profession_category").
+		Select("id", "first_name", "last_name", "age", "tg", "resume_id", "avatar_id", "email", "description", "profession_category", "education_institution").
 		From(PROFILE_TABLE).
 		Where("deleted_at IS NULL").
 		Where(squirrel.Eq{"role": role}).
@@ -115,7 +116,7 @@ func (r *UsersRepository) GetAllProfiles(ctx context.Context, professionCategory
 	var profiles []*usersv1.Profile
 	for rows.Next() {
 		var profile usersv1.Profile
-		var resumeId, avatarId *string // Используем указатели для обработки NULL
+		var resumeId, avatarId, educationInstitution *string
 
 		err := rows.Scan(
 			&profile.Id,
@@ -123,25 +124,26 @@ func (r *UsersRepository) GetAllProfiles(ctx context.Context, professionCategory
 			&profile.LastName,
 			&profile.Age,
 			&profile.Tg,
-			&resumeId, // Сканируем в указатель
-			&avatarId, // Сканируем в указатель
+			&resumeId,
+			&avatarId,
 			&profile.Email,
 			&profile.Description,
 			&profile.ProfessionCategory,
+			&educationInstitution,
 		)
 		if err != nil {
 			log.Printf("Repository: Failed to scan profile row: %v", err)
 			return nil, fmt.Errorf("failed to scan profile: %w", err)
 		}
 
-		// Обрабатываем NULL resume_id
 		if resumeId != nil {
 			profile.ResumeId = *resumeId
 		}
-
-		// Обрабатываем NULL avatar_id
 		if avatarId != nil {
 			profile.AvatarId = *avatarId
+		}
+		if educationInstitution != nil {
+			profile.EducationInstitution = *educationInstitution
 		}
 
 		profiles = append(profiles, &profile)
@@ -223,9 +225,14 @@ func (r *UsersRepository) CreateProfile(ctx context.Context, profile *usersv1.Pr
 		values = append(values, profile.AvatarId)
 	}
 
+	if profile.EducationInstitution != "" {
+		insertBuilder = insertBuilder.Columns("education_institution")
+		values = append(values, profile.EducationInstitution)
+	}
+
 	query, args, err := insertBuilder.
 		Values(values...).
-		Suffix("RETURNING id, first_name, last_name, age, tg, resume_id, avatar_id, email, description, profession_category").
+		Suffix("RETURNING id, first_name, last_name, age, tg, resume_id, avatar_id, email, description, profession_category, education_institution").
 		ToSql()
 	if err != nil {
 		log.Printf("Repository: Failed to build create profile query: %v", err)
@@ -233,7 +240,7 @@ func (r *UsersRepository) CreateProfile(ctx context.Context, profile *usersv1.Pr
 	}
 
 	var createdProfile usersv1.Profile
-	var resumeId, avatarId *string // Используем указатели для обработки NULL
+	var resumeId, avatarId, educationInstitution *string
 
 	err = r.db.QueryRow(ctx, query, args...).Scan(
 		&createdProfile.Id,
@@ -241,25 +248,26 @@ func (r *UsersRepository) CreateProfile(ctx context.Context, profile *usersv1.Pr
 		&createdProfile.LastName,
 		&createdProfile.Age,
 		&createdProfile.Tg,
-		&resumeId, // Сканируем в указатель
-		&avatarId, // Сканируем в указатель
+		&resumeId,
+		&avatarId,
 		&createdProfile.Email,
 		&createdProfile.Description,
 		&createdProfile.ProfessionCategory,
+		&educationInstitution,
 	)
 	if err != nil {
 		log.Printf("Repository: Failed to create profile for email %s: %v", profile.Email, err)
 		return nil, fmt.Errorf("failed to create profile: %w", err)
 	}
 
-	// Обрабатываем NULL resume_id
 	if resumeId != nil {
 		createdProfile.ResumeId = *resumeId
 	}
-
-	// Обрабатываем NULL avatar_id
 	if avatarId != nil {
 		createdProfile.AvatarId = *avatarId
+	}
+	if educationInstitution != nil {
+		createdProfile.EducationInstitution = *educationInstitution
 	}
 
 	log.Printf("Repository: Successfully created profile with ID: %s", createdProfile.Id)
@@ -306,9 +314,12 @@ func (r *UsersRepository) UpdateProfile(ctx context.Context, id string, profile 
 	if profile.ProfessionCategory != "" {
 		updateBuilder = updateBuilder.Set("profession_category", profile.ProfessionCategory)
 	}
+	if profile.EducationInstitution != "" {
+		updateBuilder = updateBuilder.Set("education_institution", profile.EducationInstitution)
+	}
 
 	query, args, err := updateBuilder.
-		Suffix("RETURNING id, first_name, last_name, age, tg, resume_id, avatar_id, email, description, profession_category").
+		Suffix("RETURNING id, first_name, last_name, age, tg, resume_id, avatar_id, email, description, profession_category, education_institution").
 		ToSql()
 	if err != nil {
 		log.Printf("Repository: Failed to build update profile query: %v", err)
@@ -316,7 +327,7 @@ func (r *UsersRepository) UpdateProfile(ctx context.Context, id string, profile 
 	}
 
 	var updatedProfile usersv1.Profile
-	var resumeId, avatarId *string // Используем указатели для обработки NULL
+	var resumeId, avatarId, educationInstitution *string
 
 	err = r.db.QueryRow(ctx, query, args...).Scan(
 		&updatedProfile.Id,
@@ -324,25 +335,26 @@ func (r *UsersRepository) UpdateProfile(ctx context.Context, id string, profile 
 		&updatedProfile.LastName,
 		&updatedProfile.Age,
 		&updatedProfile.Tg,
-		&resumeId, // Сканируем в указатель
-		&avatarId, // Сканируем в указатель
+		&resumeId,
+		&avatarId,
 		&updatedProfile.Email,
 		&updatedProfile.Description,
 		&updatedProfile.ProfessionCategory,
+		&educationInstitution,
 	)
 	if err != nil {
 		log.Printf("Repository: Failed to update profile with ID %s: %v", id, err)
 		return nil, fmt.Errorf("failed to update profile: %w", err)
 	}
 
-	// Обрабатываем NULL resume_id
 	if resumeId != nil {
 		updatedProfile.ResumeId = *resumeId
 	}
-
-	// Обрабатываем NULL avatar_id
 	if avatarId != nil {
 		updatedProfile.AvatarId = *avatarId
+	}
+	if educationInstitution != nil {
+		updatedProfile.EducationInstitution = *educationInstitution
 	}
 
 	log.Printf("Repository: Successfully PATCH updated profile with ID: %s", updatedProfile.Id)

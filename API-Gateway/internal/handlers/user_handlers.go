@@ -78,8 +78,9 @@ func (h *Handler) GetUsers(c *fiber.Ctx) error {
 			Age:                profile.Age,
 			Tg:                 profile.Tg,
 			Email:              profile.Email,
-			Description:        profile.Description,
-			ProfessionCategory: profile.ProfessionCategory,
+			Description:          profile.Description,
+			ProfessionCategory:   profile.ProfessionCategory,
+			EducationInstitution: profile.EducationInstitution,
 		}
 	}
 
@@ -169,8 +170,9 @@ func (h *Handler) getUserWithFiles(c *fiber.Ctx, userID string) (*models.User, e
 		Age:                profile.Age,
 		Tg:                 profile.Tg,
 		Email:              profile.Email,
-		Description:        profile.Description,
-		ProfessionCategory: profile.ProfessionCategory,
+		Description:          profile.Description,
+		ProfessionCategory:   profile.ProfessionCategory,
+		EducationInstitution: profile.EducationInstitution,
 	}
 
 	// Обогащаем информацией о файлах
@@ -300,6 +302,9 @@ func (h *Handler) UpdateUser(c *fiber.Ctx) error {
 	if updateData.ProfessionCategory != nil {
 		profile.ProfessionCategory = *updateData.ProfessionCategory
 	}
+	if updateData.EducationInstitution != nil {
+		profile.EducationInstitution = *updateData.EducationInstitution
+	}
 	if updateData.ResumeID != nil {
 		profile.ResumeId = *updateData.ResumeID
 	}
@@ -327,8 +332,9 @@ func (h *Handler) UpdateUser(c *fiber.Ctx) error {
 		Age:                updatedProfile.Age,
 		Tg:                 updatedProfile.Tg,
 		Email:              updatedProfile.Email,
-		Description:        updatedProfile.Description,
-		ProfessionCategory: updatedProfile.ProfessionCategory,
+		Description:          updatedProfile.Description,
+		ProfessionCategory:   updatedProfile.ProfessionCategory,
+		EducationInstitution: updatedProfile.EducationInstitution,
 	}
 
 	// Обогащаем информацией о файлах
