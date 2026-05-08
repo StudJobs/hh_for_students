@@ -13,7 +13,7 @@ import (
 
 // GetUsers возвращает список пользователей с пагинацией
 // @Summary Получить список пользователей
-// @Description Возвращает список пользователей с поддержкой пагинации и фильтрации по категории
+// @Description Возвращает список пользователей с пагинацией. Если задан skill_slugs или q — поиск через Elasticsearch.
 // @Tags Users
 // @Accept json
 // @Produce json
@@ -21,6 +21,8 @@ import (
 // @Param page query int false "Номер страницы" default(1) minimum(1)
 // @Param limit query int false "Количество элементов на странице" default(10) minimum(1) maximum(100)
 // @Param category query string false "Фильтр по категории профессии"
+// @Param skill_slugs query string false "Список slug-ов навыков через запятую (включает Elasticsearch-поиск)"
+// @Param q query string false "Свободный текстовый запрос (через Elasticsearch)"
 // @Success 200 {object} models.ProfileList "Список пользователей"
 // @Failure 400 {object} models.ErrorResponse "Неверные параметры запроса"
 // @Failure 401 {object} models.ErrorResponse "Неавторизованный доступ"
@@ -34,24 +36,30 @@ func (h *Handler) GetUsers(c *fiber.Ctx) error {
 	limit, _ := strconv.Atoi(c.Query("limit", "10"))
 	page, limit = normalizePagination(page, limit)
 	category := c.Query("category", "")
+	skillSlugs := splitCSV(c.Query("skill_slugs", ""))
+	query := c.Query("q", "")
 
-	//role := h.roleConvert(getRoleFromContext(c))
+	var profiles *usersv1.ProfileList
+	var err error
 
-	// Строим запрос к users service
-	req := &usersv1.GetAllProfilesRequest{
-		Pagination: &commonv1.Pagination{
-			Page:  int32(page),
-			Limit: int32(limit),
-		},
-		Role: "ROLE_STUDENT",
+	// Если задан фильтр по навыкам или свободный текст — идём через Search (Elasticsearch).
+	// Иначе — обычная выборка из Users (быстрее и не требует ES).
+	if h.apiService.Search.Available() && (len(skillSlugs) > 0 || query != "") {
+		log.Printf("GetUsers: routing through Search (skill_slugs=%v query=%q)", skillSlugs, query)
+		profiles, err = h.apiService.Search.SearchProfiles(c.Context(), query, skillSlugs, category, int32(page), int32(limit))
+	} else {
+		req := &usersv1.GetAllProfilesRequest{
+			Pagination: &commonv1.Pagination{
+				Page:  int32(page),
+				Limit: int32(limit),
+			},
+			Role: "ROLE_STUDENT",
+		}
+		if category != "" {
+			req.ProfessionCategory = category
+		}
+		profiles, err = h.apiService.User.GetUsers(c.Context(), req)
 	}
-
-	if category != "" {
-		req.ProfessionCategory = category
-	}
-
-	// Вызываем users service
-	profiles, err := h.apiService.User.GetUsers(c.Context(), req)
 	if err != nil {
 		log.Printf("GetUsers: Failed to get users: %v", err)
 		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{

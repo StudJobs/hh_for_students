@@ -11,7 +11,7 @@ import (
 
 // GetVacancies возвращает список вакансий с пагинацией и фильтрами
 // @Summary Получить список вакансий
-// @Description Возвращает список вакансий с поддержкой пагинации и фильтрации
+// @Description Возвращает список вакансий. Если задан skill_slugs или search_title — поиск через Elasticsearch.
 // @Tags Vacancies
 // @Accept json
 // @Produce json
@@ -26,7 +26,8 @@ import (
 // @Param max_salary query int false "Максимальная зарплата"
 // @Param min_experience query int false "Минимальный опыт работы (лет)"
 // @Param max_experience query int false "Максимальный опыт работы (лет)"
-// @Param search_title query string false "Поиск по названию вакансии"
+// @Param search_title query string false "Поиск по названию вакансии (через Elasticsearch)"
+// @Param skill_slugs query string false "Slug-и навыков через запятую (через Elasticsearch)"
 // @Success 200 {object} models.VacancyList "Список вакансий"
 // @Failure 400 {object} models.ErrorResponse "Неверные параметры запроса"
 // @Failure 401 {object} models.ErrorResponse "Неавторизованный доступ"
@@ -47,16 +48,28 @@ func (h *Handler) GetVacancies(c *fiber.Ctx) error {
 	minExperience, _ := strconv.Atoi(c.Query("min_experience", "0"))
 	maxExperience, _ := strconv.Atoi(c.Query("max_experience", "0"))
 	searchTitle := c.Query("search_title", "")
+	skillSlugs := splitCSV(c.Query("skill_slugs", ""))
 
-	pagination := &models.Pagination{
-		Page:  int32(page),
-		Limit: int32(limit),
+	var vacancies *models.VacancyList
+	var err error
+
+	// Если задан тег-фильтр или текстовый поиск — идём через Search.
+	// SQL-фильтры из старого пути (positionStatus/workFormat/schedule/maxSalary) при ES-маршруте игнорируются —
+	// в текущей версии mapping их не моделирует; для них всё ещё доступен старый путь без skill_slugs.
+	if h.apiService.Search.Available() && (len(skillSlugs) > 0 || searchTitle != "") {
+		log.Printf("GetVacancies: routing through Search (skill_slugs=%v search_title=%q)", skillSlugs, searchTitle)
+		vacancies, err = h.apiService.Search.SearchVacanciesAsModel(c.Context(), searchTitle, skillSlugs,
+			int32(minSalary), int32(maxExperience), companyID, int32(page), int32(limit))
+	} else {
+		pagination := &models.Pagination{
+			Page:  int32(page),
+			Limit: int32(limit),
+		}
+		vacancies, err = h.apiService.Vacancy.GetAllVacancies(c.Context(), pagination,
+			companyID, positionStatus, workFormat, schedule,
+			int32(minSalary), int32(maxSalary), int32(minExperience), int32(maxExperience),
+			searchTitle)
 	}
-
-	vacancies, err := h.apiService.Vacancy.GetAllVacancies(c.Context(), pagination,
-		companyID, positionStatus, workFormat, schedule,
-		int32(minSalary), int32(maxSalary), int32(minExperience), int32(maxExperience),
-		searchTitle)
 	if err != nil {
 		log.Printf("GetVacancies: Failed to get vacancies: %v", err)
 		return c.Status(fiber.StatusInternalServerError).JSON(models.Error{

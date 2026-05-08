@@ -4,6 +4,7 @@ import (
 	"context"
 	achievementv1 "github.com/StudJobs/proto_srtucture/gen/go/proto/achievement/v1"
 	companyv1 "github.com/StudJobs/proto_srtucture/gen/go/proto/company/v1"
+	searchv1 "github.com/StudJobs/proto_srtucture/gen/go/proto/search/v1"
 	skillsv1 "github.com/StudJobs/proto_srtucture/gen/go/proto/skills/v1"
 	vacancyv1 "github.com/StudJobs/proto_srtucture/gen/go/proto/vacancy/v1"
 
@@ -52,6 +53,16 @@ type SkillsService interface {
 	Bulk(ctx context.Context, slugs []string) ([]*models.Skill, error)
 }
 
+// SearchService — фасад над Elasticsearch-сервисом.
+// Available() возвращает false, если Search-сервис не сконфигурирован — Gateway упадёт обратно на SQL-фильтр.
+type SearchService interface {
+	Available() bool
+	SearchProfiles(ctx context.Context, query string, skillSlugs []string, professionCategory string, page, limit int32) (*usersv1.ProfileList, error)
+	SearchVacancies(ctx context.Context, query string, skillSlugs []string, salaryMin, experienceMax int32, companyID string, page, limit int32) (*vacancyv1.VacancyList, error)
+	// SearchVacanciesAsModel — то же, что SearchVacancies, но возвращает HTTP-модель.
+	SearchVacanciesAsModel(ctx context.Context, query string, skillSlugs []string, salaryMin, experienceMax int32, companyID string, page, limit int32) (*models.VacancyList, error)
+}
+
 type VacancyService interface {
 	CreateVacancy(ctx context.Context, vacancy *models.Vacancy) (*models.Vacancy, error)
 	GetVacancy(ctx context.Context, id string) (*models.Vacancy, error)
@@ -76,6 +87,7 @@ type ApiGateway struct {
 	Company     CompanyService
 	Vacancy     VacancyService
 	Skills      SkillsService
+	Search      SearchService
 }
 
 // NewApiGateway создает новый экземпляр ApiGateway
@@ -86,6 +98,7 @@ func NewApiGateway(
 	companyClient companyv1.CompanyServiceClient,
 	vacancyClient vacancyv1.VacancyServiceClient,
 	skillsClient skillsv1.SkillsServiceClient,
+	searchClient searchv1.SearchServiceClient,
 ) *ApiGateway {
 	return &ApiGateway{
 		Auth:        NewAuthService(authClient),
@@ -94,5 +107,6 @@ func NewApiGateway(
 		Company:     NewCompanyService(companyClient),
 		Vacancy:     NewVacancyService(vacancyClient),
 		Skills:      NewSkillsService(skillsClient),
+		Search:      NewSearchService(searchClient),
 	}
 }

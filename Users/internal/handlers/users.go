@@ -30,6 +30,7 @@ func (h *UsersHandler) NewProfile(ctx context.Context, req *usersv1.NewProfileRe
 	}
 
 	log.Printf("Handlers: NewProfile completed successfully for ID: %s", profile.Id)
+	h.search.IndexProfile(ctx, profile)
 	return profile, nil
 }
 
@@ -59,6 +60,7 @@ func (h *UsersHandler) UpdateProfile(ctx context.Context, req *usersv1.UpdatePro
 	}
 
 	log.Printf("Handlers: UpdateProfile completed successfully for ID: %s", profile.Id)
+	h.search.IndexProfile(ctx, profile)
 	return profile, nil
 }
 
@@ -84,6 +86,7 @@ func (h *UsersHandler) DeleteProfile(ctx context.Context, req *usersv1.DeletePro
 	}
 
 	log.Printf("Handlers: DeleteProfile completed successfully for ID: %s", req.Id)
+	h.search.DeleteProfile(ctx, req.Id)
 	return &commonv1.Empty{}, nil
 }
 

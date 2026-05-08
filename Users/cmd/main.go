@@ -5,6 +5,7 @@ import (
 	"github.com/spf13/viper"
 	"github.com/studjobs/hh_for_students/users/internal/handlers"
 	"github.com/studjobs/hh_for_students/users/internal/repository"
+	"github.com/studjobs/hh_for_students/users/internal/searchclient"
 	"github.com/studjobs/hh_for_students/users/internal/service"
 	"github.com/studjobs/hh_for_students/users/server"
 	"log"
@@ -45,7 +46,9 @@ func main() {
 	// Инициализация зависимостей
 	repo := repository.NewRepository(db)
 	serv := service.NewService(repo)
-	userHandlers := handlers.NewUsersHandler(serv)
+	searchCli := searchclient.New(getEnv("SEARCH_GRPC_ADDR", viper.GetString("clients.search_addr")))
+	defer searchCli.Close()
+	userHandlers := handlers.NewUsersHandler(serv, searchCli)
 
 	// Получаем порт из конфигурации - ИСПРАВЛЕНО!
 	grpcPort := getEnv("GRPC_PORT", viper.GetString("grpc.port"))

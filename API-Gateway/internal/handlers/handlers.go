@@ -5,6 +5,7 @@ import (
 	"github.com/studjobs/hh_for_students/api-gateway/internal/services"
 	"github.com/studjobs/hh_for_students/api-gateway/internal/utils"
 	"log"
+	"strings"
 	"time"
 
 	swagger "github.com/arsmn/fiber-swagger/v2"
@@ -150,6 +151,21 @@ func normalizePagination(page, limit int) (int, int) {
 		limit = maxPageSize
 	}
 	return page, limit
+}
+
+// splitCSV разбивает строку через запятую на список slug-ов, удаляя пустые элементы.
+func splitCSV(raw string) []string {
+	if raw == "" {
+		return nil
+	}
+	parts := strings.Split(raw, ",")
+	out := make([]string, 0, len(parts))
+	for _, p := range parts {
+		if v := strings.TrimSpace(p); v != "" {
+			out = append(out, v)
+		}
+	}
+	return out
 }
 
 func (h *Handler) roleConvert(userRole Role) string {

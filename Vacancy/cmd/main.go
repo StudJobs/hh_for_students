@@ -3,6 +3,7 @@ package main
 import (
 	"hh_for_students/vacancy-service/internal/handlers"
 	"hh_for_students/vacancy-service/internal/repository"
+	"hh_for_students/vacancy-service/internal/searchclient"
 	"hh_for_students/vacancy-service/internal/service"
 	"hh_for_students/vacancy-service/server"
 
@@ -47,7 +48,9 @@ func main() {
 	// Инициализация зависимостей
 	repo := repository.NewRepository(db)
 	serv := service.NewService(repo)
-	vacancyHandlers := handlers.NewVacancyHandler(serv)
+	searchCli := searchclient.New(getEnv("SEARCH_GRPC_ADDR", viper.GetString("clients.search_addr")))
+	defer searchCli.Close()
+	vacancyHandlers := handlers.NewVacancyHandler(serv, searchCli)
 
 	// Получаем порт из конфигурации!
 	grpcPort := getEnv("GRPC_PORT", viper.GetString("grpc.port"))

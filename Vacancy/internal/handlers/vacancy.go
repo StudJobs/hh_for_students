@@ -30,6 +30,7 @@ func (h *VacancyHandler) NewVacancy(ctx context.Context, req *vacancyv1.NewVacan
 	}
 
 	log.Printf("Handlers: NewVacancy completed successfully for ID: %s", vacancy.Id)
+	h.search.IndexVacancy(ctx, vacancy)
 	return vacancy, nil
 }
 
@@ -59,6 +60,7 @@ func (h *VacancyHandler) UpdateVacancy(ctx context.Context, req *vacancyv1.Updat
 	}
 
 	log.Printf("Handlers: UpdateVacancy completed successfully for ID: %s", vacancy.Id)
+	h.search.IndexVacancy(ctx, vacancy)
 	return vacancy, nil
 }
 
@@ -84,6 +86,7 @@ func (h *VacancyHandler) DeleteVacancy(ctx context.Context, req *vacancyv1.Delet
 	}
 
 	log.Printf("Handlers: DeleteVacancy completed successfully for ID: %s", req.Id)
+	h.search.DeleteVacancy(ctx, req.Id)
 	return &commonv1.Empty{}, nil
 }
 

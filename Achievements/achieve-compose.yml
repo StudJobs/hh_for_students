@@ -4,6 +4,8 @@ services:
       context: .
       dockerfile: Dockerfile
 
+    restart: unless-stopped
+
     ports:
       - "50053:50053"
 
@@ -32,6 +34,8 @@ services:
 
   postgres_achieve:
     image: postgres:15-alpine
+
+    restart: unless-stopped
 
     environment:
       POSTGRES_USER: postgres

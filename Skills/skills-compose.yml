@@ -6,6 +6,8 @@ services:
       context: .
       dockerfile: Dockerfile
 
+    restart: unless-stopped
+
     ports:
       - "50056:50056"
 
@@ -36,6 +38,8 @@ services:
 
   postgres_skills:
     image: postgres:15-alpine
+
+    restart: unless-stopped
 
     environment:
       POSTGRES_USER: postgres

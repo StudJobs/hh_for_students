@@ -1,4 +1,4 @@
-.PHONY: all infra gateway auth users achievement skills down clean help
+.PHONY: all infra gateway auth users achievement skills es search down clean help reindex
 
 help:
 	@echo "Available commands:"
@@ -9,7 +9,14 @@ help:
 	@echo "  make status   - Show service status"
 
 # Запуск всего в правильном порядке
-all: haproxy minio auth users achievement company vacancy skills gateway
+all: haproxy minio es auth users achievement company vacancy skills search gateway
+
+# Elasticsearch — нужен Search-сервису и индексаторам в Users/Vacancy
+es:
+	cd devops && docker-compose -f elasticsearch-compose.yml up -d
+	@echo "Waiting for Elasticsearch (this can take ~30s on first start)..."
+	@timeout 60 bash -c 'until curl -fs http://localhost:9200/_cluster/health 2>/dev/null | grep -E "(green|yellow)" >/dev/null; do sleep 3; echo "Waiting for Elasticsearch..."; done'
+	@echo "✓ Elasticsearch is healthy!"
 
 # Инфраструктурные сервисы
 #haproxy:
@@ -62,7 +69,20 @@ skills:
 	@timeout 10 bash -c 'until ./grpcurl -plaintext localhost:50056 grpc.health.v1.Health/Check >/dev/null 2>&1; do sleep 2; echo "Waiting for skills..."; done'
 	@echo "✓ Skills service is healthy!"
 
-gateway: auth vacancy skills
+search: es users vacancy
+	cd Search && docker-compose -f search-compose.yml up -d
+	@echo "Waiting for search service..."
+	@timeout 60 bash -c 'until ./grpcurl -plaintext localhost:50057 grpc.health.v1.Health/Check >/dev/null 2>&1; do sleep 2; echo "Waiting for search..."; done'
+	@echo "✓ Search service is healthy!"
+
+# Холодная переиндексация PG → ES (вызывается после миграций или для первого старта).
+# Reindex RPC создаёт индексы (recreate=true) и перечитывает все профили/вакансии.
+reindex:
+	@echo "Reindexing all profiles and vacancies into Elasticsearch..."
+	./grpcurl -plaintext -d '{"recreate_indices": true}' localhost:50057 search.v1.SearchService/Reindex
+	@echo "✓ Reindex done"
+
+gateway: auth vacancy skills search
 	cd API-Gateway && docker-compose -f api-gateway-compose.yml up -d
 	@echo "Waiting for gateway service..."
 	@timeout 10 bash -c 'until curl -f http://localhost:8000/health >/dev/null 2>&1; do sleep 2; echo "Waiting for gateway..."; done'
@@ -77,9 +97,11 @@ down:
 	docker-compose -f Achievements/achivement-compose.yml down
 	docker-compose -f devops/haproxy-compose.yml down
 	docker-compose -f devops/minio-compose.yml down
+	docker-compose -f devops/elasticsearch-compose.yml down
 	docker-compose -f Company/company-compose.yml down
 	docker-compose -f vacancy-service/vacancy-compose.yml down
 	docker-compose -f Skills/skills-compose.yml down
+	docker-compose -f Search/search-compose.yml down
 	@echo "✓ All services stopped"
 
 logs:

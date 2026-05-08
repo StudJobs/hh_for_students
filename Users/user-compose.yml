@@ -20,6 +20,9 @@ services:
       DB_USER: postgres
       DB_NAME: users
       DB_SSLMODE: disable
+      SEARCH_GRPC_ADDR: search:50057
+
+    restart: unless-stopped
 
     volumes:
       - ./configs:/configs
@@ -29,6 +32,8 @@ services:
 
   postgres_user:
     image: postgres:15-alpine
+
+    restart: unless-stopped
 
     environment:
       POSTGRES_USER: postgres

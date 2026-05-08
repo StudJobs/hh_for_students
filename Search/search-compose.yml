@@ -1,0 +1,35 @@
+version: '3.8'
+
+services:
+  search:
+    build:
+      context: .
+      dockerfile: Dockerfile
+
+    ports:
+      - "50057:50057"
+
+    environment:
+      ELASTICSEARCH_URL: http://elasticsearch:9200
+      USERS_GRPC_ADDR: user:50052
+      VACANCY_GRPC_ADDR: vacancy:50054
+      GRPC_PORT: "50057"
+
+    volumes:
+      - ./configs:/configs
+
+    networks:
+      - microservices-net
+
+    restart: unless-stopped
+
+    healthcheck:
+      test: ["CMD", "grpc_health_probe", "-addr=localhost:50057"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 20s
+
+networks:
+  microservices-net:
+    external: true
