@@ -92,10 +92,13 @@ func (r *UsersRepository) GetAllProfiles(ctx context.Context, professionCategory
 		Select("id", "first_name", "last_name", "age", "tg", "resume_id", "avatar_id", "email", "description", "profession_category", "education_institution", "skill_slugs").
 		From(PROFILE_TABLE).
 		Where("deleted_at IS NULL").
-		Where(squirrel.Eq{"role": role}).
 		OrderBy("created_at DESC").
 		Limit(uint64(limit)).
 		Offset(uint64(offset))
+
+	if role != "" {
+		queryBuilder = queryBuilder.Where(squirrel.Eq{"role": role})
+	}
 
 	// Добавляем фильтр по категории если нужно
 	if professionCategory != "" {
@@ -165,6 +168,10 @@ func (r *UsersRepository) GetAllProfiles(ctx context.Context, professionCategory
 		Select("COUNT(*)").
 		From(PROFILE_TABLE).
 		Where("deleted_at IS NULL")
+
+	if role != "" {
+		countBuilder = countBuilder.Where(squirrel.Eq{"role": role})
+	}
 
 	if professionCategory != "" {
 		countBuilder = countBuilder.Where(squirrel.Eq{"profession_category": professionCategory})
