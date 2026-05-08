@@ -41,6 +41,7 @@ func (s *achievementService) GetAllAchievements(ctx context.Context, userID stri
 			FileName:  protoAchievement.FileName,
 			FileType:  protoAchievement.FileType,
 			FileSize:  protoAchievement.FileSize,
+			Type:      int32(protoAchievement.Type),
 			CreatedAt: protoAchievement.CreatedAt,
 		}
 	}
@@ -114,6 +115,7 @@ func (s *achievementService) AddAchievementMeta(ctx context.Context, meta *model
 		FileName:  meta.FileName,
 		FileType:  meta.FileType,
 		FileSize:  meta.FileSize,
+		Type:      achievementv1.AchievementType(meta.Type),
 		CreatedAt: meta.CreatedAt,
 	}
 

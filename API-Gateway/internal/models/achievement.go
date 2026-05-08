@@ -8,6 +8,7 @@ type AchievementMeta struct {
 	FileName  string `json:"file_name" example:"diploma.pdf"`
 	FileType  string `json:"file_type" example:"application/pdf"`
 	FileSize  int64  `json:"file_size" example:"2048576"`
+	Type      int32  `json:"type" example:"1"` // 0 unspec, 1 pet-project, 2 coursework, 3 hackathon, 4 course, 5 microtask result, 6 other
 	CreatedAt string `json:"created_at" example:"2023-10-05T14:30:00Z"`
 }
 
@@ -39,6 +40,7 @@ type AchievementUploadRequest struct {
 	FileName string `json:"file_name" example:"diploma.pdf" validate:"required"`
 	FileType string `json:"file_type" example:"application/pdf" validate:"required"`
 	FileSize int64  `json:"file_size" example:"2048576" validate:"required,min=1"`
+	Type     int32  `json:"type" example:"1"`
 }
 
 // AchievementCreateResponse HTTP модель ответа при создании достижения

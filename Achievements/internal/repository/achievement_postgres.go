@@ -27,6 +27,7 @@ type AchievementDB struct {
 	FileType  string     `db:"file_type"`
 	FileSize  int64      `db:"file_size"`
 	S3Key     string     `db:"s3_key"`
+	Type      int32      `db:"type"`
 	CreatedAt time.Time  `db:"created_at"`
 	UpdatedAt time.Time  `db:"updated_at"`
 	DeletedAt *time.Time `db:"deleted_at"`
@@ -69,9 +70,9 @@ func (r *AchievementRepository) CreateAchievement(ctx context.Context, achieveme
 	// Создаем новое достижение
 	query, args, err := r.sb.
 		Insert(ACHIEVEMENT_TABLE).
-		Columns("name", "user_uuid", "file_name", "file_type", "file_size", "s3_key").
+		Columns("name", "user_uuid", "file_name", "file_type", "file_size", "s3_key", "type").
 		Values(achievement.Name, achievement.UserUUID, achievement.FileName,
-			achievement.FileType, achievement.FileSize, achievement.S3Key).
+			achievement.FileType, achievement.FileSize, achievement.S3Key, achievement.Type).
 		ToSql()
 
 	if err != nil {
@@ -94,7 +95,7 @@ func (r *AchievementRepository) GetAchievementsByUser(ctx context.Context, userU
 	log.Printf("Repository: Getting achievements for user: %s", userUUID)
 
 	query, args, err := r.sb.
-		Select("id", "name", "user_uuid", "file_name", "file_type", "file_size", "s3_key", "created_at").
+		Select("id", "name", "user_uuid", "file_name", "file_type", "file_size", "s3_key", "type", "created_at").
 		From(ACHIEVEMENT_TABLE).
 		Where(squirrel.Eq{"user_uuid": userUUID}).
 		Where("deleted_at IS NULL").
@@ -124,6 +125,7 @@ func (r *AchievementRepository) GetAchievementsByUser(ctx context.Context, userU
 			&achievement.FileType,
 			&achievement.FileSize,
 			&achievement.S3Key,
+			&achievement.Type,
 			&achievement.CreatedAt,
 		)
 		if err != nil {
@@ -142,7 +144,7 @@ func (r *AchievementRepository) GetAchievementByName(ctx context.Context, userUU
 	log.Printf("Repository: Getting achievement for user %s: %s", userUUID, name)
 
 	query, args, err := r.sb.
-		Select("id", "name", "user_uuid", "file_name", "file_type", "file_size", "s3_key", "created_at").
+		Select("id", "name", "user_uuid", "file_name", "file_type", "file_size", "s3_key", "type", "created_at").
 		From(ACHIEVEMENT_TABLE).
 		Where(squirrel.Eq{"user_uuid": userUUID, "name": name}).
 		Where("deleted_at IS NULL").
@@ -162,6 +164,7 @@ func (r *AchievementRepository) GetAchievementByName(ctx context.Context, userUU
 		&achievement.FileType,
 		&achievement.FileSize,
 		&achievement.S3Key,
+		&achievement.Type,
 		&achievement.CreatedAt,
 	)
 

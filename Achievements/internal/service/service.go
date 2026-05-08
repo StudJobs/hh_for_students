@@ -7,7 +7,7 @@ type Achievement interface {
 	GetAllAchievements(userUUID string) ([]*AchievementResponse, error)
 	GetAchievementDownloadURL(userUUID, achievementName string) (string, error)
 	GetAchievementUploadURL(userUUID, achievementName, fileName, fileType string, fileSize int64) (string, string, error)
-	AddAchievementMeta(userUUID, achievementName, fileName, fileType string, fileSize int64, s3Key string) error
+	AddAchievementMeta(userUUID, achievementName, fileName, fileType string, fileSize int64, s3Key string, achievementType int32) error
 	DeleteAchievement(userUUID, achievementName string) error
 }
 

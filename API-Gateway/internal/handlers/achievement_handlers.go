@@ -118,6 +118,7 @@ func (h *Handler) CreateUserAchievement(c *fiber.Ctx) error {
 		FileName:  uploadReq.FileName,
 		FileType:  uploadReq.FileType,
 		FileSize:  uploadReq.FileSize,
+		Type:      uploadReq.Type,
 		CreatedAt: time.Now().Format(time.RFC3339),
 	}
 

@@ -43,6 +43,7 @@ func (h *Handler) GetAllAchievements(ctx context.Context, req *achievementv1.Get
 			FileType:  achievement.FileType,
 			FileSize:  achievement.FileSize,
 			CreatedAt: achievement.CreatedAt.Format(time.RFC3339),
+			Type:      achievementv1.AchievementType(achievement.Type),
 		}
 	}
 
@@ -113,6 +114,7 @@ func (h *Handler) AddAchievementMeta(ctx context.Context, req *achievementv1.Add
 		meta.GetFileType(),
 		meta.GetFileSize(),
 		req.GetS3Key(),
+		int32(meta.GetType()),
 	)
 	if err != nil {
 		return nil, err

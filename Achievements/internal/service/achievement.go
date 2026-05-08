@@ -22,6 +22,7 @@ type AchievementResponse struct {
 	FileType  string
 	FileSize  int64
 	S3Key     string
+	Type      int32
 	CreatedAt time.Time
 }
 
@@ -56,6 +57,7 @@ func (s *AchievementService) GetAllAchievements(userUUID string) ([]*Achievement
 			FileType:  achievement.FileType,
 			FileSize:  achievement.FileSize,
 			S3Key:     achievement.S3Key,
+			Type:      achievement.Type,
 			CreatedAt: achievement.CreatedAt,
 		}
 	}
@@ -135,8 +137,8 @@ func (s *AchievementService) GetAchievementUploadURL(userUUID, achievementName, 
 }
 
 // AddAchievementMeta добавляет метаданные достижения после успешной загрузки
-func (s *AchievementService) AddAchievementMeta(userUUID, achievementName, fileName, fileType string, fileSize int64, s3Key string) error {
-	log.Printf("Service: Adding achievement metadata for user %s, achievement: %s, S3 key: %s", userUUID, achievementName, s3Key)
+func (s *AchievementService) AddAchievementMeta(userUUID, achievementName, fileName, fileType string, fileSize int64, s3Key string, achievementType int32) error {
+	log.Printf("Service: Adding achievement metadata for user %s, achievement: %s, S3 key: %s, type: %d", userUUID, achievementName, s3Key, achievementType)
 
 	if userUUID == "" || achievementName == "" || fileName == "" || fileType == "" || s3Key == "" {
 		return status.Error(codes.InvalidArgument, "all fields are required")
@@ -162,6 +164,7 @@ func (s *AchievementService) AddAchievementMeta(userUUID, achievementName, fileN
 		FileType:  fileType,
 		FileSize:  fileSize,
 		S3Key:     s3Key,
+		Type:      achievementType,
 		CreatedAt: time.Now(),
 	}
 
