@@ -7,3 +7,4 @@ grpc:
   user_ach_address: "DB_HOST_EXAMPLE:50053"
   vacancy_address: "DB_HOST_EXAMPLE:50054"
   company_address: "DB_HOST_EXAMPLE:50055"
+  skills_address:  "DB_HOST_EXAMPLE:50056"

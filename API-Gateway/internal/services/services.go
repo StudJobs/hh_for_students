@@ -4,6 +4,7 @@ import (
 	"context"
 	achievementv1 "github.com/StudJobs/proto_srtucture/gen/go/proto/achievement/v1"
 	companyv1 "github.com/StudJobs/proto_srtucture/gen/go/proto/company/v1"
+	skillsv1 "github.com/StudJobs/proto_srtucture/gen/go/proto/skills/v1"
 	vacancyv1 "github.com/StudJobs/proto_srtucture/gen/go/proto/vacancy/v1"
 
 	authv1 "github.com/StudJobs/proto_srtucture/gen/go/proto/auth/v1"
@@ -45,6 +46,12 @@ type CompanyService interface {
 	DeleteCompany(ctx context.Context, id string) error
 }
 
+type SkillsService interface {
+	Search(ctx context.Context, query string, category int32, limit int32) ([]*models.Skill, error)
+	Popular(ctx context.Context, category int32, limit int32) ([]*models.Skill, error)
+	Bulk(ctx context.Context, slugs []string) ([]*models.Skill, error)
+}
+
 type VacancyService interface {
 	CreateVacancy(ctx context.Context, vacancy *models.Vacancy) (*models.Vacancy, error)
 	GetVacancy(ctx context.Context, id string) (*models.Vacancy, error)
@@ -68,6 +75,7 @@ type ApiGateway struct {
 	Achievement AchievementService
 	Company     CompanyService
 	Vacancy     VacancyService
+	Skills      SkillsService
 }
 
 // NewApiGateway создает новый экземпляр ApiGateway
@@ -77,6 +85,7 @@ func NewApiGateway(
 	achievementClient achievementv1.AchievementServiceClient,
 	companyClient companyv1.CompanyServiceClient,
 	vacancyClient vacancyv1.VacancyServiceClient,
+	skillsClient skillsv1.SkillsServiceClient,
 ) *ApiGateway {
 	return &ApiGateway{
 		Auth:        NewAuthService(authClient),
@@ -84,5 +93,6 @@ func NewApiGateway(
 		Achievement: NewAchievementService(achievementClient),
 		Company:     NewCompanyService(companyClient),
 		Vacancy:     NewVacancyService(vacancyClient),
+		Skills:      NewSkillsService(skillsClient),
 	}
 }

@@ -54,6 +54,7 @@ func main() {
 		UserAchievementAddress: viper.GetString("grpc.user_ach_address"),
 		VacancyAddress:         viper.GetString("grpc.vacancy_address"),
 		CompanyAddress:         viper.GetString("grpc.company_address"),
+		SkillsAddress:          viper.GetString("grpc.skills_address"),
 		Timeout:                10 * time.Second,
 	}
 
@@ -63,7 +64,7 @@ func main() {
 		log.Fatalf("Failed to initialize gRPC clients: %v", err)
 	}
 
-	apiGateway := services.NewApiGateway(clients.Auth, clients.Users, clients.Achievement, clients.Company, clients.Vacancy)
+	apiGateway := services.NewApiGateway(clients.Auth, clients.Users, clients.Achievement, clients.Company, clients.Vacancy, clients.Skills)
 	handler := handlers.NewHandler(apiGateway)
 	app := handler.Init()
 

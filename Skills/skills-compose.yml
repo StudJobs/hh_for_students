@@ -1,0 +1,65 @@
+version: '3.8'
+
+services:
+  skills:
+    build:
+      context: .
+      dockerfile: Dockerfile
+
+    ports:
+      - "50056:50056"
+
+    depends_on:
+      postgres_skills:
+        condition: service_healthy
+
+    environment:
+      DB_PASS: ${DB_PASS}
+      DB_HOST: postgres_skills
+      DB_PORT: 5432
+      DB_USER: postgres
+      DB_NAME: skills
+      DB_SSLMODE: disable
+
+    volumes:
+      - ./configs:/configs
+
+    networks:
+      - microservices-net
+
+    healthcheck:
+      test: ["CMD", "grpc_health_probe", "-addr=localhost:50056"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 20s
+
+  postgres_skills:
+    image: postgres:15-alpine
+
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: ${DB_PASS}
+      POSTGRES_DB: skills
+
+    ports:
+      - "5438:5432"
+
+    volumes:
+      - postgres_data_skills:/var/lib/postgresql/data
+
+    networks:
+      - microservices-net
+
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres -d skills"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
+volumes:
+  postgres_data_skills:
+
+networks:
+  microservices-net:
+    external: true

@@ -1,0 +1,9 @@
+database:
+  host: "DB_HOST_EXAMPLE"
+  port: "5432"
+  username: "postgres"
+  name: "skills"
+  sslmode: "disable"
+
+grpc:
+  port: "50056"

@@ -1,15 +1,15 @@
-.PHONY: all infra gateway auth users achievement down clean help
+.PHONY: all infra gateway auth users achievement skills down clean help
 
 help:
 	@echo "Available commands:"
 	@echo "  make all      - Start all services"
-	@echo "  make service  - Start selected service selected from minio, haproxy, API-Gateway, Auth, Users, achievement, company, vacancy"
-	@echo "  make down     - Stop all services" 
+	@echo "  make service  - Start selected service selected from minio, haproxy, API-Gateway, Auth, Users, achievement, company, vacancy, skills"
+	@echo "  make down     - Stop all services"
 	@echo "  make logs     - Show logs in selected service"
 	@echo "  make status   - Show service status"
 
 # Запуск всего в правильном порядке
-all: haproxy minio auth users achievement company vacancy gateway
+all: haproxy minio auth users achievement company vacancy skills gateway
 
 # Инфраструктурные сервисы
 #haproxy:
@@ -50,13 +50,19 @@ vacancy:
 	@timeout 10 bash -c 'until ./grpcurl -plaintext localhost:50054 grpc.health.v1.Health/Check >/dev/null 2>&1; do sleep 2; echo "Waiting for vacancy..."; done'
 	@echo "✓ Vacancy service is healthy!"
 
-company: 
+company:
 	cd Company && docker-compose -f company-compose.yml up -d
 	@echo "Waiting for company service..."
 	@timeout 10 bash -c 'until ./grpcurl -plaintext localhost:50055 grpc.health.v1.Health/Check >/dev/null 2>&1; do sleep 2; echo "Waiting for company..."; done'
 	@echo "✓ Company service is healthy!"
-	
-gateway: auth vacancy
+
+skills:
+	cd Skills && docker-compose -f skills-compose.yml up -d
+	@echo "Waiting for skills service..."
+	@timeout 10 bash -c 'until ./grpcurl -plaintext localhost:50056 grpc.health.v1.Health/Check >/dev/null 2>&1; do sleep 2; echo "Waiting for skills..."; done'
+	@echo "✓ Skills service is healthy!"
+
+gateway: auth vacancy skills
 	cd API-Gateway && docker-compose -f api-gateway-compose.yml up -d
 	@echo "Waiting for gateway service..."
 	@timeout 10 bash -c 'until curl -f http://localhost:8000/health >/dev/null 2>&1; do sleep 2; echo "Waiting for gateway..."; done'
@@ -73,6 +79,7 @@ down:
 	docker-compose -f devops/minio-compose.yml down
 	docker-compose -f Company/company-compose.yml down
 	docker-compose -f vacancy-service/vacancy-compose.yml down
+	docker-compose -f Skills/skills-compose.yml down
 	@echo "✓ All services stopped"
 
 logs:
@@ -86,7 +93,7 @@ logs:
 
 status:
 	@echo "=== Service Status ==="
-	@for service in devops API-Gateway Auth Users Achievements Company vacancy-service; do \
+	@for service in devops API-Gateway Auth Users Achievements Company vacancy-service Skills; do \
 		if [ -f "$$service/docker-compose.yml" ] || [ -f "$$service/*-compose.yml" ]; then \
 			echo "--- $$service ---"; \
 			if [ "$$service" = "devops" ]; then \

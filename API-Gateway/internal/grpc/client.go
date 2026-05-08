@@ -3,6 +3,7 @@ package grpc
 import (
 	"context"
 	companyv1 "github.com/StudJobs/proto_srtucture/gen/go/proto/company/v1"
+	skillsv1 "github.com/StudJobs/proto_srtucture/gen/go/proto/skills/v1"
 	vacancyv1 "github.com/StudJobs/proto_srtucture/gen/go/proto/vacancy/v1"
 	"log"
 	"time"
@@ -21,6 +22,7 @@ type Clients struct {
 	Achievement achievementv1.AchievementServiceClient
 	Company     companyv1.CompanyServiceClient
 	Vacancy     vacancyv1.VacancyServiceClient
+	Skills      skillsv1.SkillsServiceClient
 }
 
 // Config конфигурация для gRPC подключений
@@ -30,6 +32,7 @@ type Config struct {
 	UserAchievementAddress string
 	VacancyAddress         string
 	CompanyAddress         string
+	SkillsAddress          string
 	Timeout                time.Duration
 }
 
@@ -67,6 +70,12 @@ func NewClients(cfg Config) (*Clients, error) {
 	if cfg.UserAchievementAddress != "" {
 		if conn := mustConn(cfg.UserAchievementAddress, cfg.Timeout); conn != nil {
 			clients.Achievement = achievementv1.NewAchievementServiceClient(conn)
+		}
+	}
+
+	if cfg.SkillsAddress != "" {
+		if conn := mustConn(cfg.SkillsAddress, cfg.Timeout); conn != nil {
+			clients.Skills = skillsv1.NewSkillsServiceClient(conn)
 		}
 	}
 	log.Println("✓ gRPC initialization completed (some services may be skipped)")

@@ -112,6 +112,12 @@ func (h *Handler) initRoutes() {
 	vacancyFiles.Post("/attachment", OwnerOrRoleMiddleware(ID, ROLE_DEVELOPER, ROLE_HR), h.UploadVacancyAttachment)
 	vacancyFiles.Delete("/attachment", OwnerOrRoleMiddleware(ID, ROLE_DEVELOPER, ROLE_HR), h.DeleteVacancyAttachment)
 
+	// === Skills (справочник тегов компетенций) ===
+	skills := api.Group("/skills")
+	skills.Get("/search", RoleMiddleware(ROLE_DEVELOPER, ROLE_STUDENT, ROLE_HR, ROLE_COMPANY), h.SearchSkills)
+	skills.Get("/popular", RoleMiddleware(ROLE_DEVELOPER, ROLE_STUDENT, ROLE_HR, ROLE_COMPANY), h.PopularSkills)
+	skills.Get("/bulk", RoleMiddleware(ROLE_DEVELOPER, ROLE_STUDENT, ROLE_HR, ROLE_COMPANY), h.BulkSkills)
+
 	// === Company ===
 	company := api.Group("/company")
 	company.Get("/", RoleMiddleware(ROLE_DEVELOPER, ROLE_STUDENT, ROLE_HR, ROLE_COMPANY), h.GetCompanies)
