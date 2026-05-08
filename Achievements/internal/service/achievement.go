@@ -16,14 +16,44 @@ import (
 
 // AchievementResponse представляет ответ с данными достижения
 type AchievementResponse struct {
-	Name      string
-	UserUUID  string
-	FileName  string
-	FileType  string
-	FileSize  int64
-	S3Key     string
-	Type      int32
-	CreatedAt time.Time
+	ID                 int64
+	Name               string
+	UserUUID           string
+	FileName           string
+	FileType           string
+	FileSize           int64
+	S3Key              string
+	Type               int32
+	CreatedAt          time.Time
+	VerificationStatus int32
+	ReviewedBy         string
+	ReviewedAt         time.Time
+	ReviewComment      string
+}
+
+func toResponse(a *repository.AchievementDB) *AchievementResponse {
+	r := &AchievementResponse{
+		ID:                 a.ID,
+		Name:               a.Name,
+		UserUUID:           a.UserUUID,
+		FileName:           a.FileName,
+		FileType:           a.FileType,
+		FileSize:           a.FileSize,
+		S3Key:              a.S3Key,
+		Type:               a.Type,
+		CreatedAt:          a.CreatedAt,
+		VerificationStatus: a.VerificationStatus,
+	}
+	if a.ReviewedBy != nil {
+		r.ReviewedBy = *a.ReviewedBy
+	}
+	if a.ReviewedAt != nil {
+		r.ReviewedAt = *a.ReviewedAt
+	}
+	if a.ReviewComment != nil {
+		r.ReviewComment = *a.ReviewComment
+	}
+	return r
 }
 
 type AchievementService struct {
@@ -49,21 +79,66 @@ func (s *AchievementService) GetAllAchievements(userUUID string) ([]*Achievement
 	}
 
 	result := make([]*AchievementResponse, len(achievements))
-	for i, achievement := range achievements {
-		result[i] = &AchievementResponse{
-			Name:      achievement.Name,
-			UserUUID:  achievement.UserUUID,
-			FileName:  achievement.FileName,
-			FileType:  achievement.FileType,
-			FileSize:  achievement.FileSize,
-			S3Key:     achievement.S3Key,
-			Type:      achievement.Type,
-			CreatedAt: achievement.CreatedAt,
-		}
+	for i, a := range achievements {
+		result[i] = toResponse(a)
 	}
 
 	log.Printf("Service: Retrieved %d achievements for user %s", len(result), userUUID)
 	return result, nil
+}
+
+// SubmitForReview — студент переводит DRAFT -> PENDING.
+func (s *AchievementService) SubmitForReview(ctx context.Context, userUUID string, achievementID int64) error {
+	if userUUID == "" || achievementID <= 0 {
+		return status.Error(codes.InvalidArgument, "user_uuid and achievement_id are required")
+	}
+
+	a, err := s.repo.Achievement.GetAchievementByID(ctx, achievementID)
+	if err != nil {
+		return err
+	}
+	if a.UserUUID != userUUID {
+		return status.Error(codes.PermissionDenied, "not your achievement")
+	}
+	// Разрешён переход из DRAFT(1) и REJECTED(4) — повторная отправка после правок.
+	if a.VerificationStatus != 1 && a.VerificationStatus != 4 {
+		return status.Errorf(codes.FailedPrecondition, "cannot submit from status %d", a.VerificationStatus)
+	}
+
+	if _, err := s.repo.Achievement.SetVerificationStatus(ctx, achievementID, 2, a.VerificationStatus, "", ""); err != nil {
+		return err
+	}
+	log.Printf("Service: SubmitForReview ok: id=%d, user=%s", achievementID, userUUID)
+	return nil
+}
+
+// GetExpertQueue — все PENDING-достижения с пагинацией.
+func (s *AchievementService) GetExpertQueue(ctx context.Context, page, limit int32) ([]*AchievementResponse, error) {
+	achievements, err := s.repo.Achievement.ListPending(ctx, page, limit)
+	if err != nil {
+		return nil, err
+	}
+	result := make([]*AchievementResponse, len(achievements))
+	for i, a := range achievements {
+		result[i] = toResponse(a)
+	}
+	return result, nil
+}
+
+// ReviewAchievement — эксперт принимает решение APPROVED(3) или REJECTED(4).
+func (s *AchievementService) ReviewAchievement(ctx context.Context, achievementID int64, reviewerUUID string, decision int32, comment string) error {
+	if achievementID <= 0 || reviewerUUID == "" {
+		return status.Error(codes.InvalidArgument, "achievement_id and reviewer_uuid are required")
+	}
+	if decision != 3 && decision != 4 {
+		return status.Error(codes.InvalidArgument, "decision must be APPROVED or REJECTED")
+	}
+	// Переход разрешён только из PENDING(2).
+	if _, err := s.repo.Achievement.SetVerificationStatus(ctx, achievementID, decision, 2, reviewerUUID, comment); err != nil {
+		return err
+	}
+	log.Printf("Service: ReviewAchievement ok: id=%d, reviewer=%s, decision=%d", achievementID, reviewerUUID, decision)
+	return nil
 }
 
 // GetAchievementDownloadURL генерирует URL для скачивания достижения

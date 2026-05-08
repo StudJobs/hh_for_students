@@ -12,7 +12,10 @@ type Achievement interface {
 	CreateAchievement(ctx context.Context, achievement *AchievementDB) error
 	GetAchievementsByUser(ctx context.Context, userUUID string) ([]*AchievementDB, error)
 	GetAchievementByName(ctx context.Context, userUUID, name string) (*AchievementDB, error)
+	GetAchievementByID(ctx context.Context, id int64) (*AchievementDB, error)
 	DeleteAchievement(ctx context.Context, userUUID, name string) error
+	SetVerificationStatus(ctx context.Context, id int64, newStatus, expectedStatus int32, reviewerUUID, comment string) (*AchievementDB, error)
+	ListPending(ctx context.Context, page, limit int32) ([]*AchievementDB, error)
 }
 
 // S3 определяет методы для работы с файловым хранилищем

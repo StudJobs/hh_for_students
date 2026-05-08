@@ -5,6 +5,7 @@ import (
 	"github.com/google/uuid"
 	"github.com/studjobs/hh_for_students/api-gateway/internal/models"
 	"log"
+	"strconv"
 	"time"
 )
 
@@ -337,4 +338,84 @@ func (h *Handler) DeleteAchievement(c *fiber.Ctx) error {
 	return c.JSON(fiber.Map{
 		"message": "Achievement deleted successfully",
 	})
+}
+
+// SubmitAchievementForReview отправляет достижение на ревью эксперта.
+// @Summary Отправить достижение на экспертную проверку
+// @Tags Achievements
+// @Param id path int true "ID достижения"
+// @Security BearerAuth
+// @Success 200 {object} map[string]string
+// @Router /user/achievements/{id}/submit [post]
+func (h *Handler) SubmitAchievementForReview(c *fiber.Ctx) error {
+	userID := getUserIDFromContext(c)
+	if _, err := uuid.Parse(userID); err != nil {
+		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{"error": "invalid user id"})
+	}
+
+	achievementID, err := strconv.ParseInt(c.Params("id"), 10, 64)
+	if err != nil || achievementID <= 0 {
+		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{"error": "invalid achievement id"})
+	}
+
+	if err := h.apiService.Achievement.SubmitForReview(c.Context(), userID, achievementID); err != nil {
+		log.Printf("SubmitAchievementForReview: failed for user %s, id %d: %v", userID, achievementID, err)
+		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{"error": err.Error()})
+	}
+	return c.JSON(fiber.Map{"message": "submitted for review"})
+}
+
+// GetExpertQueue возвращает список достижений в статусе PENDING (только ROLE_EXPERT).
+// @Summary Очередь экспертной проверки
+// @Tags Expert
+// @Param page query int false "Страница" default(1)
+// @Param limit query int false "Размер" default(20)
+// @Security BearerAuth
+// @Success 200 {object} models.AchievementList
+// @Router /expert/queue [get]
+func (h *Handler) GetExpertQueue(c *fiber.Ctx) error {
+	page := c.QueryInt("page", 1)
+	limit := c.QueryInt("limit", 20)
+	page, limit = normalizePagination(page, limit)
+
+	res, err := h.apiService.Achievement.GetExpertQueue(c.Context(), int32(page), int32(limit))
+	if err != nil {
+		log.Printf("GetExpertQueue: failed: %v", err)
+		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{"error": err.Error()})
+	}
+	return c.JSON(res)
+}
+
+// ReviewAchievement — эксперт принимает решение по достижению.
+// @Summary Ревью достижения экспертом
+// @Tags Expert
+// @Param id path int true "ID достижения"
+// @Param request body models.ReviewRequest true "Решение"
+// @Security BearerAuth
+// @Success 200 {object} map[string]string
+// @Router /expert/achievements/{id}/review [post]
+func (h *Handler) ReviewAchievement(c *fiber.Ctx) error {
+	reviewerID := getUserIDFromContext(c)
+	if _, err := uuid.Parse(reviewerID); err != nil {
+		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{"error": "invalid reviewer id"})
+	}
+
+	achievementID, err := strconv.ParseInt(c.Params("id"), 10, 64)
+	if err != nil || achievementID <= 0 {
+		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{"error": "invalid achievement id"})
+	}
+
+	var req models.AchievementReviewRequest
+	if err := c.BodyParser(&req); err != nil {
+		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{"error": "invalid request body"})
+	}
+	if req.Decision != 3 && req.Decision != 4 {
+		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{"error": "decision must be 3 (approved) or 4 (rejected)"})
+	}
+
+	if err := h.apiService.Achievement.ReviewAchievement(c.Context(), achievementID, reviewerID, req.Decision, req.Comment); err != nil {
+		log.Printf("ReviewAchievement: failed for reviewer %s, id %d: %v", reviewerID, achievementID, err)
+		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{"error": err.Error()})
+	}
+	return c.JSON(fiber.Map{"message": "review submitted"})
 }

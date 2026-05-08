@@ -3,13 +3,25 @@ package models
 // AchievementMeta HTTP модель метаданных достижения
 // @Description Метаданные достижения пользователя
 type AchievementMeta struct {
-	Name      string `json:"name" example:"Диплом бакалавра"`
-	UserUUID  string `json:"user_uuid" example:"550e8400-e29b-41d4-a716-446655440000"`
-	FileName  string `json:"file_name" example:"diploma.pdf"`
-	FileType  string `json:"file_type" example:"application/pdf"`
-	FileSize  int64  `json:"file_size" example:"2048576"`
-	Type      int32  `json:"type" example:"1"` // 0 unspec, 1 pet-project, 2 coursework, 3 hackathon, 4 course, 5 microtask result, 6 other
-	CreatedAt string `json:"created_at" example:"2023-10-05T14:30:00Z"`
+	ID                 int64  `json:"id" example:"42"`
+	Name               string `json:"name" example:"Диплом бакалавра"`
+	UserUUID           string `json:"user_uuid" example:"550e8400-e29b-41d4-a716-446655440000"`
+	FileName           string `json:"file_name" example:"diploma.pdf"`
+	FileType           string `json:"file_type" example:"application/pdf"`
+	FileSize           int64  `json:"file_size" example:"2048576"`
+	Type               int32  `json:"type" example:"1"` // 0 unspec, 1 pet-project, 2 coursework, 3 hackathon, 4 course, 5 microtask result, 6 other
+	CreatedAt          string `json:"created_at" example:"2023-10-05T14:30:00Z"`
+	VerificationStatus int32  `json:"verification_status" example:"1"` // 0 unspec, 1 draft, 2 pending, 3 approved, 4 rejected
+	ReviewedBy         string `json:"reviewed_by,omitempty"`
+	ReviewedAt         string `json:"reviewed_at,omitempty"`
+	ReviewComment      string `json:"review_comment,omitempty"`
+}
+
+// AchievementReviewRequest HTTP модель запроса ревью эксперта
+// @Description Решение эксперта по достижению
+type AchievementReviewRequest struct {
+	Decision int32  `json:"decision" example:"3"` // 3 APPROVED, 4 REJECTED
+	Comment  string `json:"comment,omitempty"`
 }
 
 // AchievementList HTTP модель списка достижений

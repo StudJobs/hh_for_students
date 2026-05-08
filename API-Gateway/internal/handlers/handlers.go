@@ -56,7 +56,7 @@ func (h *Handler) initRoutes() {
 
 	// === File routes ===
 	files := api.Group("/files")
-	files.Get("/:entity_id/:file_name", RoleMiddleware(ROLE_DEVELOPER, ROLE_STUDENT, ROLE_HR, ROLE_COMPANY), h.ServeFileDirect)
+	files.Get("/:entity_id/:file_name", RoleMiddleware(ROLE_DEVELOPER, ROLE_STUDENT, ROLE_HR, ROLE_COMPANY, ROLE_EXPERT), h.ServeFileDirect)
 
 	// === User routes ===
 	users := api.Group("/users")
@@ -79,11 +79,17 @@ func (h *Handler) initRoutes() {
 
 	// === User Achievement routes ===
 	userAchievement := api.Group("/user/achievements")
-	userAchievement.Get("/", RoleMiddleware(ROLE_DEVELOPER, ROLE_STUDENT, ROLE_HR), h.GetUserAchievements)
-	userAchievement.Post("/", RoleMiddleware(ROLE_DEVELOPER, ROLE_STUDENT), h.CreateUserAchievement)                                    // Нет :id
-	userAchievement.Post("/:id/confirm", OwnerOrRoleMiddleware(ID, ROLE_DEVELOPER, ROLE_STUDENT), h.ConfirmAchievementUpload)           // Есть :id
-	userAchievement.Get("/:id/download", OwnerOrRoleMiddleware(ID, ROLE_DEVELOPER, ROLE_STUDENT, ROLE_HR), h.GetAchievementDownloadUrl) // Есть :id
-	userAchievement.Delete("/:id", OwnerOrRoleMiddleware(ID, ROLE_DEVELOPER, ROLE_STUDENT), h.DeleteAchievement)                        // Есть :id
+	userAchievement.Get("/", RoleMiddleware(ROLE_DEVELOPER, ROLE_STUDENT, ROLE_HR, ROLE_EXPERT), h.GetUserAchievements)
+	userAchievement.Post("/", RoleMiddleware(ROLE_DEVELOPER, ROLE_STUDENT), h.CreateUserAchievement)                                                // Нет :id
+	userAchievement.Post("/:id/confirm", OwnerOrRoleMiddleware(ID, ROLE_DEVELOPER, ROLE_STUDENT), h.ConfirmAchievementUpload)                       // Есть :id (имя достижения)
+	userAchievement.Get("/:id/download", OwnerOrRoleMiddleware(ID, ROLE_DEVELOPER, ROLE_STUDENT, ROLE_HR, ROLE_EXPERT), h.GetAchievementDownloadUrl) // Есть :id (имя)
+	userAchievement.Delete("/:id", OwnerOrRoleMiddleware(ID, ROLE_DEVELOPER, ROLE_STUDENT), h.DeleteAchievement)                                    // Есть :id (имя)
+	userAchievement.Post("/:id/submit", RoleMiddleware(ROLE_DEVELOPER, ROLE_STUDENT), h.SubmitAchievementForReview)                                 // :id — числовой achievement ID
+
+	// === Expert review routes ===
+	expert := api.Group("/expert")
+	expert.Get("/queue", RoleMiddleware(ROLE_DEVELOPER, ROLE_EXPERT), h.GetExpertQueue)
+	expert.Post("/achievements/:id/review", RoleMiddleware(ROLE_DEVELOPER, ROLE_EXPERT), h.ReviewAchievement)
 
 	// === HR routes ===
 	profileHR := api.Group("/hr")
@@ -195,6 +201,8 @@ func (h *Handler) roleConvert(userRole Role) string {
 		return "ROLE_STUDENT"
 	case ROLE_HR:
 		return "ROLE_EMPLOYER"
+	case ROLE_EXPERT:
+		return "ROLE_EXPERT"
 	default:
 		return "ROLE_STUDENT"
 	}

@@ -35,21 +35,76 @@ func (s *achievementService) GetAllAchievements(ctx context.Context, userID stri
 
 	achievements := make([]models.AchievementMeta, len(protoResponse.Achievements))
 	for i, protoAchievement := range protoResponse.Achievements {
-		achievements[i] = models.AchievementMeta{
-			Name:      protoAchievement.Name,
-			UserUUID:  protoAchievement.UserUuid,
-			FileName:  protoAchievement.FileName,
-			FileType:  protoAchievement.FileType,
-			FileSize:  protoAchievement.FileSize,
-			Type:      int32(protoAchievement.Type),
-			CreatedAt: protoAchievement.CreatedAt,
-		}
+		achievements[i] = protoToModelMeta(protoAchievement)
 	}
 
 	log.Printf("AchievementService: Successfully retrieved %d achievements for user: %s", len(achievements), userID)
 	return &models.AchievementList{
 		Achievements: achievements,
 	}, nil
+}
+
+// protoToModelMeta — единая конвертация AchievementMeta из proto в HTTP-модель.
+func protoToModelMeta(p *achievementv1.AchievementMeta) models.AchievementMeta {
+	return models.AchievementMeta{
+		ID:                 p.GetId(),
+		Name:               p.GetName(),
+		UserUUID:           p.GetUserUuid(),
+		FileName:           p.GetFileName(),
+		FileType:           p.GetFileType(),
+		FileSize:           p.GetFileSize(),
+		Type:               int32(p.GetType()),
+		CreatedAt:          p.GetCreatedAt(),
+		VerificationStatus: int32(p.GetVerificationStatus()),
+		ReviewedBy:         p.GetReviewedBy(),
+		ReviewedAt:         p.GetReviewedAt(),
+		ReviewComment:      p.GetReviewComment(),
+	}
+}
+
+// SubmitForReview — отправка достижения студентом на экспертную проверку.
+func (s *achievementService) SubmitForReview(ctx context.Context, userUUID string, achievementID int64) error {
+	_, err := s.client.SubmitForReview(ctx, &achievementv1.SubmitForReviewRequest{
+		UserUuid:      userUUID,
+		AchievementId: achievementID,
+	})
+	if err != nil {
+		log.Printf("AchievementService: SubmitForReview failed: %v", err)
+		return err
+	}
+	return nil
+}
+
+// GetExpertQueue — список достижений в статусе PENDING.
+func (s *achievementService) GetExpertQueue(ctx context.Context, page, limit int32) (*models.AchievementList, error) {
+	resp, err := s.client.GetExpertQueue(ctx, &achievementv1.GetExpertQueueRequest{
+		Page:  page,
+		Limit: limit,
+	})
+	if err != nil {
+		log.Printf("AchievementService: GetExpertQueue failed: %v", err)
+		return nil, err
+	}
+	out := make([]models.AchievementMeta, len(resp.Achievements))
+	for i, p := range resp.Achievements {
+		out[i] = protoToModelMeta(p)
+	}
+	return &models.AchievementList{Achievements: out}, nil
+}
+
+// ReviewAchievement — эксперт принимает решение по достижению.
+func (s *achievementService) ReviewAchievement(ctx context.Context, achievementID int64, reviewerUUID string, decision int32, comment string) error {
+	_, err := s.client.ReviewAchievement(ctx, &achievementv1.ReviewAchievementRequest{
+		AchievementId: achievementID,
+		ReviewerUuid:  reviewerUUID,
+		Decision:      achievementv1.VerificationStatus(decision),
+		Comment:       comment,
+	})
+	if err != nil {
+		log.Printf("AchievementService: ReviewAchievement failed: %v", err)
+		return err
+	}
+	return nil
 }
 
 // GetAchievementDownloadUrl возвращает URL для скачивания достижения
@@ -110,13 +165,14 @@ func (s *achievementService) AddAchievementMeta(ctx context.Context, meta *model
 	log.Printf("AchievementService: Adding achievement metadata for user %s, achievement: %s", meta.UserUUID, meta.Name)
 
 	protoMeta := &achievementv1.AchievementMeta{
-		Name:      meta.Name,
-		UserUuid:  meta.UserUUID,
-		FileName:  meta.FileName,
-		FileType:  meta.FileType,
-		FileSize:  meta.FileSize,
-		Type:      achievementv1.AchievementType(meta.Type),
-		CreatedAt: meta.CreatedAt,
+		Name:               meta.Name,
+		UserUuid:           meta.UserUUID,
+		FileName:           meta.FileName,
+		FileType:           meta.FileType,
+		FileSize:           meta.FileSize,
+		Type:               achievementv1.AchievementType(meta.Type),
+		CreatedAt:          meta.CreatedAt,
+		VerificationStatus: achievementv1.VerificationStatus(meta.VerificationStatus),
 	}
 
 	req := &achievementv1.AddAchievementMetaRequest{

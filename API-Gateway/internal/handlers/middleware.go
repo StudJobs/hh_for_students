@@ -22,6 +22,7 @@ const (
 	ROLE_STUDENT   Role = "ROLE_STUDENT"
 	ROLE_HR        Role = "ROLE_EMPLOYER"
 	ROLE_COMPANY   Role = "ROLE_COMPANY_OWNER"
+	ROLE_EXPERT    Role = "ROLE_EXPERT"
 
 	ID string = "id"
 )
@@ -85,6 +86,8 @@ func AuthMiddleware(apiService *services.ApiGateway) fiber.Handler {
 			userRole = ROLE_STUDENT
 		case "ROLE_EMPLOYER":
 			userRole = ROLE_HR
+		case "ROLE_EXPERT":
+			userRole = ROLE_EXPERT
 		default:
 			log.Printf("AuthMiddleware: Unknown role: %s", role)
 			return c.Status(fiber.StatusUnauthorized).JSON(fiber.Map{

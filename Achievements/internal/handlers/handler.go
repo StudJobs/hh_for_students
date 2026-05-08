@@ -36,20 +36,76 @@ func (h *Handler) GetAllAchievements(ctx context.Context, req *achievementv1.Get
 
 	protoAchievements := make([]*achievementv1.AchievementMeta, len(achievements))
 	for i, achievement := range achievements {
-		protoAchievements[i] = &achievementv1.AchievementMeta{
-			Name:      achievement.Name,
-			UserUuid:  achievement.UserUUID,
-			FileName:  achievement.FileName,
-			FileType:  achievement.FileType,
-			FileSize:  achievement.FileSize,
-			CreatedAt: achievement.CreatedAt.Format(time.RFC3339),
-			Type:      achievementv1.AchievementType(achievement.Type),
-		}
+		protoAchievements[i] = toProtoMeta(achievement)
 	}
 
 	return &achievementv1.AchievementList{
 		Achievements: protoAchievements,
 	}, nil
+}
+
+// toProtoMeta — единая конвертация service.AchievementResponse -> proto.AchievementMeta.
+func toProtoMeta(a *service.AchievementResponse) *achievementv1.AchievementMeta {
+	m := &achievementv1.AchievementMeta{
+		Id:                 a.ID,
+		Name:               a.Name,
+		UserUuid:           a.UserUUID,
+		FileName:           a.FileName,
+		FileType:           a.FileType,
+		FileSize:           a.FileSize,
+		CreatedAt:          a.CreatedAt.Format(time.RFC3339),
+		Type:               achievementv1.AchievementType(a.Type),
+		VerificationStatus: achievementv1.VerificationStatus(a.VerificationStatus),
+		ReviewedBy:         a.ReviewedBy,
+		ReviewComment:      a.ReviewComment,
+	}
+	if !a.ReviewedAt.IsZero() {
+		m.ReviewedAt = a.ReviewedAt.Format(time.RFC3339)
+	}
+	return m
+}
+
+// SubmitForReview — студент отправляет своё DRAFT-достижение на ревью.
+func (h *Handler) SubmitForReview(ctx context.Context, req *achievementv1.SubmitForReviewRequest) (*commonv1.Empty, error) {
+	if req.GetUserUuid() == "" || req.GetAchievementId() <= 0 {
+		return nil, status.Error(codes.InvalidArgument, "user_uuid and achievement_id are required")
+	}
+	if err := h.service.Achievement.SubmitForReview(ctx, req.GetUserUuid(), req.GetAchievementId()); err != nil {
+		return nil, err
+	}
+	return &commonv1.Empty{}, nil
+}
+
+// GetExpertQueue — список PENDING для эксперта.
+func (h *Handler) GetExpertQueue(ctx context.Context, req *achievementv1.GetExpertQueueRequest) (*achievementv1.AchievementList, error) {
+	page := req.GetPage()
+	limit := req.GetLimit()
+	achievements, err := h.service.Achievement.GetExpertQueue(ctx, page, limit)
+	if err != nil {
+		return nil, err
+	}
+	out := make([]*achievementv1.AchievementMeta, len(achievements))
+	for i, a := range achievements {
+		out[i] = toProtoMeta(a)
+	}
+	return &achievementv1.AchievementList{Achievements: out}, nil
+}
+
+// ReviewAchievement — эксперт принимает решение.
+func (h *Handler) ReviewAchievement(ctx context.Context, req *achievementv1.ReviewAchievementRequest) (*commonv1.Empty, error) {
+	if req.GetAchievementId() <= 0 || req.GetReviewerUuid() == "" {
+		return nil, status.Error(codes.InvalidArgument, "achievement_id and reviewer_uuid are required")
+	}
+	if err := h.service.Achievement.ReviewAchievement(
+		ctx,
+		req.GetAchievementId(),
+		req.GetReviewerUuid(),
+		int32(req.GetDecision()),
+		req.GetComment(),
+	); err != nil {
+		return nil, err
+	}
+	return &commonv1.Empty{}, nil
 }
 
 // GetAchievementDownloadUrl возвращает URL для скачивания достижения

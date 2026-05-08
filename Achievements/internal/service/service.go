@@ -1,6 +1,10 @@
 package service
 
-import "github.com/studjobs/hh_for_students/achievments/internal/repository"
+import (
+	"context"
+
+	"github.com/studjobs/hh_for_students/achievments/internal/repository"
+)
 
 // Achievement определяет методы бизнес-логики для работы с достижениями
 type Achievement interface {
@@ -9,6 +13,9 @@ type Achievement interface {
 	GetAchievementUploadURL(userUUID, achievementName, fileName, fileType string, fileSize int64) (string, string, error)
 	AddAchievementMeta(userUUID, achievementName, fileName, fileType string, fileSize int64, s3Key string, achievementType int32) error
 	DeleteAchievement(userUUID, achievementName string) error
+	SubmitForReview(ctx context.Context, userUUID string, achievementID int64) error
+	GetExpertQueue(ctx context.Context, page, limit int32) ([]*AchievementResponse, error)
+	ReviewAchievement(ctx context.Context, achievementID int64, reviewerUUID string, decision int32, comment string) error
 }
 
 // Service объединяет все сервисы

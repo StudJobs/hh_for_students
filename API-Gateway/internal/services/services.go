@@ -38,6 +38,9 @@ type AchievementService interface {
 	GetAchievementUploadUrl(ctx context.Context, userID, achieveName, fileName, fileType string, fileSize int64) (*models.UploadUrlResponse, error)
 	AddAchievementMeta(ctx context.Context, meta *models.AchievementMeta, s3Key string) error
 	DeleteAchievement(ctx context.Context, userID, achieveName string) error
+	SubmitForReview(ctx context.Context, userUUID string, achievementID int64) error
+	GetExpertQueue(ctx context.Context, page, limit int32) (*models.AchievementList, error)
+	ReviewAchievement(ctx context.Context, achievementID int64, reviewerUUID string, decision int32, comment string) error
 }
 
 type CompanyService interface {
