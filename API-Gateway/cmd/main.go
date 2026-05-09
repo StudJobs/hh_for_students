@@ -5,11 +5,13 @@ import (
 	"log"
 	"os"
 	"os/signal"
+	"strconv"
 	"syscall"
 	"time"
 
 	"github.com/spf13/viper"
 	_ "github.com/studjobs/hh_for_students/api-gateway/docs"
+	"github.com/studjobs/hh_for_students/api-gateway/internal/cache"
 	"github.com/studjobs/hh_for_students/api-gateway/internal/grpc"
 	"github.com/studjobs/hh_for_students/api-gateway/internal/handlers"
 	"github.com/studjobs/hh_for_students/api-gateway/internal/metrics"
@@ -77,7 +79,37 @@ func main() {
 	metrics.ServeMetrics(metricsAddr)
 
 	apiGateway := services.NewApiGateway(clients.Auth, clients.Users, clients.Achievement, clients.Company, clients.Vacancy, clients.Skills, clients.Search, clients.MicroTasks)
-	handler := handlers.NewHandler(apiGateway)
+
+	// Redis-кэш (cache-aside). Если REDIS_ADDR не задан — кэш отключён.
+	redisAddr := os.Getenv("REDIS_ADDR")
+	if redisAddr == "" {
+		redisAddr = viper.GetString("redis.addr")
+	}
+	cacheTTL := 60 * time.Second
+	if v := viper.GetDuration("redis.ttl"); v > 0 {
+		cacheTTL = v
+	}
+	cacheClient := cache.New(redisAddr, cacheTTL)
+	if cacheClient.Enabled() {
+		pingCtx, pingCancel := context.WithTimeout(context.Background(), 2*time.Second)
+		if err := cacheClient.Ping(pingCtx); err != nil {
+			log.Printf("redis ping failed (%v); cache will operate as no-op", err)
+			cacheClient = cache.New("", 0) // переключаем в no-op
+		} else {
+			log.Printf("redis cache enabled at %s (TTL %s)", redisAddr, cacheTTL)
+		}
+		pingCancel()
+	} else {
+		log.Printf("redis cache disabled (REDIS_ADDR not set)")
+	}
+
+	// Rate limiter (per-IP). Включён всегда, лимиты конфигурируемые через env.
+	rateLimitPerMin := envInt("RATELIMIT_PER_MIN", 100)
+	rateLimitBurst := envInt("RATELIMIT_BURST", 20)
+	rateLimiter := handlers.NewRateLimiter(rateLimitPerMin, rateLimitBurst)
+	log.Printf("rate limiter enabled: %d req/min per IP, burst %d", rateLimitPerMin, rateLimitBurst)
+
+	handler := handlers.NewHandler(apiGateway, cacheClient, rateLimiter)
 	app := handler.Init()
 
 	srv := server.NewServer(app)
@@ -98,6 +130,19 @@ func initConfig() error {
 	viper.AddConfigPath("configs")
 	viper.SetConfigName("config")
 	return viper.ReadInConfig()
+}
+
+// envInt reads integer env var with fallback default.
+func envInt(key string, def int) int {
+	v := os.Getenv(key)
+	if v == "" {
+		return def
+	}
+	n, err := strconv.Atoi(v)
+	if err != nil || n <= 0 {
+		return def
+	}
+	return n
 }
 
 func waitForShutdownSignal(srv *server.Server) {

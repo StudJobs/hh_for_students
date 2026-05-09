@@ -2,6 +2,7 @@ package handlers
 
 import (
 	"github.com/gofiber/fiber/v2"
+	"github.com/studjobs/hh_for_students/api-gateway/internal/cache"
 	"github.com/studjobs/hh_for_students/api-gateway/internal/metrics"
 	"github.com/studjobs/hh_for_students/api-gateway/internal/services"
 	"github.com/studjobs/hh_for_students/api-gateway/internal/utils"
@@ -13,17 +14,23 @@ import (
 )
 
 type Handler struct {
-	app         *fiber.App
-	apiService  *services.ApiGateway
-	fileHandler *utils.FileHandler
+	app          *fiber.App
+	apiService   *services.ApiGateway
+	fileHandler  *utils.FileHandler
+	cacheClient  *cache.Client
+	rateLimiter  *RateLimiter
 }
 
-// NewHandler создает новый экземпляр Handler
-func NewHandler(apiService *services.ApiGateway) *Handler {
+// NewHandler создает новый экземпляр Handler.
+// cacheClient — может быть nil (тогда middleware no-op'ит).
+// rateLimiter — может быть nil (тогда не применяется).
+func NewHandler(apiService *services.ApiGateway, cacheClient *cache.Client, rateLimiter *RateLimiter) *Handler {
 	log.Printf("Creating new Handler")
 	return &Handler{
 		apiService:  apiService,
 		fileHandler: utils.NewFileHandler(apiService),
+		cacheClient: cacheClient,
+		rateLimiter: rateLimiter,
 	}
 }
 
@@ -38,7 +45,17 @@ func (h *Handler) Init() *fiber.App {
 		StrictRouting: false,
 	})
 	h.app.Use(metrics.HTTPMiddleware())
+	// Rate limit идёт ПЕРЕД auth: на /auth/login тоже распространяется. Иначе
+	// botnet может бесконечно проверять пароли без ограничений.
+	if h.rateLimiter != nil {
+		h.app.Use(h.rateLimiter.Middleware())
+	}
 	h.app.Use(AuthMiddleware(h.apiService))
+	// Cache идёт ПОСЛЕ auth — чтобы middleware видел уже-проверенные запросы и
+	// 401/403 не попадали в кэш как валидные ответы.
+	if h.cacheClient != nil && h.cacheClient.Enabled() {
+		h.app.Use(CacheMiddleware(h.cacheClient))
+	}
 
 	// Swagger документация
 	h.app.Get("/swagger/*", swagger.HandlerDefault)

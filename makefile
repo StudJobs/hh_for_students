@@ -9,7 +9,15 @@ help:
 	@echo "  make status   - Show service status"
 
 # Запуск всего в правильном порядке
-all: haproxy minio es auth users achievement company vacancy skills search microtasks gateway
+all: haproxy minio es redis auth users achievement company vacancy skills search microtasks gateway
+
+# Redis для cache-aside в API-Gateway. Должен подняться до gateway, иначе тот стартует
+# с no-op кэшом (см. main.go::cacheClient.Ping).
+redis:
+	cd devops && docker-compose -f redis-compose.yml up -d
+	@echo "Waiting for Redis..."
+	@timeout 15 bash -c 'until docker exec studjobs_redis redis-cli ping 2>/dev/null | grep -q PONG; do sleep 1; done'
+	@echo "✓ Redis is healthy!"
 
 # Elasticsearch — нужен Search-сервису и индексаторам в Users/Vacancy
 es:
@@ -108,7 +116,7 @@ reindex:
 	./grpcurl -plaintext -d '{"recreate_indices": true}' localhost:50057 search.v1.SearchService/Reindex
 	@echo "✓ Reindex done"
 
-gateway: auth vacancy skills search microtasks
+gateway: auth vacancy skills search microtasks redis
 	cd API-Gateway && docker-compose -f api-gateway-compose.yml up -d
 	@echo "Waiting for gateway service..."
 	@timeout 10 bash -c 'until curl -f http://localhost:8000/health >/dev/null 2>&1; do sleep 2; echo "Waiting for gateway..."; done'
@@ -117,6 +125,7 @@ gateway: auth vacancy skills search microtasks
 # Управление
 down:
 	@echo "Stopping all services..."
+	docker-compose -f devops/redis-compose.yml down 2>/dev/null || true
 	docker-compose -f API-Gateway/api-gateway-compose.yml down
 	docker-compose -f Auth/auth-compose.yml down
 	docker-compose -f Users/user-compose.yml down
