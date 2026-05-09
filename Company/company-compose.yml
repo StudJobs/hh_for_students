@@ -10,6 +10,7 @@ services:
 
     ports:
       - "50055:50055"
+      - "9096:9096"
 
     depends_on:
       postgres_company:
@@ -21,7 +22,8 @@ services:
       DB_PORT: 5432
       DB_USER: postgres
       DB_NAME: company
-      DB_SSLMODE: disable 
+      DB_SSLMODE: disable
+      METRICS_ADDR: ":9096"
 
     volumes:
       - ./configs:/configs

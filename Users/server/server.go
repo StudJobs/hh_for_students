@@ -6,6 +6,7 @@ import (
 	"net"
 
 	usersv1 "github.com/StudJobs/proto_srtucture/gen/go/proto/users/v1"
+	"github.com/studjobs/hh_for_students/users/internal/metrics"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/health"
 	healthpb "google.golang.org/grpc/health/grpc_health_v1"
@@ -19,7 +20,7 @@ type Server struct {
 }
 
 func New(port string, usersService usersv1.UsersServiceServer) *Server {
-	grpcServer := grpc.NewServer()
+	grpcServer := grpc.NewServer(grpc.UnaryInterceptor(metrics.UnaryInterceptor()))
 
 	// Регистрация сервисов
 	usersv1.RegisterUsersServiceServer(grpcServer, usersService)

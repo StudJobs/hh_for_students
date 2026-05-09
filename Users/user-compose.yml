@@ -8,6 +8,7 @@ services:
 
     ports:
       - "50052:50052"
+      - "9093:9093"
 
     depends_on:
       postgres_user:
@@ -21,6 +22,7 @@ services:
       DB_NAME: users
       DB_SSLMODE: disable
       SEARCH_GRPC_ADDR: search:50057
+      METRICS_ADDR: ":9093"
 
     restart: unless-stopped
 

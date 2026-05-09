@@ -2,6 +2,7 @@ package main
 
 import (
 	"hh_for_students/vacancy-service/internal/handlers"
+	"hh_for_students/vacancy-service/internal/metrics"
 	"hh_for_students/vacancy-service/internal/repository"
 	"hh_for_students/vacancy-service/internal/searchclient"
 	"hh_for_students/vacancy-service/internal/service"
@@ -59,7 +60,9 @@ func main() {
 		log.Printf("warning: using default gRPC port: %s", grpcPort)
 	}
 
-	log.Printf("Starting Auth Service on gRPC port: %s", grpcPort)
+	metrics.ServeMetrics(getEnv("METRICS_ADDR", ":9095"))
+
+	log.Printf("Starting Vacancy Service on gRPC port: %s", grpcPort)
 
 	// Запуск gRPC сервера
 	grpcServer := server.New(grpcPort, vacancyHandlers)

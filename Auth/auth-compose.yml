@@ -10,6 +10,7 @@ services:
 
     ports:
       - "50051:50051"
+      - "9092:9092"
 
     depends_on:
       postgres_auth:
@@ -24,6 +25,7 @@ services:
       DB_SSLMODE: disable
       JWT_SECRET: ${JWT_SECRET}
       JWT_TIME_DURATION: ${JWT_TIME_DURATION:-60}
+      METRICS_ADDR: ":9092"
 
     volumes:
       - ./configs:/configs

@@ -10,6 +10,7 @@ services:
 
     ports:
       - "50054:50054"
+      - "9095:9095"
     networks:
       - microservices-net
     depends_on:
@@ -24,6 +25,7 @@ services:
       DB_NAME: vacancy
       DB_SSLMODE: disable
       SEARCH_GRPC_ADDR: search:50057
+      METRICS_ADDR: ":9095"
 
     volumes:
       - ./configs:/configs

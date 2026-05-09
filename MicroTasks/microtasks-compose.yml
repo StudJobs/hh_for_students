@@ -10,6 +10,7 @@ services:
 
     ports:
       - "50058:50058"
+      - "9099:9099"
 
     depends_on:
       postgres_microtasks:
@@ -24,6 +25,7 @@ services:
       DB_SSLMODE: disable
       SEARCH_GRPC_ADDR: search:50057
       ACHIEVEMENTS_GRPC_ADDR: achieve:50053
+      METRICS_ADDR: ":9099"
 
     volumes:
       - ./configs:/configs

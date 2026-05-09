@@ -6,6 +6,7 @@ import (
 	"net"
 
 	microtaskv1 "github.com/StudJobs/proto_srtucture/gen/go/proto/microtask/v1"
+	"github.com/studjobs/hh_for_students/microtasks/internal/metrics"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/health"
 	healthpb "google.golang.org/grpc/health/grpc_health_v1"
@@ -19,7 +20,7 @@ type Server struct {
 }
 
 func New(port string, srv microtaskv1.MicroTaskServiceServer) *Server {
-	gs := grpc.NewServer()
+	gs := grpc.NewServer(grpc.UnaryInterceptor(metrics.UnaryInterceptor()))
 	microtaskv1.RegisterMicroTaskServiceServer(gs, srv)
 
 	hs := health.NewServer()

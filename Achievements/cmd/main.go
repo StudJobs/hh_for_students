@@ -4,6 +4,7 @@ import (
 	"github.com/joho/godotenv"
 	"github.com/spf13/viper"
 	"github.com/studjobs/hh_for_students/achievments/internal/handlers"
+	"github.com/studjobs/hh_for_students/achievments/internal/metrics"
 	"github.com/studjobs/hh_for_students/achievments/internal/repository"
 	"github.com/studjobs/hh_for_students/achievments/internal/repository/DB"
 	"github.com/studjobs/hh_for_students/achievments/internal/service"
@@ -76,6 +77,8 @@ func main() {
 		grpcPort = "50052" // значение по умолчанию для сервиса достижений
 		log.Printf("Предупреждение: используется порт gRPC по умолчанию: %s", grpcPort)
 	}
+
+	metrics.ServeMetrics(getEnv("METRICS_ADDR", ":9094"))
 
 	log.Printf("Запуск сервиса достижений на gRPC порту: %s", grpcPort)
 

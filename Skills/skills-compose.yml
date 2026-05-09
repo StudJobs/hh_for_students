@@ -10,6 +10,7 @@ services:
 
     ports:
       - "50056:50056"
+      - "9097:9097"
 
     depends_on:
       postgres_skills:
@@ -22,6 +23,7 @@ services:
       DB_USER: postgres
       DB_NAME: skills
       DB_SSLMODE: disable
+      METRICS_ADDR: ":9097"
 
     volumes:
       - ./configs:/configs

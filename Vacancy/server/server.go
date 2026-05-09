@@ -6,6 +6,8 @@ import (
 	"net"
 
 	vacancyv1 "github.com/StudJobs/proto_srtucture/gen/go/proto/vacancy/v1"
+	"hh_for_students/vacancy-service/internal/metrics"
+
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/health"
 	healthpb "google.golang.org/grpc/health/grpc_health_v1"
@@ -19,7 +21,7 @@ type Server struct {
 }
 
 func New(port string, vacancyService vacancyv1.VacancyServiceServer) *Server {
-	grpcServer := grpc.NewServer()
+	grpcServer := grpc.NewServer(grpc.UnaryInterceptor(metrics.UnaryInterceptor()))
 
 	// Регистрация сервисов
 	vacancyv1.RegisterVacancyServiceServer(grpcServer, vacancyService)

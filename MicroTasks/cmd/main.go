@@ -11,6 +11,7 @@ import (
 
 	"github.com/studjobs/hh_for_students/microtasks/internal/achievementclient"
 	"github.com/studjobs/hh_for_students/microtasks/internal/handlers"
+	"github.com/studjobs/hh_for_students/microtasks/internal/metrics"
 	"github.com/studjobs/hh_for_students/microtasks/internal/repository"
 	"github.com/studjobs/hh_for_students/microtasks/internal/searchclient"
 	"github.com/studjobs/hh_for_students/microtasks/internal/service"
@@ -59,6 +60,8 @@ func main() {
 	if grpcPort == "" {
 		grpcPort = "50058"
 	}
+
+	metrics.ServeMetrics(getEnv("METRICS_ADDR", ":9099"))
 
 	log.Printf("Starting MicroTasks Service on gRPC port: %s", grpcPort)
 	grpcServer := server.New(grpcPort, handler)

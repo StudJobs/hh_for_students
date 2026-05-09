@@ -4,6 +4,7 @@ import (
 	"github.com/joho/godotenv"
 	"github.com/spf13/viper"
 	"github.com/studjobs/hh_for_students/users/internal/handlers"
+	"github.com/studjobs/hh_for_students/users/internal/metrics"
 	"github.com/studjobs/hh_for_students/users/internal/repository"
 	"github.com/studjobs/hh_for_students/users/internal/searchclient"
 	"github.com/studjobs/hh_for_students/users/internal/service"
@@ -57,7 +58,9 @@ func main() {
 		log.Printf("warning: using default gRPC port: %s", grpcPort)
 	}
 
-	log.Printf("Starting Auth Service on gRPC port: %s", grpcPort)
+	metrics.ServeMetrics(getEnv("METRICS_ADDR", ":9093"))
+
+	log.Printf("Starting Users Service on gRPC port: %s", grpcPort)
 
 	// Запуск gRPC сервера
 	grpcServer := server.New(grpcPort, userHandlers)

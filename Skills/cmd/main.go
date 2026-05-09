@@ -10,6 +10,7 @@ import (
 	"github.com/spf13/viper"
 
 	"github.com/studjobs/hh_for_students/skills/internal/handlers"
+	"github.com/studjobs/hh_for_students/skills/internal/metrics"
 	"github.com/studjobs/hh_for_students/skills/internal/repository"
 	"github.com/studjobs/hh_for_students/skills/internal/service"
 	"github.com/studjobs/hh_for_students/skills/server"
@@ -51,6 +52,8 @@ func main() {
 		grpcPort = "50056"
 		log.Printf("warning: using default gRPC port: %s", grpcPort)
 	}
+
+	metrics.ServeMetrics(getEnv("METRICS_ADDR", ":9097"))
 
 	log.Printf("Starting Skills Service on gRPC port: %s", grpcPort)
 	grpcServer := server.New(grpcPort, handler)
