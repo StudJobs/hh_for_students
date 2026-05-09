@@ -6,6 +6,7 @@ import (
 	"net"
 
 	searchv1 "github.com/StudJobs/proto_srtucture/gen/go/proto/search/v1"
+	"github.com/studjobs/hh_for_students/search/internal/metrics"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/health"
 	healthpb "google.golang.org/grpc/health/grpc_health_v1"
@@ -19,7 +20,7 @@ type Server struct {
 }
 
 func New(port string, searchServer searchv1.SearchServiceServer) *Server {
-	grpcServer := grpc.NewServer()
+	grpcServer := grpc.NewServer(grpc.UnaryInterceptor(metrics.UnaryInterceptor()))
 	searchv1.RegisterSearchServiceServer(grpcServer, searchServer)
 
 	healthServer := health.NewServer()

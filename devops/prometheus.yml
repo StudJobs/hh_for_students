@@ -1,0 +1,59 @@
+# Prometheus scrape config — собирает /metrics со всех Go-сервисов StudJobs.
+# Каждый сервис экспонирует метрики на отдельном HTTP-порту 909X (911X для микро-сервисов).
+# Имена контейнеров совпадают с container_name в *-compose.yml.
+
+global:
+  scrape_interval: 15s
+  scrape_timeout: 10s
+  external_labels:
+    cluster: studjobs-local
+
+scrape_configs:
+  - job_name: prometheus
+    static_configs:
+      - targets: ['localhost:9090']
+
+  - job_name: api-gateway
+    static_configs:
+      - targets: ['api-gateway:9091']
+        labels: { service: 'api-gateway', layer: 'edge' }
+
+  - job_name: auth
+    static_configs:
+      - targets: ['auth:9092']
+        labels: { service: 'auth', layer: 'core' }
+
+  - job_name: users
+    static_configs:
+      - targets: ['user:9093']
+        labels: { service: 'users', layer: 'core' }
+
+  - job_name: achievements
+    static_configs:
+      - targets: ['achieve:9094']
+        labels: { service: 'achievements', layer: 'core' }
+
+  - job_name: vacancy
+    static_configs:
+      - targets: ['vacancy:9095']
+        labels: { service: 'vacancy', layer: 'core' }
+
+  - job_name: company
+    static_configs:
+      - targets: ['company:9096']
+        labels: { service: 'company', layer: 'core' }
+
+  - job_name: skills
+    static_configs:
+      - targets: ['skills:9097']
+        labels: { service: 'skills', layer: 'core' }
+
+  - job_name: search
+    static_configs:
+      - targets: ['search:9098']
+        labels: { service: 'search', layer: 'data' }
+
+  - job_name: microtasks
+    static_configs:
+      - targets: ['microtasks:9099']
+        labels: { service: 'microtasks', layer: 'core' }

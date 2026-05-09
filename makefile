@@ -1,4 +1,4 @@
-.PHONY: all infra gateway auth users achievement skills es search microtasks down clean help reindex
+.PHONY: all infra gateway auth users achievement skills es search microtasks down clean help reindex obs obs-down loadtest
 
 help:
 	@echo "Available commands:"
@@ -80,6 +80,26 @@ microtasks: search
 	@echo "Waiting for microtasks service..."
 	@timeout 30 bash -c 'until ./grpcurl -plaintext localhost:50058 grpc.health.v1.Health/Check >/dev/null 2>&1; do sleep 2; echo "Waiting for microtasks..."; done'
 	@echo "✓ MicroTasks service is healthy!"
+
+# Observability — Prometheus + Grafana. Сначала поднимаются основные сервисы (make all),
+# затем `make obs` подцепляется к той же microservices-net и начинает scrape /metrics.
+obs:
+	cd devops && docker-compose -f observability-compose.yml up -d
+	@echo "✓ Observability stack up"
+	@echo "  Prometheus → http://localhost:9090"
+	@echo "  Grafana    → http://localhost:3001 (anon Viewer / admin:admin)"
+
+obs-down:
+	cd devops && docker-compose -f observability-compose.yml down
+
+# Нагрузочное тестирование через k6. Скрипт прогоняет 3 сценария (search/users/tasks).
+# Требует установленный k6 (`brew install k6`) и поднятый стек (`make all`).
+# Результаты — в стандартный вывод, summary с p50/p95/p99 и RPS.
+loadtest:
+	@if ! command -v k6 >/dev/null 2>&1; then \
+		echo "k6 not installed. Install with: brew install k6"; exit 1; \
+	fi
+	k6 run devops/k6/loadtest.js
 
 # Холодная переиндексация PG → ES (вызывается после миграций или для первого старта).
 # Reindex RPC создаёт индексы (recreate=true) и перечитывает все профили/вакансии.

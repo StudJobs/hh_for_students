@@ -8,6 +8,7 @@ services:
 
     ports:
       - "50057:50057"
+      - "9098:9098"
 
     environment:
       ELASTICSEARCH_URL: http://elasticsearch:9200
@@ -15,6 +16,7 @@ services:
       VACANCY_GRPC_ADDR: vacancy:50054
       MICROTASKS_GRPC_ADDR: microtasks:50058
       GRPC_PORT: "50057"
+      METRICS_ADDR: ":9098"
 
     volumes:
       - ./configs:/configs

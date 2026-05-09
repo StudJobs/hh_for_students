@@ -12,6 +12,7 @@ import (
 	_ "github.com/studjobs/hh_for_students/api-gateway/docs"
 	"github.com/studjobs/hh_for_students/api-gateway/internal/grpc"
 	"github.com/studjobs/hh_for_students/api-gateway/internal/handlers"
+	"github.com/studjobs/hh_for_students/api-gateway/internal/metrics"
 	"github.com/studjobs/hh_for_students/api-gateway/internal/services"
 	"github.com/studjobs/hh_for_students/api-gateway/server"
 )
@@ -65,6 +66,15 @@ func main() {
 	if err != nil {
 		log.Fatalf("Failed to initialize gRPC clients: %v", err)
 	}
+
+	metricsAddr := os.Getenv("METRICS_ADDR")
+	if metricsAddr == "" {
+		metricsAddr = viper.GetString("metrics.addr")
+	}
+	if metricsAddr == "" {
+		metricsAddr = ":9091"
+	}
+	metrics.ServeMetrics(metricsAddr)
 
 	apiGateway := services.NewApiGateway(clients.Auth, clients.Users, clients.Achievement, clients.Company, clients.Vacancy, clients.Skills, clients.Search, clients.MicroTasks)
 	handler := handlers.NewHandler(apiGateway)

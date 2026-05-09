@@ -7,8 +7,10 @@ import (
 	"io"
 	"net/http"
 	"strings"
+	"time"
 
 	"github.com/elastic/go-elasticsearch/v8"
+	"github.com/studjobs/hh_for_students/search/internal/metrics"
 )
 
 const (
@@ -97,6 +99,7 @@ func (c *Client) deleteIndex(ctx context.Context, name string) error {
 
 // Index сохраняет документ. Идемпотентно: на повторный вызов с тем же id перезаписывает.
 func (c *Client) Index(ctx context.Context, index, id string, doc []byte) error {
+	defer metrics.ObserveES("index", index)(time.Now())
 	res, err := c.es.Index(
 		index,
 		bytes.NewReader(doc),
@@ -117,6 +120,7 @@ func (c *Client) Index(ctx context.Context, index, id string, doc []byte) error 
 
 // Delete удаляет документ из индекса. Если документа нет — не ошибка.
 func (c *Client) Delete(ctx context.Context, index, id string) error {
+	defer metrics.ObserveES("delete", index)(time.Now())
 	res, err := c.es.Delete(index, id, c.es.Delete.WithContext(ctx), c.es.Delete.WithRefresh("true"))
 	if err != nil {
 		return fmt.Errorf("elasticsearch: delete %s/%s: %w", index, id, err)
@@ -131,6 +135,7 @@ func (c *Client) Delete(ctx context.Context, index, id string) error {
 
 // Search выполняет произвольный JSON-запрос к индексу и возвращает сырое тело ответа.
 func (c *Client) Search(ctx context.Context, index string, body []byte) ([]byte, error) {
+	defer metrics.ObserveES("search", index)(time.Now())
 	res, err := c.es.Search(
 		c.es.Search.WithContext(ctx),
 		c.es.Search.WithIndex(index),

@@ -2,6 +2,7 @@ package handlers
 
 import (
 	"github.com/gofiber/fiber/v2"
+	"github.com/studjobs/hh_for_students/api-gateway/internal/metrics"
 	"github.com/studjobs/hh_for_students/api-gateway/internal/services"
 	"github.com/studjobs/hh_for_students/api-gateway/internal/utils"
 	"log"
@@ -36,6 +37,7 @@ func (h *Handler) Init() *fiber.App {
 		CaseSensitive: true,
 		StrictRouting: false,
 	})
+	h.app.Use(metrics.HTTPMiddleware())
 	h.app.Use(AuthMiddleware(h.apiService))
 
 	// Swagger документация

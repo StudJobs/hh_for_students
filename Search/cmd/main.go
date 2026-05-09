@@ -15,6 +15,7 @@ import (
 	"github.com/studjobs/hh_for_students/search/internal/esclient"
 	"github.com/studjobs/hh_for_students/search/internal/handlers"
 	"github.com/studjobs/hh_for_students/search/internal/indexer"
+	"github.com/studjobs/hh_for_students/search/internal/metrics"
 	"github.com/studjobs/hh_for_students/search/internal/reindexer"
 	"github.com/studjobs/hh_for_students/search/internal/searcher"
 	"github.com/studjobs/hh_for_students/search/server"
@@ -40,6 +41,8 @@ func main() {
 	if grpcPort == "" {
 		grpcPort = "50057"
 	}
+	metricsAddr := getEnv("METRICS_ADDR", ":9098")
+	metrics.ServeMetrics(metricsAddr)
 
 	es, err := esclient.New(esURL)
 	if err != nil {
