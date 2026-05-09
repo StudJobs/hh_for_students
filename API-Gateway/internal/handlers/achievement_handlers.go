@@ -9,6 +9,31 @@ import (
 	"time"
 )
 
+// GetUserAchievementsByID возвращает все достижения указанного пользователя.
+// Используется на публичном профиле (/u/:uuid) — фронт фильтрует APPROVED для гостей.
+// @Summary Получить достижения чужого профиля
+// @Tags Achievements
+// @Produce json
+// @Security BearerAuth
+// @Param id path string true "UUID пользователя"
+// @Success 200 {object} models.AchievementList
+// @Failure 400 {object} models.ErrorResponse
+// @Failure 500 {object} models.ErrorResponse
+// @Router /users/{id}/achievements [get]
+func (h *Handler) GetUserAchievementsByID(c *fiber.Ctx) error {
+	targetID := c.Params("id")
+	if _, err := uuid.Parse(targetID); err != nil {
+		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{"error": "Invalid user ID format"})
+	}
+
+	achievements, err := h.apiService.Achievement.GetAllAchievements(c.Context(), targetID)
+	if err != nil {
+		log.Printf("GetUserAchievementsByID: %v", err)
+		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{"error": "Failed to get achievements"})
+	}
+	return c.JSON(achievements)
+}
+
 // GetUserAchievements возвращает все достижения пользователя
 // @Summary Получить достижения пользователя
 // @Description Возвращает список всех достижений текущего пользователя

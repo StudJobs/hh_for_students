@@ -64,6 +64,7 @@ func (h *Handler) initRoutes() {
 	users.Get("/", RoleMiddleware(ROLE_DEVELOPER, ROLE_STUDENT, ROLE_HR, ROLE_COMPANY), h.GetUsers)
 	users.Get("/me", RoleMiddleware(ROLE_DEVELOPER, ROLE_STUDENT), h.GetMe)
 	users.Get("/:id", RoleMiddleware(ROLE_DEVELOPER, ROLE_STUDENT, ROLE_HR), h.GetUser)
+	users.Get("/:id/achievements", RoleMiddleware(ROLE_DEVELOPER, ROLE_STUDENT, ROLE_HR, ROLE_COMPANY, ROLE_EXPERT), h.GetUserAchievementsByID)
 	// Для /edit нет параметра :id, поэтому используем RoleMiddleware.
 	// Проверка, что юзер меняет именно себя, должна быть внутри h.UpdateUser.
 	users.Patch("/edit", RoleMiddleware(ROLE_DEVELOPER, ROLE_STUDENT), h.UpdateUser)
