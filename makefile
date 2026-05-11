@@ -18,14 +18,20 @@ all: minio es redis auth users achievement company vacancy skills search microta
 redis:
 	cd devops && docker-compose -f redis-compose.yml up -d
 	@echo "Waiting for Redis..."
-	@timeout 15 bash -c 'until docker exec studjobs_redis redis-cli ping 2>/dev/null | grep -q PONG; do sleep 1; done'
+	@i=0; until docker exec studjobs_redis redis-cli ping 2>/dev/null | grep -q PONG; do \
+		[ $$i -ge 15 ] && echo "✗ Redis timeout" && exit 1; \
+		i=$$((i+1)); sleep 1; \
+	done
 	@echo "✓ Redis is healthy!"
 
 # Elasticsearch — нужен Search-сервису и индексаторам в Users/Vacancy
 es:
 	cd devops && docker-compose -f elasticsearch-compose.yml up -d
 	@echo "Waiting for Elasticsearch (this can take ~30s on first start)..."
-	@timeout 60 bash -c 'until curl -fs http://localhost:9200/_cluster/health 2>/dev/null | grep -E "(green|yellow)" >/dev/null; do sleep 3; echo "Waiting for Elasticsearch..."; done'
+	@i=0; until curl -fs http://localhost:9200/_cluster/health 2>/dev/null | grep -E "(green|yellow)" >/dev/null; do \
+		[ $$i -ge 20 ] && echo "✗ Elasticsearch timeout" && exit 1; \
+		i=$$((i+1)); echo "  Waiting for Elasticsearch..."; sleep 3; \
+	done
 	@echo "✓ Elasticsearch is healthy!"
 
 # Инфраструктурные сервисы
@@ -33,64 +39,93 @@ es:
 haproxy:
 	cd devops && docker-compose -f haproxy-compose.yml up -d
 	@echo "Waiting for HAProxy..."
-	@timeout 30 bash -c 'until nc -z localhost 80 || nc -z localhost 443 || nc -z localhost 8443; do sleep 2; echo "Waiting for HAProxy..."; done'
+	@i=0; until nc -z localhost 80 || nc -z localhost 443 || nc -z localhost 8443; do \
+		[ $$i -ge 15 ] && echo "✗ HAProxy timeout" && exit 1; \
+		i=$$((i+1)); sleep 2; \
+	done
 	@echo "✓ HAProxy is healthy!"
 
 # MinIO — S3-совместимое хранилище для файлов ачивок (Achievements-сервис ходит через minio:9000).
 minio:
 	cd devops && docker-compose -f minio-compose.yml up -d
 	@echo "Waiting for MinIO..."
-	@timeout 30 bash -c 'until curl -f http://localhost:9000/minio/health/live >/dev/null 2>&1; do sleep 2; echo "Waiting for MinIO..."; done'
+	@i=0; until curl -f http://localhost:9000/minio/health/live >/dev/null 2>&1; do \
+		[ $$i -ge 15 ] && echo "✗ MinIO timeout" && exit 1; \
+		i=$$((i+1)); sleep 2; \
+	done
 	@echo "✓ MinIO is healthy!"
 
 # Микросервисы с зависимостями и проверками через grpcurl
 auth:
 	cd Auth && docker-compose -f auth-compose.yml up -d
 	@echo "Waiting for auth service..."
-	@timeout 10 bash -c 'until ./grpcurl -plaintext localhost:50051 grpc.health.v1.Health/Check >/dev/null 2>&1; do sleep 2; echo "Waiting for auth..."; done'
+	@i=0; until ./grpcurl -plaintext localhost:50051 grpc.health.v1.Health/Check >/dev/null 2>&1; do \
+		[ $$i -ge 30 ] && echo "✗ Auth timeout" && exit 1; \
+		i=$$((i+1)); sleep 2; \
+	done
 	@echo "✓ Auth service is healthy!"
 
 users: auth
 	cd Users && docker-compose -f user-compose.yml up -d
 	@echo "Waiting for users service..."
-	@timeout 10 bash -c 'until ./grpcurl -plaintext localhost:50052 grpc.health.v1.Health/Check >/dev/null 2>&1; do sleep 2; echo "Waiting for users..."; done'
+	@i=0; until ./grpcurl -plaintext localhost:50052 grpc.health.v1.Health/Check >/dev/null 2>&1; do \
+		[ $$i -ge 30 ] && echo "✗ Users timeout" && exit 1; \
+		i=$$((i+1)); sleep 2; \
+	done
 	@echo "✓ Users service is healthy!"
 
 achievement: users
 	cd Achievements && docker-compose -f achieve-compose.yml up -d
 	@echo "Waiting for achievement service..."
-	@timeout 10 bash -c 'until ./grpcurl -plaintext localhost:50053 grpc.health.v1.Health/Check >/dev/null 2>&1; do sleep 2; echo "Waiting for achievement..."; done'
+	@i=0; until ./grpcurl -plaintext localhost:50053 grpc.health.v1.Health/Check >/dev/null 2>&1; do \
+		[ $$i -ge 30 ] && echo "✗ Achievement timeout" && exit 1; \
+		i=$$((i+1)); sleep 2; \
+	done
 	@echo "✓ Achievement service is healthy!"
-
 
 vacancy:
 	cd Vacancy && docker-compose -f vacancy-compose.yml up -d
 	@echo "Waiting for vacancy service..."
-	@timeout 10 bash -c 'until ./grpcurl -plaintext localhost:50054 grpc.health.v1.Health/Check >/dev/null 2>&1; do sleep 2; echo "Waiting for vacancy..."; done'
+	@i=0; until ./grpcurl -plaintext localhost:50054 grpc.health.v1.Health/Check >/dev/null 2>&1; do \
+		[ $$i -ge 30 ] && echo "✗ Vacancy timeout" && exit 1; \
+		i=$$((i+1)); sleep 2; \
+	done
 	@echo "✓ Vacancy service is healthy!"
 
 company:
 	cd Company && docker-compose -f company-compose.yml up -d
 	@echo "Waiting for company service..."
-	@timeout 10 bash -c 'until ./grpcurl -plaintext localhost:50055 grpc.health.v1.Health/Check >/dev/null 2>&1; do sleep 2; echo "Waiting for company..."; done'
+	@i=0; until ./grpcurl -plaintext localhost:50055 grpc.health.v1.Health/Check >/dev/null 2>&1; do \
+		[ $$i -ge 30 ] && echo "✗ Company timeout" && exit 1; \
+		i=$$((i+1)); sleep 2; \
+	done
 	@echo "✓ Company service is healthy!"
 
 skills:
 	cd Skills && docker-compose -f skills-compose.yml up -d
 	@echo "Waiting for skills service..."
-	@timeout 10 bash -c 'until ./grpcurl -plaintext localhost:50056 grpc.health.v1.Health/Check >/dev/null 2>&1; do sleep 2; echo "Waiting for skills..."; done'
+	@i=0; until ./grpcurl -plaintext localhost:50056 grpc.health.v1.Health/Check >/dev/null 2>&1; do \
+		[ $$i -ge 30 ] && echo "✗ Skills timeout" && exit 1; \
+		i=$$((i+1)); sleep 2; \
+	done
 	@echo "✓ Skills service is healthy!"
 
 search: es users vacancy
 	cd Search && docker-compose -f search-compose.yml up -d
 	@echo "Waiting for search service..."
-	@timeout 60 bash -c 'until ./grpcurl -plaintext localhost:50057 grpc.health.v1.Health/Check >/dev/null 2>&1; do sleep 2; echo "Waiting for search..."; done'
+	@i=0; until ./grpcurl -plaintext localhost:50057 grpc.health.v1.Health/Check >/dev/null 2>&1; do \
+		[ $$i -ge 60 ] && echo "✗ Search timeout" && exit 1; \
+		i=$$((i+1)); sleep 2; \
+	done
 	@echo "✓ Search service is healthy!"
 
 microtasks: search
 	cd MicroTasks && docker-compose -f microtasks-compose.yml up -d
 	@echo "Waiting for microtasks service..."
-	@timeout 30 bash -c 'until ./grpcurl -plaintext localhost:50058 grpc.health.v1.Health/Check >/dev/null 2>&1; do sleep 2; echo "Waiting for microtasks..."; done'
+	@i=0; until ./grpcurl -plaintext localhost:50058 grpc.health.v1.Health/Check >/dev/null 2>&1; do \
+		[ $$i -ge 30 ] && echo "✗ MicroTasks timeout" && exit 1; \
+		i=$$((i+1)); sleep 2; \
+	done
 	@echo "✓ MicroTasks service is healthy!"
 
 # Observability — Prometheus + Grafana. Сначала поднимаются основные сервисы (make all),
@@ -123,7 +158,10 @@ reindex:
 gateway: auth vacancy skills search microtasks redis
 	cd API-Gateway && docker-compose -f api-gateway-compose.yml up -d
 	@echo "Waiting for gateway service..."
-	@timeout 10 bash -c 'until curl -f http://localhost:8000/health >/dev/null 2>&1; do sleep 2; echo "Waiting for gateway..."; done'
+	@i=0; until curl -f http://localhost:8000/health >/dev/null 2>&1; do \
+		[ $$i -ge 20 ] && echo "✗ Gateway timeout" && exit 1; \
+		i=$$((i+1)); sleep 2; \
+	done
 	@echo "✓ Gateway service is healthy!"
 
 # Управление
