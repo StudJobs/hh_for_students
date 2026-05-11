@@ -165,11 +165,11 @@ microtasks: search
 gateway: auth vacancy skills search microtasks redis company achievement
 	cd API-Gateway && docker-compose $(ENVFILE) -f api-gateway-compose.yml up -d
 	@echo "Waiting for gateway service..."
-	@i=0; until curl -fs http://localhost:8000/health >/dev/null 2>&1; do \
+	@i=0; until curl -fs http://localhost:9091/health >/dev/null 2>&1; do \
 		[ $$i -ge 30 ] && echo "✗ Gateway timeout" && exit 1; \
 		i=$$((i+1)); sleep 2; \
 	done
-	@echo "✓ Gateway service is healthy!"
+	@echo "✓ Gateway service is healthy! (Fiber на :8000, metrics на :9091)"
 
 # Observability — Prometheus + Grafana. Сначала поднимаются основные сервисы (make all),
 # затем `make obs` подцепляется к той же microservices-net и начинает scrape /metrics.
@@ -293,7 +293,7 @@ start:
 	-cd devops && docker-compose -f observability-compose.yml start 2>/dev/null
 	-cd devops && docker-compose -f haproxy-compose.yml start 2>/dev/null
 	@echo "Waiting for gateway to respond..."
-	@i=0; until curl -fs http://localhost:8000/health >/dev/null 2>&1; do \
+	@i=0; until curl -fs http://localhost:9091/health >/dev/null 2>&1; do \
 		[ $$i -ge 30 ] && echo "⚠ Gateway не отвечает за 60с — проверь docker ps" && exit 1; \
 		i=$$((i+1)); sleep 2; \
 	done
