@@ -46,7 +46,7 @@ type AchievementService interface {
 type CompanyService interface {
 	CreateCompany(ctx context.Context, company *models.Company) (*models.Company, error)
 	GetCompany(ctx context.Context, id string) (*models.Company, error)
-	GetAllCompanies(ctx context.Context, pagination *models.Pagination, city, companyType string) (*models.CompanyList, error)
+	GetAllCompanies(ctx context.Context, pagination *models.Pagination, city, companyType, query string) (*models.CompanyList, error)
 	UpdateCompany(ctx context.Context, id string, company *models.Company) (*models.Company, error)
 	DeleteCompany(ctx context.Context, id string) error
 }

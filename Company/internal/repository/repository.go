@@ -8,7 +8,7 @@ import (
 
 type Company interface {
 	GetCompany(ctx context.Context, id string) (*companyv1.Company, error)
-	GetAllCompanies(ctx context.Context, city, companyType string, page, limit int32) (*companyv1.CompanyList, error)
+	GetAllCompanies(ctx context.Context, city, companyType, query string, page, limit int32) (*companyv1.CompanyList, error)
 	CreateCompany(ctx context.Context, company *companyv1.Company) (*companyv1.Company, error)
 	UpdateCompany(ctx context.Context, id string, company *companyv1.Company) (*companyv1.Company, error)
 	DeleteCompany(ctx context.Context, id string) error

@@ -91,12 +91,13 @@ func (s *companyService) GetCompany(ctx context.Context, id string) (*models.Com
 	return company, nil
 }
 
-func (s *companyService) GetAllCompanies(ctx context.Context, pagination *models.Pagination, city, companyType string) (*models.CompanyList, error) {
-	log.Printf("CompanyService: GetAllCompanies attempt")
+func (s *companyService) GetAllCompanies(ctx context.Context, pagination *models.Pagination, city, companyType, query string) (*models.CompanyList, error) {
+	log.Printf("CompanyService: GetAllCompanies attempt (q=%q)", query)
 
 	req := &companyv1.GetAllCompaniesRequest{
 		City:        city,
 		CompanyType: companyType,
+		Query:       query,
 	}
 
 	if pagination != nil {

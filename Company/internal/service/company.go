@@ -66,11 +66,11 @@ func (s *CompanyService) GetCompany(ctx context.Context, id string) (*companyv1.
 }
 
 // ListCompanies возвращает список компаний с фильтрацией и пагинацией
-func (s *CompanyService) ListCompanies(ctx context.Context, city, companyType string, page, limit int32) (*companyv1.CompanyList, error) {
-	log.Printf("Service: Listing companies - city: %s, type: %s, page: %d, limit: %d",
-		city, companyType, page, limit)
+func (s *CompanyService) ListCompanies(ctx context.Context, city, companyType, query string, page, limit int32) (*companyv1.CompanyList, error) {
+	log.Printf("Service: Listing companies - city: %s, type: %s, query: %s, page: %d, limit: %d",
+		city, companyType, query, page, limit)
 
-	companies, err := s.repo.GetAllCompanies(ctx, city, companyType, page, limit)
+	companies, err := s.repo.GetAllCompanies(ctx, city, companyType, query, page, limit)
 	if err != nil {
 		log.Printf("Service: Failed to list companies: %v", err)
 		return nil, err

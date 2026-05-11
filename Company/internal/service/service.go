@@ -12,7 +12,7 @@ import (
 type CompanyInterface interface {
 	CreateCompany(ctx context.Context, company *companyv1.Company) (*companyv1.Company, error)
 	GetCompany(ctx context.Context, id string) (*companyv1.Company, error)
-	ListCompanies(ctx context.Context, city, companyType string, page, limit int32) (*companyv1.CompanyList, error)
+	ListCompanies(ctx context.Context, city, companyType, query string, page, limit int32) (*companyv1.CompanyList, error)
 	UpdateCompany(ctx context.Context, id string, company *companyv1.Company) (*companyv1.Company, error)
 	DeleteCompany(ctx context.Context, id string) error
 }

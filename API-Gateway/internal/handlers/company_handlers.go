@@ -32,13 +32,14 @@ func (h *Handler) GetCompanies(c *fiber.Ctx) error {
 	page, limit = normalizePagination(page, limit)
 	city := c.Query("city", "")
 	companyType := c.Query("type", "")
+	query := c.Query("q", "")
 
 	pagination := &models.Pagination{
 		Page:  int32(page),
 		Limit: int32(limit),
 	}
 
-	companies, err := h.apiService.Company.GetAllCompanies(c.Context(), pagination, city, companyType)
+	companies, err := h.apiService.Company.GetAllCompanies(c.Context(), pagination, city, companyType, query)
 	if err != nil {
 		log.Printf("GetCompanies: Failed to get companies: %v", err)
 		return c.Status(fiber.StatusInternalServerError).JSON(models.Error{

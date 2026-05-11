@@ -126,10 +126,10 @@ func (h *CompanyHandlers) GetAllCompanies(ctx context.Context, req *companyv1.Ge
 		}
 	}
 
-	log.Printf("Handlers: GetAllCompanies - page: %d, limit: %d, city: %s, type: %s",
-		page, limit, req.GetCity(), req.GetCompanyType())
+	log.Printf("Handlers: GetAllCompanies - page: %d, limit: %d, city: %s, type: %s, query: %s",
+		page, limit, req.GetCity(), req.GetCompanyType(), req.GetQuery())
 
-	companies, err := h.service.Company.ListCompanies(ctx, req.City, req.CompanyType, page, limit)
+	companies, err := h.service.Company.ListCompanies(ctx, req.City, req.CompanyType, req.Query, page, limit)
 	if err != nil {
 		log.Printf("Handlers: GetAllCompanies failed: %v", err)
 		return nil, status.Error(codes.Internal, "failed to get companies")

@@ -35,7 +35,7 @@ func NewCompanyRepository(db *pgxpool.Pool) *CompanyRepository {
 func (r *CompanyRepository) GetCompany(ctx context.Context, id string) (*companyv1.Company, error) {
 	log.Printf("Repository: Getting company with ID: %s", id)
 
-	query, args, err := r.buildCompanyQueryBuilder("", "").
+	query, args, err := r.buildCompanyQueryBuilder("", "", "").
 		Where(squirrel.Eq{"id": id}).
 		ToSql()
 	if err != nil {
@@ -54,14 +54,14 @@ func (r *CompanyRepository) GetCompany(ctx context.Context, id string) (*company
 }
 
 // GetAllCompanies возвращает список компаний с фильтрацией и пагинацией
-func (r *CompanyRepository) GetAllCompanies(ctx context.Context, city, companyType string, page, limit int32) (*companyv1.CompanyList, error) {
-	log.Printf("Repository: Getting all companies - page: %d, limit: %d, city: '%s', type: '%s'",
-		page, limit, city, companyType)
+func (r *CompanyRepository) GetAllCompanies(ctx context.Context, city, companyType, search string, page, limit int32) (*companyv1.CompanyList, error) {
+	log.Printf("Repository: Getting all companies - page: %d, limit: %d, city: '%s', type: '%s', search: '%s'",
+		page, limit, city, companyType, search)
 
 	// Расчет offset
 	offset := (page - 1) * limit
 
-	query, args, err := r.buildCompanyQueryBuilder(city, companyType).
+	query, args, err := r.buildCompanyQueryBuilder(city, companyType, search).
 		OrderBy("created_at DESC").
 		Limit(uint64(limit)).
 		Offset(uint64(offset)).
@@ -95,7 +95,7 @@ func (r *CompanyRepository) GetAllCompanies(ctx context.Context, city, companyTy
 	}
 
 	// Получаем общее количество
-	countQuery, countArgs, err := r.buildCompanyCountBuilder(city, companyType).ToSql()
+	countQuery, countArgs, err := r.buildCompanyCountBuilder(city, companyType, search).ToSql()
 	if err != nil {
 		log.Printf("Repository: Failed to build count query: %v", err)
 		return nil, fmt.Errorf("failed to build count query: %w", err)
@@ -284,37 +284,45 @@ func nullStringToString(nullStr sql.NullString) string {
 }
 
 // buildCompanyQueryBuilder создает базовый query builder для компаний
-func (r *CompanyRepository) buildCompanyQueryBuilder(city, companyType string) squirrel.SelectBuilder {
+func (r *CompanyRepository) buildCompanyQueryBuilder(city, companyType, search string) squirrel.SelectBuilder {
 	queryBuilder := r.sb.
 		Select("id", "name", "description", "city", "site", "company_type", "logo_id", "created_at").
 		From(COMPANY_TABLE).
 		Where("deleted_at IS NULL")
 
-	if city != "" {
-		queryBuilder = queryBuilder.Where(squirrel.Eq{"city": city})
-	}
-	if companyType != "" {
-		queryBuilder = queryBuilder.Where(squirrel.Eq{"company_type": companyType})
-	}
-
+	queryBuilder = applyCompanyFilters(queryBuilder, city, companyType, search)
 	return queryBuilder
 }
 
 // buildCompanyCountBuilder создает builder для подсчета компаний
-func (r *CompanyRepository) buildCompanyCountBuilder(city, companyType string) squirrel.SelectBuilder {
+func (r *CompanyRepository) buildCompanyCountBuilder(city, companyType, search string) squirrel.SelectBuilder {
 	countBuilder := r.sb.
 		Select("COUNT(*)").
 		From(COMPANY_TABLE).
 		Where("deleted_at IS NULL")
 
+	countBuilder = applyCompanyFilters(countBuilder, city, companyType, search)
+	return countBuilder
+}
+
+// applyCompanyFilters раскладывает фильтры city/type/search в WHERE.
+// search — ILIKE по name OR description (без индекса; для текущего объёма seed
+// этого достаточно, при росте — pg_trgm + GIN).
+func applyCompanyFilters(b squirrel.SelectBuilder, city, companyType, search string) squirrel.SelectBuilder {
 	if city != "" {
-		countBuilder = countBuilder.Where(squirrel.Eq{"city": city})
+		b = b.Where(squirrel.Eq{"city": city})
 	}
 	if companyType != "" {
-		countBuilder = countBuilder.Where(squirrel.Eq{"company_type": companyType})
+		b = b.Where(squirrel.Eq{"company_type": companyType})
 	}
-
-	return countBuilder
+	if search != "" {
+		pattern := "%" + search + "%"
+		b = b.Where(squirrel.Or{
+			squirrel.ILike{"name": pattern},
+			squirrel.ILike{"description": pattern},
+		})
+	}
+	return b
 }
 
 // calculatePagination вычисляет пагинацию
