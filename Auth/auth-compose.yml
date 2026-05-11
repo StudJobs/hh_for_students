@@ -31,7 +31,7 @@ services:
       - ./configs:/configs
 
     networks:
-      - microservices-net  # ← ДОБАВЬТЕ ЭТУ СТРОКУ
+      - microservices-net
 
     healthcheck:
       test: ["CMD", "grpc_health_probe", "-addr=localhost:50051"]
@@ -57,7 +57,7 @@ services:
       - postgres_data_auth:/var/lib/postgresql/data
       
     networks:
-      - microservices-net  
+      - microservices-net
 
     healthcheck:
       test: ["CMD-SHELL", "pg_isready -U postgres -d auth"]

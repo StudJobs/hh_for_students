@@ -5,6 +5,7 @@ import (
 	"log"
 	"net"
 
+	applicationv1 "github.com/StudJobs/proto_srtucture/gen/go/proto/application/v1"
 	vacancyv1 "github.com/StudJobs/proto_srtucture/gen/go/proto/vacancy/v1"
 	"hh_for_students/vacancy-service/internal/metrics"
 
@@ -20,11 +21,12 @@ type Server struct {
 	healthServer *health.Server
 }
 
-func New(port string, vacancyService vacancyv1.VacancyServiceServer) *Server {
+func New(port string, vacancyService vacancyv1.VacancyServiceServer, applicationService applicationv1.ApplicationServiceServer) *Server {
 	grpcServer := grpc.NewServer(grpc.UnaryInterceptor(metrics.UnaryInterceptor()))
 
 	// Регистрация сервисов
 	vacancyv1.RegisterVacancyServiceServer(grpcServer, vacancyService)
+	applicationv1.RegisterApplicationServiceServer(grpcServer, applicationService)
 
 	// Создание и настройка health сервера
 	healthServer := health.NewServer()
@@ -32,6 +34,7 @@ func New(port string, vacancyService vacancyv1.VacancyServiceServer) *Server {
 
 	// Установка статусов сервисов
 	healthServer.SetServingStatus("vacancy.v1", healthpb.HealthCheckResponse_SERVING)
+	healthServer.SetServingStatus("application.v1", healthpb.HealthCheckResponse_SERVING)
 	healthServer.SetServingStatus("", healthpb.HealthCheckResponse_SERVING) // Общий статус сервера
 
 	// Включение reflection для тестирования

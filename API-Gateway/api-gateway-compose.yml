@@ -20,7 +20,7 @@ services:
 
     volumes:
       - ./configs:/configs
-    networks:  # ← ДОБАВЬТЕ ЭТОТ БЛОК
+    networks:
       - microservices-net
 
 

@@ -27,11 +27,13 @@ type Vacancy interface {
 }
 
 type Repository struct {
-	Vacancy Vacancy
+	Vacancy     Vacancy
+	Application Application
 }
 
 func NewRepository(db *pgxpool.Pool) *Repository {
 	return &Repository{
-		Vacancy: NewVacancyRepository(db),
+		Vacancy:     NewVacancyRepository(db),
+		Application: NewApplicationRepository(db),
 	}
 }

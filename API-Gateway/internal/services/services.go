@@ -3,6 +3,7 @@ package services
 import (
 	"context"
 	achievementv1 "github.com/StudJobs/proto_srtucture/gen/go/proto/achievement/v1"
+	applicationv1 "github.com/StudJobs/proto_srtucture/gen/go/proto/application/v1"
 	companyv1 "github.com/StudJobs/proto_srtucture/gen/go/proto/company/v1"
 	microtaskv1 "github.com/StudJobs/proto_srtucture/gen/go/proto/microtask/v1"
 	searchv1 "github.com/StudJobs/proto_srtucture/gen/go/proto/search/v1"
@@ -84,6 +85,15 @@ type MicroTaskService interface {
 	Review(ctx context.Context, submissionID string, status int32, reviewComment string) (*models.Submission, error)
 }
 
+type ApplicationService interface {
+	Available() bool
+	Apply(ctx context.Context, vacancyID, studentID, coverLetter string) (*models.Application, error)
+	Withdraw(ctx context.Context, id, studentID string) error
+	ListMine(ctx context.Context, studentID string, status int32, page, limit int32) (*models.ApplicationList, error)
+	ListForVacancy(ctx context.Context, vacancyID string, status int32, page, limit int32) (*models.ApplicationList, error)
+	UpdateStatus(ctx context.Context, id string, status int32, hrComment string) (*models.Application, error)
+}
+
 type VacancyService interface {
 	CreateVacancy(ctx context.Context, vacancy *models.Vacancy) (*models.Vacancy, error)
 	GetVacancy(ctx context.Context, id string) (*models.Vacancy, error)
@@ -102,14 +112,15 @@ type VacancyService interface {
 
 // ApiGateway объединяет все сервисы
 type ApiGateway struct {
-	Auth       AuthService
-	User       UsersService
+	Auth        AuthService
+	User        UsersService
 	Achievement AchievementService
-	Company    CompanyService
-	Vacancy    VacancyService
-	Skills     SkillsService
-	Search     SearchService
-	MicroTasks MicroTaskService
+	Company     CompanyService
+	Vacancy     VacancyService
+	Application ApplicationService
+	Skills      SkillsService
+	Search      SearchService
+	MicroTasks  MicroTaskService
 }
 
 // NewApiGateway создает новый экземпляр ApiGateway
@@ -119,18 +130,20 @@ func NewApiGateway(
 	achievementClient achievementv1.AchievementServiceClient,
 	companyClient companyv1.CompanyServiceClient,
 	vacancyClient vacancyv1.VacancyServiceClient,
+	applicationClient applicationv1.ApplicationServiceClient,
 	skillsClient skillsv1.SkillsServiceClient,
 	searchClient searchv1.SearchServiceClient,
 	microtasksClient microtaskv1.MicroTaskServiceClient,
 ) *ApiGateway {
 	return &ApiGateway{
-		Auth:       NewAuthService(authClient),
-		User:       NewUsersService(usersClient),
+		Auth:        NewAuthService(authClient),
+		User:        NewUsersService(usersClient),
 		Achievement: NewAchievementService(achievementClient),
-		Company:    NewCompanyService(companyClient),
-		Vacancy:    NewVacancyService(vacancyClient),
-		Skills:     NewSkillsService(skillsClient),
-		Search:     NewSearchService(searchClient),
-		MicroTasks: NewMicroTaskService(microtasksClient),
+		Company:     NewCompanyService(companyClient),
+		Vacancy:     NewVacancyService(vacancyClient),
+		Application: NewApplicationService(applicationClient),
+		Skills:      NewSkillsService(skillsClient),
+		Search:      NewSearchService(searchClient),
+		MicroTasks:  NewMicroTaskService(microtasksClient),
 	}
 }

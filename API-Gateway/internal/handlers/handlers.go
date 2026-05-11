@@ -133,11 +133,23 @@ func (h *Handler) initRoutes() {
 	vacancy := api.Group("/vacancy")
 	vacancy.Get("/", RoleMiddleware(ROLE_DEVELOPER, ROLE_STUDENT, ROLE_HR), h.GetVacancies)
 	vacancy.Get("/:id", RoleMiddleware(ROLE_DEVELOPER, ROLE_STUDENT, ROLE_HR), h.GetVacancy)
+	// Студент откликается на вакансию (cover_letter опционален).
+	vacancy.Post("/:id/respond", RoleMiddleware(ROLE_DEVELOPER, ROLE_STUDENT), h.RespondToVacancy)
 
 	// === Vacancy File routes ===
 	vacancyFiles := vacancy.Group("/:id/files")
 	vacancyFiles.Post("/attachment", OwnerOrRoleMiddleware(ID, ROLE_DEVELOPER, ROLE_HR), h.UploadVacancyAttachment)
 	vacancyFiles.Delete("/attachment", OwnerOrRoleMiddleware(ID, ROLE_DEVELOPER, ROLE_HR), h.DeleteVacancyAttachment)
+
+	// === Применения (отклики на вакансии) ===
+	// Студенческая часть.
+	userApplications := api.Group("/user/applications")
+	userApplications.Get("/", RoleMiddleware(ROLE_DEVELOPER, ROLE_STUDENT), h.ListMyApplications)
+	userApplications.Delete("/:id", RoleMiddleware(ROLE_DEVELOPER, ROLE_STUDENT), h.WithdrawApplication)
+
+	// HR-часть: список откликов на конкретную вакансию + accept/reject.
+	HRVacancy.Get("/:id/applications", OwnerOrRoleMiddleware(ID, ROLE_DEVELOPER, ROLE_HR), h.ListVacancyApplications)
+	profileHR.Patch("/applications/:id", RoleMiddleware(ROLE_DEVELOPER, ROLE_HR), h.ReviewApplication)
 
 	// === Skills (справочник тегов компетенций) ===
 	skills := api.Group("/skills")

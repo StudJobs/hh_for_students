@@ -52,6 +52,7 @@ func main() {
 	searchCli := searchclient.New(getEnv("SEARCH_GRPC_ADDR", viper.GetString("clients.search_addr")))
 	defer searchCli.Close()
 	vacancyHandlers := handlers.NewVacancyHandler(serv, searchCli)
+	applicationHandlers := handlers.NewApplicationHandler(serv)
 
 	// Получаем порт из конфигурации!
 	grpcPort := getEnv("GRPC_PORT", viper.GetString("grpc.port"))
@@ -65,7 +66,7 @@ func main() {
 	log.Printf("Starting Vacancy Service on gRPC port: %s", grpcPort)
 
 	// Запуск gRPC сервера
-	grpcServer := server.New(grpcPort, vacancyHandlers)
+	grpcServer := server.New(grpcPort, vacancyHandlers, applicationHandlers)
 
 	// Graceful shutdown
 	go func() {

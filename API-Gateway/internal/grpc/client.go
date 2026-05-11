@@ -2,6 +2,7 @@ package grpc
 
 import (
 	"context"
+	applicationv1 "github.com/StudJobs/proto_srtucture/gen/go/proto/application/v1"
 	companyv1 "github.com/StudJobs/proto_srtucture/gen/go/proto/company/v1"
 	microtaskv1 "github.com/StudJobs/proto_srtucture/gen/go/proto/microtask/v1"
 	searchv1 "github.com/StudJobs/proto_srtucture/gen/go/proto/search/v1"
@@ -24,6 +25,7 @@ type Clients struct {
 	Achievement achievementv1.AchievementServiceClient
 	Company     companyv1.CompanyServiceClient
 	Vacancy     vacancyv1.VacancyServiceClient
+	Application applicationv1.ApplicationServiceClient
 	Skills      skillsv1.SkillsServiceClient
 	Search      searchv1.SearchServiceClient
 	MicroTasks  microtaskv1.MicroTaskServiceClient
@@ -68,8 +70,11 @@ func NewClients(cfg Config) (*Clients, error) {
 	}
 
 	if cfg.VacancyAddress != "" {
+		// ApplicationService живёт на том же gRPC-сервере, что и VacancyService (порт 50054),
+		// и обслуживается тем же подключением — экономим коннект.
 		if conn := mustConn(cfg.VacancyAddress, cfg.Timeout); conn != nil {
 			clients.Vacancy = vacancyv1.NewVacancyServiceClient(conn)
+			clients.Application = applicationv1.NewApplicationServiceClient(conn)
 		}
 	}
 

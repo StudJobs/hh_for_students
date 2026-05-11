@@ -28,11 +28,13 @@ type Vacancy interface {
 }
 
 type Service struct {
-	Vacancy Vacancy
+	Vacancy     Vacancy
+	Application Application
 }
 
 func NewService(repo *repository.Repository) *Service {
 	return &Service{
-		Vacancy: NewVacancyService(repo),
+		Vacancy:     NewVacancyService(repo),
+		Application: NewApplicationService(repo.Application),
 	}
 }
