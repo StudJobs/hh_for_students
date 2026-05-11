@@ -11,17 +11,33 @@
         redis es haproxy minio \
         auth users achievement vacancy company skills search microtasks gateway \
         obs obs-down loadtest reindex \
-        down wipe logs status restart clean setup-grpcurl deps
+        down wipe stop start soft-restart logs status restart clean setup-grpcurl deps
 
 ENVFILE := --env-file $(CURDIR)/.env
 
 help:
-	@echo "Available commands:"
-	@echo "  make all      - Start all services"
-	@echo "  make obs      - Start Prometheus + Grafana"
-	@echo "  make down     - Stop all services"
-	@echo "  make logs service=<name> - tail logs"
-	@echo "  make status   - service status"
+	@echo "── StudJobs · Makefile ───────────────────────────────────────"
+	@echo "Запуск:"
+	@echo "  make all           — поднять весь стек (первый раз / после wipe)"
+	@echo "  make obs           — Prometheus + Grafana"
+	@echo ""
+	@echo "Мягкое управление (данные сохраняются):"
+	@echo "  make stop          — остановить контейнеры (volumes на месте)"
+	@echo "  make start         — поднять обратно остановленные"
+	@echo "  make soft-restart  — stop + start (быстрый рестарт без потери БД)"
+	@echo ""
+	@echo "Жёсткое управление (DESTRUCTIVE — удаляет volumes и данные):"
+	@echo "  make down          — снос всего + удаление volumes"
+	@echo "  make wipe          — алиас на down"
+	@echo "  make restart       — down + all (свежий старт с нуля)"
+	@echo ""
+	@echo "Диагностика:"
+	@echo "  make status                     — список запущенных контейнеров"
+	@echo "  make logs service=<container>   — tail логов конкретного контейнера"
+	@echo ""
+	@echo "Тестирование:"
+	@echo "  make loadtest      — k6 нагрузочный прогон"
+	@echo "  make reindex       — холодная переиндексация PG → ES"
 
 # Запуск всего в правильном порядке.
 # HAProxy сознательно не в зависимостях — на локалке мы ходим в API-Gateway напрямую
@@ -228,6 +244,60 @@ status:
 
 restart: down all
 	@echo "✓ All services restarted (свежие volumes, свежая инициализация)"
+
+# ── Soft-управление (без удаления данных) ───────────────────────────────────
+# stop останавливает контейнеры, но НЕ удаляет их и volumes. Можно потом start.
+# start поднимает обратно — Postgres, ES, Redis с накопленными данными.
+# soft-restart = stop + start — мгновенный in-place рестарт всех сервисов
+#                                без потери юзеров/ачивок/вакансий.
+# Когда использовать что:
+#   make soft-restart — контейнер залип, хочешь освежить процесс без потери БД
+#   make restart      — нужна чистая инициализация (после смены DB_PASS, миграций)
+#   make all          — первый старт или после wipe
+
+stop:
+	@echo "Stopping all services (data preserved)..."
+	-docker-compose -f API-Gateway/api-gateway-compose.yml stop 2>/dev/null
+	-docker-compose -f MicroTasks/microtasks-compose.yml stop 2>/dev/null
+	-docker-compose -f Search/search-compose.yml stop 2>/dev/null
+	-docker-compose -f Skills/skills-compose.yml stop 2>/dev/null
+	-docker-compose -f Vacancy/vacancy-compose.yml stop 2>/dev/null
+	-docker-compose -f Company/company-compose.yml stop 2>/dev/null
+	-docker-compose -f Achievements/achieve-compose.yml stop 2>/dev/null
+	-docker-compose -f Users/user-compose.yml stop 2>/dev/null
+	-docker-compose -f Auth/auth-compose.yml stop 2>/dev/null
+	-docker-compose -f devops/redis-compose.yml stop 2>/dev/null
+	-docker-compose -f devops/elasticsearch-compose.yml stop 2>/dev/null
+	-docker-compose -f devops/minio-compose.yml stop 2>/dev/null
+	-docker-compose -f devops/haproxy-compose.yml stop 2>/dev/null
+	-docker-compose -f devops/observability-compose.yml stop 2>/dev/null
+	@echo "✓ All services stopped (volumes preserved)"
+
+start:
+	@echo "Starting all services (data preserved)..."
+	-docker-compose -f devops/minio-compose.yml start 2>/dev/null
+	-docker-compose -f devops/elasticsearch-compose.yml start 2>/dev/null
+	-docker-compose -f devops/redis-compose.yml start 2>/dev/null
+	-docker-compose -f Auth/auth-compose.yml start 2>/dev/null
+	-docker-compose -f Users/user-compose.yml start 2>/dev/null
+	-docker-compose -f Achievements/achieve-compose.yml start 2>/dev/null
+	-docker-compose -f Company/company-compose.yml start 2>/dev/null
+	-docker-compose -f Vacancy/vacancy-compose.yml start 2>/dev/null
+	-docker-compose -f Skills/skills-compose.yml start 2>/dev/null
+	-docker-compose -f Search/search-compose.yml start 2>/dev/null
+	-docker-compose -f MicroTasks/microtasks-compose.yml start 2>/dev/null
+	-docker-compose -f API-Gateway/api-gateway-compose.yml start 2>/dev/null
+	-docker-compose -f devops/observability-compose.yml start 2>/dev/null
+	-docker-compose -f devops/haproxy-compose.yml start 2>/dev/null
+	@echo "Waiting for gateway to respond..."
+	@i=0; until curl -fs http://localhost:8000/health >/dev/null 2>&1; do \
+		[ $$i -ge 30 ] && echo "⚠ Gateway не отвечает за 60с — проверь docker ps" && exit 1; \
+		i=$$((i+1)); sleep 2; \
+	done
+	@echo "✓ All services started"
+
+soft-restart: stop start
+	@echo "✓ Soft-restart done (данные сохранены)"
 
 clean: down
 	@echo "Cleaning up..."
