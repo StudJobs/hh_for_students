@@ -11,7 +11,7 @@
         redis es haproxy minio \
         auth users achievement vacancy company skills search microtasks gateway \
         obs obs-down loadtest reindex \
-        down logs status restart clean setup-grpcurl deps
+        down wipe logs status restart clean setup-grpcurl deps
 
 ENVFILE := --env-file $(CURDIR)/.env
 
@@ -217,6 +217,27 @@ logs:
 status:
 	@docker ps --filter "name=studjobs\|auth-\|users-\|achievements-\|vacancy-\|company-\|skills-\|search-\|microtasks-\|api-gateway-" \
 		--format "table {{.Names}}\t{{.Status}}\t{{.Ports}}"
+
+# wipe — полное удаление контейнеров И volumes (Postgres-данные сбросятся!).
+# Нужно при первой инициализации, если DB_PASS был запутан и Postgres-volume
+# запомнил неправильный пароль.
+wipe:
+	@echo "⚠ Удаление всех контейнеров и volumes (Postgres-данные пропадут)..."
+	-docker-compose -f Auth/auth-compose.yml down -v 2>/dev/null
+	-docker-compose -f Users/user-compose.yml down -v 2>/dev/null
+	-docker-compose -f Achievements/achieve-compose.yml down -v 2>/dev/null
+	-docker-compose -f Company/company-compose.yml down -v 2>/dev/null
+	-docker-compose -f Vacancy/vacancy-compose.yml down -v 2>/dev/null
+	-docker-compose -f Skills/skills-compose.yml down -v 2>/dev/null
+	-docker-compose -f MicroTasks/microtasks-compose.yml down -v 2>/dev/null
+	-docker-compose -f Search/search-compose.yml down -v 2>/dev/null
+	-docker-compose -f API-Gateway/api-gateway-compose.yml down -v 2>/dev/null
+	-docker-compose -f devops/redis-compose.yml down -v 2>/dev/null
+	-docker-compose -f devops/elasticsearch-compose.yml down -v 2>/dev/null
+	-docker-compose -f devops/minio-compose.yml down -v 2>/dev/null
+	-docker-compose -f devops/haproxy-compose.yml down -v 2>/dev/null
+	-docker-compose -f devops/observability-compose.yml down -v 2>/dev/null
+	@echo "✓ Wipe completed. Запусти 'make all' для свежего старта."
 
 restart: down all
 	@echo "✓ All services restarted"
