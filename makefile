@@ -8,8 +8,10 @@ help:
 	@echo "  make logs     - Show logs in selected service"
 	@echo "  make status   - Show service status"
 
-# Запуск всего в правильном порядке
-all: haproxy minio es redis auth users achievement company vacancy skills search microtasks gateway
+# Запуск всего в правильном порядке.
+# HAProxy сознательно не в зависимостях — на локалке мы ходим в API-Gateway напрямую
+# через :8000 без TLS-терминации. Если нужен HAProxy — `make haproxy` отдельно.
+all: minio es redis auth users achievement company vacancy skills search microtasks gateway
 
 # Redis для cache-aside в API-Gateway. Должен подняться до gateway, иначе тот стартует
 # с no-op кэшом (см. main.go::cacheClient.Ping).
@@ -27,17 +29,19 @@ es:
 	@echo "✓ Elasticsearch is healthy!"
 
 # Инфраструктурные сервисы
-#haproxy:
-#	cd devops && docker-compose -f haproxy-compose.yml up -d
-#	@echo "Waiting for HAProxy..."
-#	@timeout 30 bash -c 'until nc -z localhost 80 || nc -z localhost 443 || nc -z localhost 8443; do sleep 2; echo "Waiting for HAProxy..."; done'
-#	@echo "✓ HAProxy is healthy!"
-#
-#minio: haproxy
-#	cd devops && docker-compose -f minio-compose.yml up -d
-#	@echo "Waiting for MinIO..."
-#	@timeout 30 bash -c 'until curl -f http://localhost:9000/minio/health/live >/dev/null 2>&1; do sleep 2; echo "Waiting for MinIO..."; done'
-#	@echo "✓ MinIO is healthy!"
+# HAProxy опционален: TLS-терминация для прод-демо. На локалке не нужен.
+haproxy:
+	cd devops && docker-compose -f haproxy-compose.yml up -d
+	@echo "Waiting for HAProxy..."
+	@timeout 30 bash -c 'until nc -z localhost 80 || nc -z localhost 443 || nc -z localhost 8443; do sleep 2; echo "Waiting for HAProxy..."; done'
+	@echo "✓ HAProxy is healthy!"
+
+# MinIO — S3-совместимое хранилище для файлов ачивок (Achievements-сервис ходит через minio:9000).
+minio:
+	cd devops && docker-compose -f minio-compose.yml up -d
+	@echo "Waiting for MinIO..."
+	@timeout 30 bash -c 'until curl -f http://localhost:9000/minio/health/live >/dev/null 2>&1; do sleep 2; echo "Waiting for MinIO..."; done'
+	@echo "✓ MinIO is healthy!"
 
 # Микросервисы с зависимостями и проверками через grpcurl
 auth:
