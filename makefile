@@ -207,24 +207,27 @@ reindex:
 # DESTRUCTIVE: down останавливает контейнеры И удаляет volumes (Postgres, ES, Redis,
 # MinIO). Все зарегистрированные юзеры/ачивки/вакансии пропадут. Это сознательный выбор
 # для dev-режима: при перезапуске стек гарантированно стартует с чистой инициализацией
-# и Postgres получает свежий DB_PASS. Если нужно сохранить данные — стопай контейнеры
-# вручную через `docker-compose -f <file> stop`.
+# и Postgres получает свежий DB_PASS.
+#
+# ВАЖНО: `cd <dir> && docker-compose ...` — project name = имя каталога. Если запускать
+# `docker-compose -f <dir>/compose.yml` из корня, проект будет `hh_for_students` (имя
+# корня), и docker не найдёт ранее созданные volumes (они в проектах `auth`, `users`...).
 down:
 	@echo "⚠ Stopping all services and DELETING volumes (data will be lost)..."
-	-docker-compose -f devops/redis-compose.yml down -v 2>/dev/null
-	-docker-compose -f devops/elasticsearch-compose.yml down -v 2>/dev/null
-	-docker-compose -f devops/minio-compose.yml down -v 2>/dev/null
-	-docker-compose -f devops/haproxy-compose.yml down -v 2>/dev/null
-	-docker-compose -f devops/observability-compose.yml down -v 2>/dev/null
-	-docker-compose -f API-Gateway/api-gateway-compose.yml down -v 2>/dev/null
-	-docker-compose -f Auth/auth-compose.yml down -v 2>/dev/null
-	-docker-compose -f Users/user-compose.yml down -v 2>/dev/null
-	-docker-compose -f Achievements/achieve-compose.yml down -v 2>/dev/null
-	-docker-compose -f Company/company-compose.yml down -v 2>/dev/null
-	-docker-compose -f Vacancy/vacancy-compose.yml down -v 2>/dev/null
-	-docker-compose -f Skills/skills-compose.yml down -v 2>/dev/null
-	-docker-compose -f Search/search-compose.yml down -v 2>/dev/null
-	-docker-compose -f MicroTasks/microtasks-compose.yml down -v 2>/dev/null
+	-cd devops && docker-compose -f redis-compose.yml down -v 2>/dev/null
+	-cd devops && docker-compose -f elasticsearch-compose.yml down -v 2>/dev/null
+	-cd devops && docker-compose -f minio-compose.yml down -v 2>/dev/null
+	-cd devops && docker-compose -f haproxy-compose.yml down -v 2>/dev/null
+	-cd devops && docker-compose -f observability-compose.yml down -v 2>/dev/null
+	-cd API-Gateway && docker-compose -f api-gateway-compose.yml down -v 2>/dev/null
+	-cd Auth && docker-compose -f auth-compose.yml down -v 2>/dev/null
+	-cd Users && docker-compose -f user-compose.yml down -v 2>/dev/null
+	-cd Achievements && docker-compose -f achieve-compose.yml down -v 2>/dev/null
+	-cd Company && docker-compose -f company-compose.yml down -v 2>/dev/null
+	-cd Vacancy && docker-compose -f vacancy-compose.yml down -v 2>/dev/null
+	-cd Skills && docker-compose -f skills-compose.yml down -v 2>/dev/null
+	-cd Search && docker-compose -f search-compose.yml down -v 2>/dev/null
+	-cd MicroTasks && docker-compose -f microtasks-compose.yml down -v 2>/dev/null
 	@echo "✓ All services stopped and volumes wiped"
 
 # wipe — alias для down (явное название для тех, кто привык).
@@ -257,38 +260,38 @@ restart: down all
 
 stop:
 	@echo "Stopping all services (data preserved)..."
-	-docker-compose -f API-Gateway/api-gateway-compose.yml stop 2>/dev/null
-	-docker-compose -f MicroTasks/microtasks-compose.yml stop 2>/dev/null
-	-docker-compose -f Search/search-compose.yml stop 2>/dev/null
-	-docker-compose -f Skills/skills-compose.yml stop 2>/dev/null
-	-docker-compose -f Vacancy/vacancy-compose.yml stop 2>/dev/null
-	-docker-compose -f Company/company-compose.yml stop 2>/dev/null
-	-docker-compose -f Achievements/achieve-compose.yml stop 2>/dev/null
-	-docker-compose -f Users/user-compose.yml stop 2>/dev/null
-	-docker-compose -f Auth/auth-compose.yml stop 2>/dev/null
-	-docker-compose -f devops/redis-compose.yml stop 2>/dev/null
-	-docker-compose -f devops/elasticsearch-compose.yml stop 2>/dev/null
-	-docker-compose -f devops/minio-compose.yml stop 2>/dev/null
-	-docker-compose -f devops/haproxy-compose.yml stop 2>/dev/null
-	-docker-compose -f devops/observability-compose.yml stop 2>/dev/null
+	-cd API-Gateway && docker-compose -f api-gateway-compose.yml stop 2>/dev/null
+	-cd MicroTasks && docker-compose -f microtasks-compose.yml stop 2>/dev/null
+	-cd Search && docker-compose -f search-compose.yml stop 2>/dev/null
+	-cd Skills && docker-compose -f skills-compose.yml stop 2>/dev/null
+	-cd Vacancy && docker-compose -f vacancy-compose.yml stop 2>/dev/null
+	-cd Company && docker-compose -f company-compose.yml stop 2>/dev/null
+	-cd Achievements && docker-compose -f achieve-compose.yml stop 2>/dev/null
+	-cd Users && docker-compose -f user-compose.yml stop 2>/dev/null
+	-cd Auth && docker-compose -f auth-compose.yml stop 2>/dev/null
+	-cd devops && docker-compose -f redis-compose.yml stop 2>/dev/null
+	-cd devops && docker-compose -f elasticsearch-compose.yml stop 2>/dev/null
+	-cd devops && docker-compose -f minio-compose.yml stop 2>/dev/null
+	-cd devops && docker-compose -f haproxy-compose.yml stop 2>/dev/null
+	-cd devops && docker-compose -f observability-compose.yml stop 2>/dev/null
 	@echo "✓ All services stopped (volumes preserved)"
 
 start:
 	@echo "Starting all services (data preserved)..."
-	-docker-compose -f devops/minio-compose.yml start 2>/dev/null
-	-docker-compose -f devops/elasticsearch-compose.yml start 2>/dev/null
-	-docker-compose -f devops/redis-compose.yml start 2>/dev/null
-	-docker-compose -f Auth/auth-compose.yml start 2>/dev/null
-	-docker-compose -f Users/user-compose.yml start 2>/dev/null
-	-docker-compose -f Achievements/achieve-compose.yml start 2>/dev/null
-	-docker-compose -f Company/company-compose.yml start 2>/dev/null
-	-docker-compose -f Vacancy/vacancy-compose.yml start 2>/dev/null
-	-docker-compose -f Skills/skills-compose.yml start 2>/dev/null
-	-docker-compose -f Search/search-compose.yml start 2>/dev/null
-	-docker-compose -f MicroTasks/microtasks-compose.yml start 2>/dev/null
-	-docker-compose -f API-Gateway/api-gateway-compose.yml start 2>/dev/null
-	-docker-compose -f devops/observability-compose.yml start 2>/dev/null
-	-docker-compose -f devops/haproxy-compose.yml start 2>/dev/null
+	-cd devops && docker-compose -f minio-compose.yml start 2>/dev/null
+	-cd devops && docker-compose -f elasticsearch-compose.yml start 2>/dev/null
+	-cd devops && docker-compose -f redis-compose.yml start 2>/dev/null
+	-cd Auth && docker-compose -f auth-compose.yml start 2>/dev/null
+	-cd Users && docker-compose -f user-compose.yml start 2>/dev/null
+	-cd Achievements && docker-compose -f achieve-compose.yml start 2>/dev/null
+	-cd Company && docker-compose -f company-compose.yml start 2>/dev/null
+	-cd Vacancy && docker-compose -f vacancy-compose.yml start 2>/dev/null
+	-cd Skills && docker-compose -f skills-compose.yml start 2>/dev/null
+	-cd Search && docker-compose -f search-compose.yml start 2>/dev/null
+	-cd MicroTasks && docker-compose -f microtasks-compose.yml start 2>/dev/null
+	-cd API-Gateway && docker-compose -f api-gateway-compose.yml start 2>/dev/null
+	-cd devops && docker-compose -f observability-compose.yml start 2>/dev/null
+	-cd devops && docker-compose -f haproxy-compose.yml start 2>/dev/null
 	@echo "Waiting for gateway to respond..."
 	@i=0; until curl -fs http://localhost:8000/health >/dev/null 2>&1; do \
 		[ $$i -ge 30 ] && echo "⚠ Gateway не отвечает за 60с — проверь docker ps" && exit 1; \
