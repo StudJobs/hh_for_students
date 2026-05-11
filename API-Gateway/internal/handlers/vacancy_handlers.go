@@ -53,13 +53,18 @@ func (h *Handler) GetVacancies(c *fiber.Ctx) error {
 	var vacancies *models.VacancyList
 	var err error
 
-	// Если задан тег-фильтр или текстовый поиск — идём через Search.
-	// SQL-фильтры из старого пути (positionStatus/workFormat/schedule/maxSalary) при ES-маршруте игнорируются —
-	// в текущей версии mapping их не моделирует; для них всё ещё доступен старый путь без skill_slugs.
-	if h.apiService.Search.Available() && (len(skillSlugs) > 0 || searchTitle != "") {
+	// Через Search идём ТОЛЬКО когда нужен фильтр по skill_slugs (его в SQL нет).
+	// Текстовый поиск (search_title), формат, график и зарплата — через SQL ILIKE + индексы:
+	// предсказуемо отдают partial match и работают вместе с остальными фильтрами.
+	if h.apiService.Search.Available() && len(skillSlugs) > 0 {
 		log.Printf("GetVacancies: routing through Search (skill_slugs=%v search_title=%q)", skillSlugs, searchTitle)
 		vacancies, err = h.apiService.Search.SearchVacanciesAsModel(c.Context(), searchTitle, skillSlugs,
 			int32(minSalary), int32(maxExperience), companyID, int32(page), int32(limit))
+		// Пост-фильтрация в Gateway: ES в текущем mapping-е не моделирует work_format/schedule,
+		// поэтому применяем их к подмножеству выдачи Search (для текущего MVP это безопасно — выдача мала).
+		if err == nil && vacancies != nil && (workFormat != "" || schedule != "" || positionStatus != "") {
+			vacancies.Vacancies = filterVacanciesInMemory(vacancies.Vacancies, workFormat, schedule, positionStatus)
+		}
 	} else {
 		pagination := &models.Pagination{
 			Page:  int32(page),
@@ -484,6 +489,31 @@ func (h *Handler) DeleteVacancyAttachment(c *fiber.Ctx) error {
 	return c.JSON(fiber.Map{
 		"message": "Vacancy attachment deleted successfully",
 	})
+}
+
+// filterVacanciesInMemory применяет workFormat/schedule/positionStatus к подмножеству выдачи Search,
+// поскольку в текущем ES-mapping-е эти поля не моделируются.
+func filterVacanciesInMemory(list []*models.Vacancy, workFormat, schedule, positionStatus string) []*models.Vacancy {
+	if workFormat == "" && schedule == "" && positionStatus == "" {
+		return list
+	}
+	out := make([]*models.Vacancy, 0, len(list))
+	for _, v := range list {
+		if v == nil {
+			continue
+		}
+		if workFormat != "" && v.WorkFormat != workFormat {
+			continue
+		}
+		if schedule != "" && v.Schedule != schedule {
+			continue
+		}
+		if positionStatus != "" && v.PositionStatus != positionStatus {
+			continue
+		}
+		out = append(out, v)
+	}
+	return out
 }
 
 // enrichVacancyWithFiles обогащает вакансию информацией о файлах

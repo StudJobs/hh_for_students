@@ -2,12 +2,26 @@ package handlers
 
 import (
 	"log"
+	"math"
 	"strconv"
 
 	"github.com/gofiber/fiber/v2"
 
 	"github.com/studjobs/hh_for_students/api-gateway/internal/models"
 )
+
+// clampInt32 ограничивает значение диапазоном int32 — иначе при касте int(64)→int32
+// очень большое введённое значение (например, 1111111111111111) переполняется и приводит к
+// бессмысленному отрицательному порогу, и фильтр перестаёт работать.
+func clampInt32(v int) int32 {
+	if v < math.MinInt32 {
+		return math.MinInt32
+	}
+	if v > math.MaxInt32 {
+		return math.MaxInt32
+	}
+	return int32(v)
+}
 
 // GetTasks — публичный листинг микрозадач для студентов.
 // При наличии skill_slugs или q маршрут идёт через Search (Elasticsearch),
@@ -29,9 +43,9 @@ func (h *Handler) GetTasks(c *fiber.Ctx) error {
 
 	if h.apiService.Search.Available() && (len(skillSlugs) > 0 || query != "" || rewardMin > 0) {
 		log.Printf("GetTasks: routing through Search (skill_slugs=%v q=%q reward_min=%d)", skillSlugs, query, rewardMin)
-		list, err = h.apiService.Search.SearchMicroTasksAsModel(c.Context(), query, skillSlugs, int32(rewardMin), int32(statusInt), "", int32(page), int32(limit))
+		list, err = h.apiService.Search.SearchMicroTasksAsModel(c.Context(), query, skillSlugs, clampInt32(rewardMin), clampInt32(statusInt), "", int32(page), int32(limit))
 	} else {
-		list, err = h.apiService.MicroTasks.List(c.Context(), int32(statusInt), skillSlugs, int32(page), int32(limit))
+		list, err = h.apiService.MicroTasks.List(c.Context(), clampInt32(statusInt), skillSlugs, int32(page), int32(limit))
 	}
 	if err != nil {
 		log.Printf("GetTasks: failed: %v", err)
