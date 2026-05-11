@@ -59,7 +59,7 @@ minio:
 auth:
 	cd Auth && docker-compose -f auth-compose.yml up -d
 	@echo "Waiting for auth service..."
-	@i=0; until ./grpcurl -plaintext localhost:50051 grpc.health.v1.Health/Check >/dev/null 2>&1; do \
+	@i=0; until nc -z localhost 50051 >/dev/null 2>&1; do \
 		[ $$i -ge 30 ] && echo "✗ Auth timeout" && exit 1; \
 		i=$$((i+1)); sleep 2; \
 	done
@@ -68,7 +68,7 @@ auth:
 users: auth
 	cd Users && docker-compose -f user-compose.yml up -d
 	@echo "Waiting for users service..."
-	@i=0; until ./grpcurl -plaintext localhost:50052 grpc.health.v1.Health/Check >/dev/null 2>&1; do \
+	@i=0; until nc -z localhost 50052 >/dev/null 2>&1; do \
 		[ $$i -ge 30 ] && echo "✗ Users timeout" && exit 1; \
 		i=$$((i+1)); sleep 2; \
 	done
@@ -77,7 +77,7 @@ users: auth
 achievement: users
 	cd Achievements && docker-compose -f achieve-compose.yml up -d
 	@echo "Waiting for achievement service..."
-	@i=0; until ./grpcurl -plaintext localhost:50053 grpc.health.v1.Health/Check >/dev/null 2>&1; do \
+	@i=0; until nc -z localhost 50053 >/dev/null 2>&1; do \
 		[ $$i -ge 30 ] && echo "✗ Achievement timeout" && exit 1; \
 		i=$$((i+1)); sleep 2; \
 	done
@@ -86,7 +86,7 @@ achievement: users
 vacancy:
 	cd Vacancy && docker-compose -f vacancy-compose.yml up -d
 	@echo "Waiting for vacancy service..."
-	@i=0; until ./grpcurl -plaintext localhost:50054 grpc.health.v1.Health/Check >/dev/null 2>&1; do \
+	@i=0; until nc -z localhost 50054 >/dev/null 2>&1; do \
 		[ $$i -ge 30 ] && echo "✗ Vacancy timeout" && exit 1; \
 		i=$$((i+1)); sleep 2; \
 	done
@@ -95,7 +95,7 @@ vacancy:
 company:
 	cd Company && docker-compose -f company-compose.yml up -d
 	@echo "Waiting for company service..."
-	@i=0; until ./grpcurl -plaintext localhost:50055 grpc.health.v1.Health/Check >/dev/null 2>&1; do \
+	@i=0; until nc -z localhost 50055 >/dev/null 2>&1; do \
 		[ $$i -ge 30 ] && echo "✗ Company timeout" && exit 1; \
 		i=$$((i+1)); sleep 2; \
 	done
@@ -104,7 +104,7 @@ company:
 skills:
 	cd Skills && docker-compose -f skills-compose.yml up -d
 	@echo "Waiting for skills service..."
-	@i=0; until ./grpcurl -plaintext localhost:50056 grpc.health.v1.Health/Check >/dev/null 2>&1; do \
+	@i=0; until nc -z localhost 50056 >/dev/null 2>&1; do \
 		[ $$i -ge 30 ] && echo "✗ Skills timeout" && exit 1; \
 		i=$$((i+1)); sleep 2; \
 	done
@@ -113,7 +113,7 @@ skills:
 search: es users vacancy
 	cd Search && docker-compose -f search-compose.yml up -d
 	@echo "Waiting for search service..."
-	@i=0; until ./grpcurl -plaintext localhost:50057 grpc.health.v1.Health/Check >/dev/null 2>&1; do \
+	@i=0; until nc -z localhost 50057 >/dev/null 2>&1; do \
 		[ $$i -ge 60 ] && echo "✗ Search timeout" && exit 1; \
 		i=$$((i+1)); sleep 2; \
 	done
@@ -122,7 +122,7 @@ search: es users vacancy
 microtasks: search
 	cd MicroTasks && docker-compose -f microtasks-compose.yml up -d
 	@echo "Waiting for microtasks service..."
-	@i=0; until ./grpcurl -plaintext localhost:50058 grpc.health.v1.Health/Check >/dev/null 2>&1; do \
+	@i=0; until nc -z localhost 50058 >/dev/null 2>&1; do \
 		[ $$i -ge 30 ] && echo "✗ MicroTasks timeout" && exit 1; \
 		i=$$((i+1)); sleep 2; \
 	done
