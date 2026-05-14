@@ -108,9 +108,12 @@ func (h *Handler) Register(c *fiber.Ctx) error {
 	}
 
 	if resp.Role == "ROLE_COMPANY_OWNER" {
+		// До прохождения onboarding owner ещё не задал название компании.
+		// Пишем нейтральный плейсхолдер вместо буквального "new" (B7) — фронт
+		// рендерит его курсивом как «надо заполнить».
 		if _, err = h.apiService.Company.CreateCompany(c.Context(), &models.Company{
 			ID:   resp.UserUUID,
-			Name: "new",
+			Name: "Без названия",
 		}); err != nil {
 			log.Printf("API Gateway Create failed for email %s: %v", req.Email, err)
 

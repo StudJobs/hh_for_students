@@ -203,7 +203,8 @@ func (h *Handler) GetHRVacancies(c *fiber.Ctx) error {
 // @Router /hr/vacancy [post]
 func (h *Handler) CreateHRVacancy(c *fiber.Ctx) error {
 	userID := getUserIDFromContext(c)
-	log.Printf("CreateHRVacancy: Creating new vacancy for HR: %s", userID)
+	userRole := getRoleFromContext(c)
+	log.Printf("CreateHRVacancy: user=%s role=%s", userID, userRole)
 
 	var req models.Vacancy
 	if err := c.BodyParser(&req); err != nil {
@@ -222,11 +223,31 @@ func (h *Handler) CreateHRVacancy(c *fiber.Ctx) error {
 		})
 	}
 
-	if req.CompanyID == "" {
-		log.Printf("CreateHRVacancy: Missing required field 'company_id'")
-		return c.Status(fiber.StatusBadRequest).JSON(models.Error{
-			Code:    "MISSING_FIELD",
-			Message: "Company ID is required",
+	// Закрытие B3+B4: владелец компании всегда публикует под СВОЙ company_id
+	// (= его userID, так устроен Company-сервис, см. company_handlers.go::GetCompanyMe).
+	// HR-без-membership пока заблокирован (membership-flow отложен по STATUS.md);
+	// иначе любой HR смог бы публиковать под чужим брендом.
+	switch userRole {
+	case ROLE_COMPANY:
+		req.CompanyID = userID
+	case ROLE_HR:
+		log.Printf("CreateHRVacancy: ROLE_HR blocked — membership flow not implemented (B4)")
+		return c.Status(fiber.StatusForbidden).JSON(models.Error{
+			Code:    "MEMBERSHIP_REQUIRED",
+			Message: "HR может публиковать вакансии только в составе компании; HR-membership пока не реализован",
+		})
+	case ROLE_DEVELOPER:
+		// devloper-режим — оставляем как есть, требуем явный company_id
+		if req.CompanyID == "" {
+			return c.Status(fiber.StatusBadRequest).JSON(models.Error{
+				Code:    "MISSING_FIELD",
+				Message: "Company ID is required",
+			})
+		}
+	default:
+		return c.Status(fiber.StatusForbidden).JSON(models.Error{
+			Code:    "FORBIDDEN",
+			Message: "Insufficient permissions",
 		})
 	}
 
@@ -265,7 +286,12 @@ func (h *Handler) CreateHRVacancy(c *fiber.Ctx) error {
 func (h *Handler) UpdateVacancy(c *fiber.Ctx) error {
 	vacancyID := c.Params("id")
 	userID := getUserIDFromContext(c)
-	log.Printf("UpdateVacancy: Updating vacancy %s by user %s", vacancyID, userID)
+	userRole := getRoleFromContext(c)
+	log.Printf("UpdateVacancy: Updating vacancy %s by user %s (role %s)", vacancyID, userID, userRole)
+
+	if err := h.assertVacancyOwnership(c, vacancyID, userID, userRole); err != nil {
+		return err
+	}
 
 	var req models.Vacancy
 	if err := c.BodyParser(&req); err != nil {
@@ -308,7 +334,12 @@ func (h *Handler) UpdateVacancy(c *fiber.Ctx) error {
 func (h *Handler) DeleteVacancy(c *fiber.Ctx) error {
 	vacancyID := c.Params("id")
 	userID := getUserIDFromContext(c)
-	log.Printf("DeleteVacancy: Deleting vacancy %s by user %s", vacancyID, userID)
+	userRole := getRoleFromContext(c)
+	log.Printf("DeleteVacancy: Deleting vacancy %s by user %s (role %s)", vacancyID, userID, userRole)
+
+	if err := h.assertVacancyOwnership(c, vacancyID, userID, userRole); err != nil {
+		return err
+	}
 
 	vacancy, err := h.apiService.Vacancy.GetVacancy(c.Context(), vacancyID)
 	if err != nil {
@@ -533,4 +564,41 @@ func (h *Handler) enrichVacancyListWithFiles(ctx context.Context, vacancies []*m
 	for _, vacancy := range vacancies {
 		h.enrichVacancyWithFiles(ctx, vacancy)
 	}
+}
+
+// assertVacancyOwnership: только владелец компании, под которой опубликована вакансия,
+// или ROLE_DEVELOPER может её править/удалять. ROLE_HR без membership пока заблокирован
+// (см. CreateHRVacancy и B4 в BUGS_E2E.md).
+func (h *Handler) assertVacancyOwnership(c *fiber.Ctx, vacancyID, userID string, userRole Role) error {
+	if userRole == ROLE_DEVELOPER {
+		return nil
+	}
+	if userRole == ROLE_HR {
+		return c.Status(fiber.StatusForbidden).JSON(models.Error{
+			Code:    "MEMBERSHIP_REQUIRED",
+			Message: "HR может управлять вакансиями только в составе компании; HR-membership пока не реализован",
+		})
+	}
+	if userRole != ROLE_COMPANY {
+		return c.Status(fiber.StatusForbidden).JSON(models.Error{
+			Code:    "FORBIDDEN",
+			Message: "Insufficient permissions",
+		})
+	}
+	vacancy, err := h.apiService.Vacancy.GetVacancy(c.Context(), vacancyID)
+	if err != nil {
+		log.Printf("assertVacancyOwnership: vacancy %s not found: %v", vacancyID, err)
+		return c.Status(fiber.StatusNotFound).JSON(models.Error{
+			Code:    "VACANCY_NOT_FOUND",
+			Message: "Vacancy not found",
+		})
+	}
+	if vacancy.CompanyID != userID {
+		log.Printf("assertVacancyOwnership: user %s tried to mutate vacancy of company %s", userID, vacancy.CompanyID)
+		return c.Status(fiber.StatusForbidden).JSON(models.Error{
+			Code:    "FORBIDDEN",
+			Message: "Vacancy belongs to another company",
+		})
+	}
+	return nil
 }

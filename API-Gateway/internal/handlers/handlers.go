@@ -119,13 +119,16 @@ func (h *Handler) initRoutes() {
 	profileHR.Delete("/", RoleMiddleware(ROLE_DEVELOPER, ROLE_HR), h.DeleteUser)
 
 	// === HR vacancy routes ===
+	// До появления HR-membership flow единственный «аутентифицированный HR» — это владелец
+	// компании (ROLE_COMPANY). ROLE_HR пускаем в whitelist, но в самом обработчике
+	// блокируем (см. CreateHRVacancy) — иначе любой HR публиковал бы вакансии под чужой
+	// company_id (была B4: дыра доступа).
 	HRVacancy := profileHR.Group("/vacancy")
-	// Подразумевается, что HR работает со своими вакансиями. Проверка на владение - внутри обработчиков.
-	HRVacancy.Get("/", RoleMiddleware(ROLE_DEVELOPER, ROLE_HR), h.GetHRVacancies)
-	HRVacancy.Get("/:id", OwnerOrRoleMiddleware(ID, ROLE_DEVELOPER, ROLE_HR), h.GetVacancy)
-	HRVacancy.Post("/", RoleMiddleware(ROLE_DEVELOPER, ROLE_HR), h.CreateHRVacancy)
-	HRVacancy.Patch("/:id", OwnerOrRoleMiddleware(ID, ROLE_DEVELOPER, ROLE_HR), h.UpdateVacancy)
-	HRVacancy.Delete("/:id", OwnerOrRoleMiddleware(ID, ROLE_DEVELOPER, ROLE_HR), h.DeleteVacancy)
+	HRVacancy.Get("/", RoleMiddleware(ROLE_DEVELOPER, ROLE_HR, ROLE_COMPANY), h.GetHRVacancies)
+	HRVacancy.Get("/:id", OwnerOrRoleMiddleware(ID, ROLE_DEVELOPER, ROLE_HR, ROLE_COMPANY), h.GetVacancy)
+	HRVacancy.Post("/", RoleMiddleware(ROLE_DEVELOPER, ROLE_HR, ROLE_COMPANY), h.CreateHRVacancy)
+	HRVacancy.Patch("/:id", OwnerOrRoleMiddleware(ID, ROLE_DEVELOPER, ROLE_HR, ROLE_COMPANY), h.UpdateVacancy)
+	HRVacancy.Delete("/:id", OwnerOrRoleMiddleware(ID, ROLE_DEVELOPER, ROLE_HR, ROLE_COMPANY), h.DeleteVacancy)
 
 	api.Get("/positions", OwnerOrRoleMiddleware(ID, ROLE_DEVELOPER, ROLE_HR), h.GetPositions)
 
@@ -148,8 +151,8 @@ func (h *Handler) initRoutes() {
 	userApplications.Delete("/:id", RoleMiddleware(ROLE_DEVELOPER, ROLE_STUDENT), h.WithdrawApplication)
 
 	// HR-часть: список откликов на конкретную вакансию + accept/reject.
-	HRVacancy.Get("/:id/applications", OwnerOrRoleMiddleware(ID, ROLE_DEVELOPER, ROLE_HR), h.ListVacancyApplications)
-	profileHR.Patch("/applications/:id", RoleMiddleware(ROLE_DEVELOPER, ROLE_HR), h.ReviewApplication)
+	HRVacancy.Get("/:id/applications", OwnerOrRoleMiddleware(ID, ROLE_DEVELOPER, ROLE_HR, ROLE_COMPANY), h.ListVacancyApplications)
+	profileHR.Patch("/applications/:id", RoleMiddleware(ROLE_DEVELOPER, ROLE_HR, ROLE_COMPANY), h.ReviewApplication)
 
 	// === Skills (справочник тегов компетенций) ===
 	skills := api.Group("/skills")

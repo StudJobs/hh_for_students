@@ -57,9 +57,16 @@ func init() {
 // HTTPMiddleware returns a Fiber middleware that records latency / status code per route.
 // `route` берём из c.Route().Path — это маршрут с :id-плейсхолдерами, не конкретный URL.
 // Это критично: иначе кардинальность лейблов взорвётся (каждый UUID = отдельный лейбл).
+//
+// `method` снимаем ДО c.Next() и копируем в свежую строку: c.Method() в Fiber возвращает
+// unsafe-string поверх shared fasthttp-буфера. Если читать после c.Next() (когда контекст
+// уже мог быть переиспользован для следующего запроса), получаем мусор вроде "POSTH".
+// Это и был баг B2 — Prometheus падал, потому что метка `method` рандомно склеивалась.
 func HTTPMiddleware() fiber.Handler {
 	return func(c *fiber.Ctx) error {
 		start := time.Now()
+		method := normalizeMethod(string([]byte(c.Method())))
+
 		err := c.Next()
 		dur := time.Since(start).Seconds()
 
@@ -68,9 +75,21 @@ func HTTPMiddleware() fiber.Handler {
 			route = "unknown"
 		}
 		status := strconv.Itoa(c.Response().StatusCode())
-		httpDuration.WithLabelValues(serviceLabel, c.Method(), route, status).Observe(dur)
+		httpDuration.WithLabelValues(serviceLabel, method, route, status).Observe(dur)
 		return err
 	}
+}
+
+// normalizeMethod ограничивает кардинальность лейбла method стандартными HTTP-методами.
+// Любые странные значения (например, мусор из shared-buffer'а fasthttp) превращаются в OTHER —
+// это страхует /metrics от взрыва уникальных серий и от ошибок Prometheus типа
+// "collected metric ... was collected before with the same name and label values".
+func normalizeMethod(m string) string {
+	switch m {
+	case "GET", "POST", "PUT", "PATCH", "DELETE", "HEAD", "OPTIONS":
+		return m
+	}
+	return "OTHER"
 }
 
 // ServeMetrics запускает /metrics на отдельном порту в фоне.
