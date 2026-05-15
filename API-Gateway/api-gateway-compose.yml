@@ -17,6 +17,11 @@ services:
       REDIS_ADDR: "redis:6379"
       RATELIMIT_PER_MIN: "600"
       RATELIMIT_BURST: "100"
+      # Internal endpoint MinIO для PUT-flow аватара/резюме.
+      # Presigned URL подписан под публичный host (localhost:9000), но Gateway
+      # из контейнера не может ходить на localhost — подменяет host на internal,
+      # сохраняя Host header публичным для AWS Sig V4 валидации.
+      MINIO_INTERNAL_ENDPOINT: "minio:9000"
 
     volumes:
       - ./configs:/configs

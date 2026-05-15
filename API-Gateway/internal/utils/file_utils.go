@@ -7,6 +7,8 @@ import (
 	"log"
 	"mime/multipart"
 	"net/http"
+	"net/url"
+	"os"
 	"path/filepath"
 	"strings"
 	"time"
@@ -127,15 +129,31 @@ func (fh *FileHandler) UploadFileDirect(
 	return fh.GetFileInfo(ctx, entityID, fileName, category)
 }
 
-// uploadToPresignedURL загружает файл по presigned URL
+// uploadToPresignedURL загружает файл по presigned URL.
+// Presigned URL подписан под публичным host (например localhost:9000), потому
+// что тот же URL может уходить браузеру. Изнутри docker-сети localhost:9000
+// недоступен (loopback контейнера), поэтому подключаемся к internal host
+// (например minio:9000), но в Host header HTTP-запроса оставляем публичный —
+// AWS Sig V4 валидирует подпись против Host header, не против resolved IP.
 func (fh *FileHandler) uploadToPresignedURL(presignedURL string, fileData []byte, contentType string) error {
 	client := &http.Client{Timeout: 30 * time.Second}
 
-	req, err := http.NewRequest("PUT", presignedURL, strings.NewReader(string(fileData)))
+	parsed, err := url.Parse(presignedURL)
+	if err != nil {
+		return fmt.Errorf("invalid presigned URL: %w", err)
+	}
+	publicHost := parsed.Host
+
+	if internalHost := os.Getenv("MINIO_INTERNAL_ENDPOINT"); internalHost != "" {
+		parsed.Host = internalHost
+	}
+
+	req, err := http.NewRequest("PUT", parsed.String(), strings.NewReader(string(fileData)))
 	if err != nil {
 		return err
 	}
-
+	// Host header сохраняем публичный — под него подписан URL.
+	req.Host = publicHost
 	req.Header.Set("Content-Type", contentType)
 	req.ContentLength = int64(len(fileData))
 

@@ -32,14 +32,17 @@ func NewS3Repository(client, publicClient *minio.Client) *S3Repository {
 	}
 }
 
-// GenerateUploadURL генерирует presigned URL для загрузки файла.
-// Используется Gateway-контейнером для внутреннего S3-аплоада, поэтому host
-// должен быть docker-DNS-именем `minio`. Использует internal-клиента.
+// GenerateUploadURL генерирует presigned PUT URL для загрузки файла.
+// URL уходит к клиенту в браузер (через 3-step flow: meta → PUT → confirm),
+// поэтому host должен быть browser-reachable. Используем publicClient — тот
+// же, что и для GET. Gateway, делающий PUT из docker-контейнера для avatar/
+// resume, подменяет host обратно на internal в момент connect, но Host header
+// шлёт public — это удовлетворяет AWS Sig V4 верификацию (см. uploadToPresignedURL).
 func (r *S3Repository) GenerateUploadURL(ctx context.Context, s3Key, fileType string, expiry int64) (string, error) {
 	log.Printf("S3Repository: Generating upload URL for key: %s, type: %s", s3Key, fileType)
 
 	expiryTime := time.Duration(expiry) * time.Minute
-	presignedURL, err := r.client.PresignedPutObject(ctx, r.bucketName, s3Key, expiryTime)
+	presignedURL, err := r.publicClient.PresignedPutObject(ctx, r.bucketName, s3Key, expiryTime)
 	if err != nil {
 		log.Printf("S3Repository: Failed to generate upload URL for %s: %v", s3Key, err)
 		return "", status.Error(codes.Internal, "failed to generate upload URL")
