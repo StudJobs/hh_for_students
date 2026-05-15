@@ -103,11 +103,13 @@ func main() {
 		log.Printf("redis cache disabled (REDIS_ADDR not set)")
 	}
 
-	// Rate limiter (per-IP). Включён всегда, лимиты конфигурируемые через env.
-	rateLimitPerMin := envInt("RATELIMIT_PER_MIN", 100)
-	rateLimitBurst := envInt("RATELIMIT_BURST", 20)
+	// Rate limiter. Ключ — user-id из JWT (если есть), иначе IP. Дефолты подняты
+	// под активную SPA с debounce-fetch'ами и многими вкладками: 600/min = 10 RPS
+	// sustained, burst 100 закрывает single-flow spike (фильтры/пагинация/init-page).
+	rateLimitPerMin := envInt("RATELIMIT_PER_MIN", 600)
+	rateLimitBurst := envInt("RATELIMIT_BURST", 100)
 	rateLimiter := handlers.NewRateLimiter(rateLimitPerMin, rateLimitBurst)
-	log.Printf("rate limiter enabled: %d req/min per IP, burst %d", rateLimitPerMin, rateLimitBurst)
+	log.Printf("rate limiter enabled: %d req/min per key (user-id or IP), burst %d", rateLimitPerMin, rateLimitBurst)
 
 	handler := handlers.NewHandler(apiGateway, cacheClient, rateLimiter)
 	app := handler.Init()

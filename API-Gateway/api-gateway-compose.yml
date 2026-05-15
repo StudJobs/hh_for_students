@@ -15,8 +15,8 @@ services:
     environment:
       METRICS_ADDR: ":9091"
       REDIS_ADDR: "redis:6379"
-      RATELIMIT_PER_MIN: "100"
-      RATELIMIT_BURST: "20"
+      RATELIMIT_PER_MIN: "600"
+      RATELIMIT_BURST: "100"
 
     volumes:
       - ./configs:/configs
