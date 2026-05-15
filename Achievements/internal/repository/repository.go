@@ -33,10 +33,13 @@ type Repository struct {
 	S3          S3
 }
 
-// NewRepository создает новый экземпляр репозитория
-func NewRepository(db *pgxpool.Pool, minioClient *minio.Client) *Repository {
+// NewRepository создает новый экземпляр репозитория.
+// publicMinioClient опционален: если nil, presigned GET используют тот же клиент,
+// что и PUT/Delete. Нужен когда docker-DNS-host (`minio:9000`) недоступен из
+// браузера — тогда второй клиент конфигурируется с public host (`localhost:9000`).
+func NewRepository(db *pgxpool.Pool, minioClient, publicMinioClient *minio.Client) *Repository {
 	return &Repository{
 		Achievement: NewAchievementRepository(db),
-		S3:          NewS3Repository(minioClient),
+		S3:          NewS3Repository(minioClient, publicMinioClient),
 	}
 }

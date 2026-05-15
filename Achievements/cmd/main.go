@@ -2,6 +2,7 @@ package main
 
 import (
 	"github.com/joho/godotenv"
+	"github.com/minio/minio-go/v7"
 	"github.com/spf13/viper"
 	"github.com/studjobs/hh_for_students/achievments/internal/handlers"
 	"github.com/studjobs/hh_for_students/achievments/internal/metrics"
@@ -49,7 +50,7 @@ func main() {
 	defer db.Close()
 	log.Println("✓ Успешное подключение к PostgreSQL")
 
-	// Инициализация MinIO/S3 клиента
+	// Инициализация MinIO/S3 клиента (internal: docker-DNS, для PUT/Delete).
 	minioClient, err := DB.NewMinioClient(DB.S3Config{
 		Endpoint:  getEnv("MINIO_ENDPOINT", viper.GetString("minio.endpoint")),
 		AccessKey: getEnv("MINIO_ACCESS_KEY", viper.GetString("minio.access_key")),
@@ -62,8 +63,26 @@ func main() {
 	}
 	log.Println("✓ Успешное подключение к MinIO/S3 хранилищу")
 
+	// Опциональный public-клиент для presigned GET. Когда задан MINIO_PUBLIC_ENDPOINT,
+	// download-URL подписываются под этот host, чтобы их мог открыть браузер.
+	// Validation подключения пропущена — host может быть недоступен из контейнера.
+	var publicMinioClient *minio.Client
+	if publicEndpoint := getEnv("MINIO_PUBLIC_ENDPOINT", ""); publicEndpoint != "" {
+		publicMinioClient, err = DB.NewPresignerClient(DB.S3Config{
+			Endpoint:  publicEndpoint,
+			AccessKey: getEnv("MINIO_ACCESS_KEY", viper.GetString("minio.access_key")),
+			SecretKey: getEnv("MINIO_SECRET_KEY", viper.GetString("minio.secret_key")),
+			UseSSL:    getEnvAsBool("MINIO_USE_SSL", viper.GetBool("minio.use_ssl")),
+			Bucket:    getEnv("MINIO_BUCKET", viper.GetString("minio.bucket")),
+		})
+		if err != nil {
+			log.Fatalf("Ошибка инициализации public MinIO-клиента (%s): %s", publicEndpoint, err.Error())
+		}
+		log.Printf("✓ Public MinIO-клиент инициализирован для presigned GET: %s", publicEndpoint)
+	}
+
 	// Инициализация репозитория с зависимостями от БД и S3
-	repo := repository.NewRepository(db, minioClient)
+	repo := repository.NewRepository(db, minioClient, publicMinioClient)
 
 	// Инициализация сервисного слоя
 	services := service.NewService(repo)

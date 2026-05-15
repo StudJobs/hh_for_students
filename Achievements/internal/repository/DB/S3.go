@@ -61,3 +61,32 @@ func NewMinioClient(config S3Config) (*minio.Client, error) {
 	log.Printf("✓ Успешное подключение к MinIO: %s, бакет: %s", config.Endpoint, config.Bucket)
 	return minioClient, nil
 }
+
+// NewPresignerClient создаёт MinIO-клиент только для генерации presigned URL.
+// Validation подключения и создание бакета пропущены — host этого клиента может
+// быть недоступен с сервера (например `localhost:9000` для browser-facing URL),
+// но это ОК: presign — локальная HMAC-подпись, реального запроса не делает.
+func NewPresignerClient(config S3Config) (*minio.Client, error) {
+	customTransport := &http.Transport{
+		TLSClientConfig: &tls.Config{
+			InsecureSkipVerify: true,
+		},
+	}
+
+	// Region зафиксирован: иначе при первом PresignedGetObject SDK делает
+	// GET /<bucket>/?location= к серверу для bucket-region-lookup. Public host
+	// (localhost:9000) недоступен из контейнера, и запрос валится. MinIO работает
+	// с дефолтным us-east-1 — совпадает с подписью в Credential URL.
+	minioClient, err := minio.New(config.Endpoint, &minio.Options{
+		Creds:     credentials.NewStaticV4(config.AccessKey, config.SecretKey, ""),
+		Secure:    config.UseSSL,
+		Region:    "us-east-1",
+		Transport: customTransport,
+	})
+	if err != nil {
+		return nil, fmt.Errorf("ошибка создания presigner MinIO клиента: %w", err)
+	}
+
+	log.Printf("✓ Presigner MinIO-клиент создан для public host: %s", config.Endpoint)
+	return minioClient, nil
+}
