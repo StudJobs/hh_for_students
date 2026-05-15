@@ -121,7 +121,7 @@ func (r *CompanyRepository) CreateCompany(ctx context.Context, company *companyv
 
 	query, args, err := r.sb.
 		Insert(COMPANY_TABLE).
-		Columns("id", "name", "description", "city", "site", "company_type", "logo_id").
+		Columns("id", "name", "description", "city", "site", "company_type", "logo_id", "cleanup_vacancies_after_days", "cleanup_tasks_after_days").
 		Values(
 			company.Id,
 			company.Name,
@@ -130,8 +130,10 @@ func (r *CompanyRepository) CreateCompany(ctx context.Context, company *companyv
 			company.Site,
 			getCompanyTypeValue(company.Type),
 			company.LogoId,
+			company.CleanupVacanciesAfterDays,
+			company.CleanupTasksAfterDays,
 		).
-		Suffix("RETURNING id, name, description, city, site, company_type, logo_id, created_at").
+		Suffix("RETURNING id, name, description, city, site, company_type, logo_id, cleanup_vacancies_after_days, cleanup_tasks_after_days, created_at").
 		ToSql()
 	if err != nil {
 		log.Printf("Repository: Failed to build create company query: %v", err)
@@ -179,9 +181,17 @@ func (r *CompanyRepository) UpdateCompany(ctx context.Context, id string, compan
 	if company.LogoId != "" {
 		updateBuilder = updateBuilder.Set("logo_id", company.LogoId)
 	}
+	// Cleanup policy: 0 — «не чистить», но это значимое значение, поэтому
+	// разрешаем выставлять явно (если поле в PATCH-теле было) — иначе пропускаем.
+	if company.CleanupVacanciesAfterDays > 0 {
+		updateBuilder = updateBuilder.Set("cleanup_vacancies_after_days", company.CleanupVacanciesAfterDays)
+	}
+	if company.CleanupTasksAfterDays > 0 {
+		updateBuilder = updateBuilder.Set("cleanup_tasks_after_days", company.CleanupTasksAfterDays)
+	}
 
 	query, args, err := updateBuilder.
-		Suffix("RETURNING id, name, description, city, site, company_type, logo_id, created_at").
+		Suffix("RETURNING id, name, description, city, site, company_type, logo_id, cleanup_vacancies_after_days, cleanup_tasks_after_days, created_at").
 		ToSql()
 	if err != nil {
 		log.Printf("Repository: Failed to build update company query: %v", err)
@@ -237,6 +247,7 @@ func scanCompanyRow(scanner interface {
 }) (*companyv1.Company, error) {
 	var company companyv1.Company
 	var description, city, site, companyType, logoId sql.NullString
+	var cleanupVac, cleanupTasks int32
 	var createdAt time.Time
 
 	err := scanner.Scan(
@@ -247,6 +258,8 @@ func scanCompanyRow(scanner interface {
 		&site,
 		&companyType,
 		&logoId,
+		&cleanupVac,
+		&cleanupTasks,
 		&createdAt,
 	)
 	if err != nil {
@@ -258,6 +271,8 @@ func scanCompanyRow(scanner interface {
 	company.City = nullStringToString(city)
 	company.Site = nullStringToString(site)
 	company.LogoId = nullStringToString(logoId)
+	company.CleanupVacanciesAfterDays = cleanupVac
+	company.CleanupTasksAfterDays = cleanupTasks
 
 	// Обрабатываем company_type
 	if companyType.Valid {
@@ -286,7 +301,7 @@ func nullStringToString(nullStr sql.NullString) string {
 // buildCompanyQueryBuilder создает базовый query builder для компаний
 func (r *CompanyRepository) buildCompanyQueryBuilder(city, companyType, search string) squirrel.SelectBuilder {
 	queryBuilder := r.sb.
-		Select("id", "name", "description", "city", "site", "company_type", "logo_id", "created_at").
+		Select("id", "name", "description", "city", "site", "company_type", "logo_id", "cleanup_vacancies_after_days", "cleanup_tasks_after_days", "created_at").
 		From(COMPANY_TABLE).
 		Where("deleted_at IS NULL")
 

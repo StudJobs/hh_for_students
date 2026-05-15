@@ -12,6 +12,7 @@ import (
 	"github.com/spf13/viper"
 	_ "github.com/studjobs/hh_for_students/api-gateway/docs"
 	"github.com/studjobs/hh_for_students/api-gateway/internal/cache"
+	"github.com/studjobs/hh_for_students/api-gateway/internal/cleaner"
 	"github.com/studjobs/hh_for_students/api-gateway/internal/grpc"
 	"github.com/studjobs/hh_for_students/api-gateway/internal/handlers"
 	"github.com/studjobs/hh_for_students/api-gateway/internal/metrics"
@@ -113,6 +114,16 @@ func main() {
 
 	handler := handlers.NewHandler(apiGateway, cacheClient, rateLimiter)
 	app := handler.Init()
+
+	// Auto-cleanup воркер: каждые CLEANUP_INTERVAL_HOURS (default 6) часов
+	// soft-удаляет closed-вакансии и completed-микрозадачи компаний согласно
+	// Company.CleanupVacanciesAfterDays / CleanupTasksAfterDays. Запускается в
+	// фоне; ctx закрывается при остановке процесса (см. waitForShutdownSignal).
+	cleanupHours := envInt("CLEANUP_INTERVAL_HOURS", 6)
+	cleanCtx, cancelClean := context.WithCancel(context.Background())
+	defer cancelClean()
+	go cleaner.New(apiGateway, time.Duration(cleanupHours)*time.Hour).Run(cleanCtx)
+	log.Printf("auto-cleanup loop scheduled every %d hours", cleanupHours)
 
 	srv := server.NewServer(app)
 	serverPort := viper.GetString("server.port")

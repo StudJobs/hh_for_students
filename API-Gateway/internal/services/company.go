@@ -25,9 +25,11 @@ func (s *companyService) CreateCompany(ctx context.Context, company *models.Comp
 	protoCompany := &companyv1.Company{
 		Id:          company.ID,
 		Name:        company.Name,
-		Description: company.Description,
-		City:        company.City,
-		Site:        company.Site,
+		Description:               company.Description,
+		City:                      company.City,
+		Site:                      company.Site,
+		CleanupVacanciesAfterDays: company.CleanupVacanciesAfterDays,
+		CleanupTasksAfterDays:     company.CleanupTasksAfterDays,
 	}
 
 	if company.Type != nil {
@@ -47,9 +49,11 @@ func (s *companyService) CreateCompany(ctx context.Context, company *models.Comp
 	result := &models.Company{
 		ID:          resp.Id,
 		Name:        resp.Name,
-		Description: resp.Description,
-		City:        resp.City,
-		Site:        resp.Site,
+		Description:               resp.Description,
+		City:                      resp.City,
+		Site:                      resp.Site,
+		CleanupVacanciesAfterDays: resp.CleanupVacanciesAfterDays,
+		CleanupTasksAfterDays:     resp.CleanupTasksAfterDays,
 	}
 
 	if resp.Type != nil {
@@ -76,9 +80,11 @@ func (s *companyService) GetCompany(ctx context.Context, id string) (*models.Com
 	company := &models.Company{
 		ID:          resp.Id,
 		Name:        resp.Name,
-		Description: resp.Description,
-		City:        resp.City,
-		Site:        resp.Site,
+		Description:               resp.Description,
+		City:                      resp.City,
+		Site:                      resp.Site,
+		CleanupVacanciesAfterDays: resp.CleanupVacanciesAfterDays,
+		CleanupTasksAfterDays:     resp.CleanupTasksAfterDays,
 	}
 
 	if resp.Type != nil {
@@ -118,9 +124,11 @@ func (s *companyService) GetAllCompanies(ctx context.Context, pagination *models
 		company := &models.Company{
 			ID:          protoCompany.Id,
 			Name:        protoCompany.Name,
-			Description: protoCompany.Description,
-			City:        protoCompany.City,
-			Site:        protoCompany.Site,
+			Description:               protoCompany.Description,
+			City:                      protoCompany.City,
+			Site:                      protoCompany.Site,
+			CleanupVacanciesAfterDays: protoCompany.CleanupVacanciesAfterDays,
+			CleanupTasksAfterDays:     protoCompany.CleanupTasksAfterDays,
 		}
 
 		if protoCompany.Type != nil {
@@ -152,9 +160,11 @@ func (s *companyService) UpdateCompany(ctx context.Context, id string, company *
 
 	protoCompany := &companyv1.Company{
 		Name:        company.Name,
-		Description: company.Description,
-		City:        company.City,
-		Site:        company.Site,
+		Description:               company.Description,
+		City:                      company.City,
+		Site:                      company.Site,
+		CleanupVacanciesAfterDays: company.CleanupVacanciesAfterDays,
+		CleanupTasksAfterDays:     company.CleanupTasksAfterDays,
 	}
 
 	if company.Type != nil {
@@ -175,9 +185,11 @@ func (s *companyService) UpdateCompany(ctx context.Context, id string, company *
 	result := &models.Company{
 		ID:          resp.Id,
 		Name:        resp.Name,
-		Description: resp.Description,
-		City:        resp.City,
-		Site:        resp.Site,
+		Description:               resp.Description,
+		City:                      resp.City,
+		Site:                      resp.Site,
+		CleanupVacanciesAfterDays: resp.CleanupVacanciesAfterDays,
+		CleanupTasksAfterDays:     resp.CleanupTasksAfterDays,
 	}
 
 	if resp.Type != nil {
