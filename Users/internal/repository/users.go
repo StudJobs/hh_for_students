@@ -33,7 +33,7 @@ func (r *UsersRepository) GetProfile(ctx context.Context, id string) (*usersv1.P
 	log.Printf("Repository: Getting profile with ID: %s", id)
 
 	query, args, err := r.sb.
-		Select("id", "first_name", "last_name", "age", "tg", "resume_id", "avatar_id", "email", "description", "profession_category", "education_institution", "skill_slugs").
+		Select("id", "first_name", "last_name", "age", "tg", "resume_id", "avatar_id", "email", "description", "profession_category", "education_institution", "skill_slugs", "github").
 		From(PROFILE_TABLE).
 		Where(squirrel.Eq{"id": id}).
 		Where("deleted_at IS NULL").
@@ -44,7 +44,7 @@ func (r *UsersRepository) GetProfile(ctx context.Context, id string) (*usersv1.P
 	}
 
 	var profile usersv1.Profile
-	var resumeId, avatarId, educationInstitution *string
+	var resumeId, avatarId, educationInstitution, github *string
 	var skillSlugs []string
 
 	err = r.db.QueryRow(ctx, query, args...).Scan(
@@ -60,6 +60,7 @@ func (r *UsersRepository) GetProfile(ctx context.Context, id string) (*usersv1.P
 		&profile.ProfessionCategory,
 		&educationInstitution,
 		&skillSlugs,
+		&github,
 	)
 	if err != nil {
 		log.Printf("Repository: Failed to get profile with ID %s: %v", id, err)
@@ -75,6 +76,9 @@ func (r *UsersRepository) GetProfile(ctx context.Context, id string) (*usersv1.P
 	if educationInstitution != nil {
 		profile.EducationInstitution = *educationInstitution
 	}
+	if github != nil {
+		profile.Github = *github
+	}
 	profile.SkillSlugs = skillSlugs
 
 	log.Printf("Repository: Successfully retrieved profile with ID: %s", id)
@@ -89,7 +93,7 @@ func (r *UsersRepository) GetAllProfiles(ctx context.Context, professionCategory
 
 	// Базовый запрос
 	queryBuilder := r.sb.
-		Select("id", "first_name", "last_name", "age", "tg", "resume_id", "avatar_id", "email", "description", "profession_category", "education_institution", "skill_slugs").
+		Select("id", "first_name", "last_name", "age", "tg", "resume_id", "avatar_id", "email", "description", "profession_category", "education_institution", "skill_slugs", "github").
 		From(PROFILE_TABLE).
 		Where("deleted_at IS NULL").
 		OrderBy("created_at DESC").
@@ -122,7 +126,7 @@ func (r *UsersRepository) GetAllProfiles(ctx context.Context, professionCategory
 	var profiles []*usersv1.Profile
 	for rows.Next() {
 		var profile usersv1.Profile
-		var resumeId, avatarId, educationInstitution *string
+		var resumeId, avatarId, educationInstitution, github *string
 		var skillSlugs []string
 
 		err := rows.Scan(
@@ -138,6 +142,7 @@ func (r *UsersRepository) GetAllProfiles(ctx context.Context, professionCategory
 			&profile.ProfessionCategory,
 			&educationInstitution,
 			&skillSlugs,
+			&github,
 		)
 		if err != nil {
 			log.Printf("Repository: Failed to scan profile row: %v", err)
@@ -152,6 +157,9 @@ func (r *UsersRepository) GetAllProfiles(ctx context.Context, professionCategory
 		}
 		if educationInstitution != nil {
 			profile.EducationInstitution = *educationInstitution
+		}
+		if github != nil {
+			profile.Github = *github
 		}
 		profile.SkillSlugs = skillSlugs
 
@@ -248,9 +256,14 @@ func (r *UsersRepository) CreateProfile(ctx context.Context, profile *usersv1.Pr
 		values = append(values, profile.SkillSlugs)
 	}
 
+	if profile.Github != "" {
+		insertBuilder = insertBuilder.Columns("github")
+		values = append(values, profile.Github)
+	}
+
 	query, args, err := insertBuilder.
 		Values(values...).
-		Suffix("RETURNING id, first_name, last_name, age, tg, resume_id, avatar_id, email, description, profession_category, education_institution, skill_slugs").
+		Suffix("RETURNING id, first_name, last_name, age, tg, resume_id, avatar_id, email, description, profession_category, education_institution, skill_slugs, github").
 		ToSql()
 	if err != nil {
 		log.Printf("Repository: Failed to build create profile query: %v", err)
@@ -258,7 +271,7 @@ func (r *UsersRepository) CreateProfile(ctx context.Context, profile *usersv1.Pr
 	}
 
 	var createdProfile usersv1.Profile
-	var resumeId, avatarId, educationInstitution *string
+	var resumeId, avatarId, educationInstitution, github *string
 	var skillSlugs []string
 
 	err = r.db.QueryRow(ctx, query, args...).Scan(
@@ -274,6 +287,7 @@ func (r *UsersRepository) CreateProfile(ctx context.Context, profile *usersv1.Pr
 		&createdProfile.ProfessionCategory,
 		&educationInstitution,
 		&skillSlugs,
+		&github,
 	)
 	if err != nil {
 		log.Printf("Repository: Failed to create profile for email %s: %v", profile.Email, err)
@@ -288,6 +302,9 @@ func (r *UsersRepository) CreateProfile(ctx context.Context, profile *usersv1.Pr
 	}
 	if educationInstitution != nil {
 		createdProfile.EducationInstitution = *educationInstitution
+	}
+	if github != nil {
+		createdProfile.Github = *github
 	}
 	createdProfile.SkillSlugs = skillSlugs
 
@@ -341,9 +358,12 @@ func (r *UsersRepository) UpdateProfile(ctx context.Context, id string, profile 
 	if len(profile.SkillSlugs) > 0 {
 		updateBuilder = updateBuilder.Set("skill_slugs", profile.SkillSlugs)
 	}
+	if profile.Github != "" {
+		updateBuilder = updateBuilder.Set("github", profile.Github)
+	}
 
 	query, args, err := updateBuilder.
-		Suffix("RETURNING id, first_name, last_name, age, tg, resume_id, avatar_id, email, description, profession_category, education_institution, skill_slugs").
+		Suffix("RETURNING id, first_name, last_name, age, tg, resume_id, avatar_id, email, description, profession_category, education_institution, skill_slugs, github").
 		ToSql()
 	if err != nil {
 		log.Printf("Repository: Failed to build update profile query: %v", err)
@@ -351,7 +371,7 @@ func (r *UsersRepository) UpdateProfile(ctx context.Context, id string, profile 
 	}
 
 	var updatedProfile usersv1.Profile
-	var resumeId, avatarId, educationInstitution *string
+	var resumeId, avatarId, educationInstitution, github *string
 	var skillSlugs []string
 
 	err = r.db.QueryRow(ctx, query, args...).Scan(
@@ -367,6 +387,7 @@ func (r *UsersRepository) UpdateProfile(ctx context.Context, id string, profile 
 		&updatedProfile.ProfessionCategory,
 		&educationInstitution,
 		&skillSlugs,
+		&github,
 	)
 	if err != nil {
 		log.Printf("Repository: Failed to update profile with ID %s: %v", id, err)
@@ -381,6 +402,9 @@ func (r *UsersRepository) UpdateProfile(ctx context.Context, id string, profile 
 	}
 	if educationInstitution != nil {
 		updatedProfile.EducationInstitution = *educationInstitution
+	}
+	if github != nil {
+		updatedProfile.Github = *github
 	}
 	updatedProfile.SkillSlugs = skillSlugs
 

@@ -90,6 +90,7 @@ func (h *Handler) GetUsers(c *fiber.Ctx) error {
 			ProfessionCategory:   profile.ProfessionCategory,
 			EducationInstitution: profile.EducationInstitution,
 			SkillSlugs:           profile.SkillSlugs,
+			Github:               profile.Github,
 		}
 	}
 
@@ -183,6 +184,7 @@ func (h *Handler) getUserWithFiles(c *fiber.Ctx, userID string) (*models.User, e
 		ProfessionCategory:   profile.ProfessionCategory,
 		EducationInstitution: profile.EducationInstitution,
 		SkillSlugs:           profile.SkillSlugs,
+		Github:               profile.Github,
 	}
 
 	// Обогащаем информацией о файлах
@@ -324,6 +326,9 @@ func (h *Handler) UpdateUser(c *fiber.Ctx) error {
 	if updateData.SkillSlugs != nil {
 		profile.SkillSlugs = updateData.SkillSlugs
 	}
+	if updateData.Github != nil {
+		profile.Github = *updateData.Github
+	}
 
 	// Вызываем users service
 	updatedProfile, err := h.apiService.User.UpdateUser(c.Context(), &usersv1.UpdateProfileRequest{
@@ -349,6 +354,7 @@ func (h *Handler) UpdateUser(c *fiber.Ctx) error {
 		ProfessionCategory:   updatedProfile.ProfessionCategory,
 		EducationInstitution: updatedProfile.EducationInstitution,
 		SkillSlugs:           updatedProfile.SkillSlugs,
+		Github:               updatedProfile.Github,
 	}
 
 	// Обогащаем информацией о файлах

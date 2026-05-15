@@ -1,0 +1,2 @@
+ALTER TABLE profiles
+    ADD COLUMN github VARCHAR(255);
