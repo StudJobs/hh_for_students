@@ -204,11 +204,13 @@ func (h *Handler) ConfirmAchievementUpload(c *fiber.Ctx) error {
 	// Для обратной совместимости поддерживаем старый вариант с одним s3_key — тогда
 	// meta достаётся из БД (это сработает только если кто-то параллельно создал запись).
 	var confirmReq struct {
-		S3Key    string `json:"s3_key"`
-		FileName string `json:"file_name"`
-		FileType string `json:"file_type"`
-		FileSize int64  `json:"file_size"`
-		Type     int32  `json:"type"`
+		S3Key       string `json:"s3_key"`
+		FileName    string `json:"file_name"`
+		FileType    string `json:"file_type"`
+		FileSize    int64  `json:"file_size"`
+		Type        int32  `json:"type"`
+		ExternalURL string `json:"external_url"`
+		Description string `json:"description"`
 	}
 	if err := c.BodyParser(&confirmReq); err != nil {
 		log.Printf("ConfirmAchievementUpload: Failed to parse request body: %v", err)
@@ -227,13 +229,15 @@ func (h *Handler) ConfirmAchievementUpload(c *fiber.Ctx) error {
 	var achievementMeta *models.AchievementMeta
 	if confirmReq.FileName != "" && confirmReq.FileType != "" && confirmReq.FileSize > 0 {
 		achievementMeta = &models.AchievementMeta{
-			Name:      achievementName,
-			UserUUID:  userID,
-			FileName:  confirmReq.FileName,
-			FileType:  confirmReq.FileType,
-			FileSize:  confirmReq.FileSize,
-			Type:      confirmReq.Type,
-			CreatedAt: time.Now().Format(time.RFC3339),
+			Name:        achievementName,
+			UserUUID:    userID,
+			FileName:    confirmReq.FileName,
+			FileType:    confirmReq.FileType,
+			FileSize:    confirmReq.FileSize,
+			Type:        confirmReq.Type,
+			ExternalURL: confirmReq.ExternalURL,
+			Description: confirmReq.Description,
+			CreatedAt:   time.Now().Format(time.RFC3339),
 		}
 	} else {
 		// Fallback: ищем уже сохранённую запись (на случай если клиент следует старому контракту)
@@ -423,6 +427,22 @@ func (h *Handler) GetExpertQueue(c *fiber.Ctx) error {
 	if err != nil {
 		log.Printf("GetExpertQueue: failed: %v", err)
 		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{"error": err.Error()})
+	}
+
+	// Обогащаем каждую ачивку download URL — иначе эксперт не может открыть файл
+	// для проверки. N+1 запросов в Achievements; для PENDING-очереди (десятки
+	// записей) приемлемо, и presigned URL генерится моментально (только подпись).
+	for i := range res.Achievements {
+		a := &res.Achievements[i]
+		if a.UserUUID == "" || a.Name == "" {
+			continue
+		}
+		dl, derr := h.apiService.Achievement.GetAchievementDownloadUrl(c.Context(), a.UserUUID, a.Name)
+		if derr != nil {
+			log.Printf("GetExpertQueue: failed to get download URL for %s/%s: %v", a.UserUUID, a.Name, derr)
+			continue
+		}
+		a.URL = dl.URL
 	}
 	return c.JSON(res)
 }

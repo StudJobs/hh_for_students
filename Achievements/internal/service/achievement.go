@@ -29,6 +29,8 @@ type AchievementResponse struct {
 	ReviewedBy         string
 	ReviewedAt         time.Time
 	ReviewComment      string
+	ExternalURL        string
+	Description        string
 }
 
 func toResponse(a *repository.AchievementDB) *AchievementResponse {
@@ -52,6 +54,12 @@ func toResponse(a *repository.AchievementDB) *AchievementResponse {
 	}
 	if a.ReviewComment != nil {
 		r.ReviewComment = *a.ReviewComment
+	}
+	if a.ExternalURL != nil {
+		r.ExternalURL = *a.ExternalURL
+	}
+	if a.Description != nil {
+		r.Description = *a.Description
 	}
 	return r
 }
@@ -257,8 +265,10 @@ func (s *AchievementService) GetAchievementUploadURL(userUUID, achievementName, 
 	return url, s3Key, nil
 }
 
-// AddAchievementMeta добавляет метаданные достижения после успешной загрузки
-func (s *AchievementService) AddAchievementMeta(userUUID, achievementName, fileName, fileType string, fileSize int64, s3Key string, achievementType int32) error {
+// AddAchievementMeta добавляет метаданные достижения после успешной загрузки.
+// externalURL и description — опциональные ссылки/контекст работы, эксперт их
+// видит на странице проверки.
+func (s *AchievementService) AddAchievementMeta(userUUID, achievementName, fileName, fileType string, fileSize int64, s3Key string, achievementType int32, externalURL, description string) error {
 	log.Printf("Service: Adding achievement metadata for user %s, achievement: %s, S3 key: %s, type: %d", userUUID, achievementName, s3Key, achievementType)
 
 	if userUUID == "" || achievementName == "" || fileName == "" || fileType == "" || s3Key == "" {
@@ -287,6 +297,12 @@ func (s *AchievementService) AddAchievementMeta(userUUID, achievementName, fileN
 		S3Key:     s3Key,
 		Type:      achievementType,
 		CreatedAt: time.Now(),
+	}
+	if externalURL != "" {
+		achievement.ExternalURL = &externalURL
+	}
+	if description != "" {
+		achievement.Description = &description
 	}
 
 	if err := s.repo.Achievement.CreateAchievement(ctx, achievement); err != nil {

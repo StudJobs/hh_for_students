@@ -190,6 +190,8 @@ func (h *Handler) AddAchievementMeta(ctx context.Context, req *achievementv1.Add
 		meta.GetFileSize(),
 		req.GetS3Key(),
 		int32(meta.GetType()),
+		meta.GetExternalUrl(),
+		meta.GetDescription(),
 	)
 	if err != nil {
 		return nil, err

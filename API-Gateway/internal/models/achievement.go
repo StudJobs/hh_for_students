@@ -15,6 +15,9 @@ type AchievementMeta struct {
 	ReviewedBy         string `json:"reviewed_by,omitempty"`
 	ReviewedAt         string `json:"reviewed_at,omitempty"`
 	ReviewComment      string `json:"review_comment,omitempty"`
+	ExternalURL        string `json:"external_url,omitempty"` // ссылка от студента (репо/демо/презентация)
+	Description        string `json:"description,omitempty"`  // описание / контекст работы
+	URL                string `json:"url,omitempty"`          // presigned GET (заполняется только в expert/queue)
 }
 
 // AchievementReviewRequest HTTP модель запроса ревью эксперта

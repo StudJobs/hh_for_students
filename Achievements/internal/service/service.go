@@ -11,7 +11,7 @@ type Achievement interface {
 	GetAllAchievements(userUUID string) ([]*AchievementResponse, error)
 	GetAchievementDownloadURL(userUUID, achievementName string) (string, error)
 	GetAchievementUploadURL(userUUID, achievementName, fileName, fileType string, fileSize int64) (string, string, error)
-	AddAchievementMeta(userUUID, achievementName, fileName, fileType string, fileSize int64, s3Key string, achievementType int32) error
+	AddAchievementMeta(userUUID, achievementName, fileName, fileType string, fileSize int64, s3Key string, achievementType int32, externalURL, description string) error
 	DeleteAchievement(userUUID, achievementName string) error
 	SubmitForReview(ctx context.Context, userUUID string, achievementID int64) error
 	GetExpertQueue(ctx context.Context, page, limit int32) ([]*AchievementResponse, error)
