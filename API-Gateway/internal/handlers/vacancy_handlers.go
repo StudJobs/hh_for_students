@@ -60,10 +60,17 @@ func (h *Handler) GetVacancies(c *fiber.Ctx) error {
 		log.Printf("GetVacancies: routing through Search (skill_slugs=%v search_title=%q)", skillSlugs, searchTitle)
 		vacancies, err = h.apiService.Search.SearchVacanciesAsModel(c.Context(), searchTitle, skillSlugs,
 			int32(minSalary), int32(maxExperience), companyID, int32(page), int32(limit))
-		// Пост-фильтрация в Gateway: ES в текущем mapping-е не моделирует work_format/schedule,
-		// поэтому применяем их к подмножеству выдачи Search (для текущего MVP это безопасно — выдача мала).
-		if err == nil && vacancies != nil && (workFormat != "" || schedule != "" || positionStatus != "") {
-			vacancies.Vacancies = filterVacanciesInMemory(vacancies.Vacancies, workFormat, schedule, positionStatus)
+		// Пост-фильтрация в Gateway: ES в текущем mapping-е не моделирует
+		// work_format/schedule/position_status, а salary/experience моделирует
+		// только наполовину (передаётся min-salary и max-experience). Применяем
+		// все оставшиеся ограничения к выдаче Search.
+		if err == nil && vacancies != nil {
+			vacancies.Vacancies = filterVacanciesInMemory(
+				vacancies.Vacancies,
+				workFormat, schedule, positionStatus,
+				int32(minSalary), int32(maxSalary),
+				int32(minExperience), int32(maxExperience),
+			)
 		}
 	} else {
 		pagination := &models.Pagination{
@@ -522,10 +529,17 @@ func (h *Handler) DeleteVacancyAttachment(c *fiber.Ctx) error {
 	})
 }
 
-// filterVacanciesInMemory применяет workFormat/schedule/positionStatus к подмножеству выдачи Search,
-// поскольку в текущем ES-mapping-е эти поля не моделируются.
-func filterVacanciesInMemory(list []*models.Vacancy, workFormat, schedule, positionStatus string) []*models.Vacancy {
-	if workFormat == "" && schedule == "" && positionStatus == "" {
+// filterVacanciesInMemory применяет фильтры, не моделируемые ES-mapping-ом
+// (workFormat / schedule / positionStatus) или моделируемые частично
+// (salary-min/max — Search принимает только min; experience-min/max — Search
+// принимает только max). Прогоняется поверх Search-выдачи, безопасно для MVP.
+func filterVacanciesInMemory(
+	list []*models.Vacancy,
+	workFormat, schedule, positionStatus string,
+	minSalary, maxSalary, minExperience, maxExperience int32,
+) []*models.Vacancy {
+	if workFormat == "" && schedule == "" && positionStatus == "" &&
+		minSalary == 0 && maxSalary == 0 && minExperience == 0 && maxExperience == 0 {
 		return list
 	}
 	out := make([]*models.Vacancy, 0, len(list))
@@ -540,6 +554,18 @@ func filterVacanciesInMemory(list []*models.Vacancy, workFormat, schedule, posit
 			continue
 		}
 		if positionStatus != "" && v.PositionStatus != positionStatus {
+			continue
+		}
+		if minSalary > 0 && v.Salary < minSalary {
+			continue
+		}
+		if maxSalary > 0 && v.Salary > maxSalary {
+			continue
+		}
+		if minExperience > 0 && v.Experience < minExperience {
+			continue
+		}
+		if maxExperience > 0 && v.Experience > maxExperience {
 			continue
 		}
 		out = append(out, v)
