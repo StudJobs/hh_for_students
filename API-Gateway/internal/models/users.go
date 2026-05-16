@@ -15,6 +15,9 @@ type User struct {
 	ProfessionCategory   string   `json:"profession_category" example:"Backend Developer"`
 	EducationInstitution string   `json:"education_institution,omitempty" example:"МИРЭА"`
 	SkillSlugs           []string `json:"skill_slugs,omitempty" example:"go,postgresql,docker"`
+	VerifiedSkillSlugs   []string `json:"verified_skill_slugs,omitempty" example:"go,docker"`
+	ExpertSkillSlugs     []string `json:"expert_skill_slugs,omitempty" example:"go,react"`
+	ExpertVerifiedSkillSlugs []string `json:"expert_verified_skill_slugs,omitempty" example:"go"`
 	Github               string   `json:"github,omitempty" example:"https://github.com/ivanov"`
 
 	// Ссылки на файлы

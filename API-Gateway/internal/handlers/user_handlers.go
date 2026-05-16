@@ -174,17 +174,20 @@ func (h *Handler) getUserWithFiles(c *fiber.Ctx, userID string) (*models.User, e
 
 	// Конвертируем в HTTP модель
 	user := &models.User{
-		ID:                 uuid.MustParse(profile.Id),
-		FirstName:          profile.FirstName,
-		LastName:           profile.LastName,
-		Age:                profile.Age,
-		Tg:                 profile.Tg,
-		Email:              profile.Email,
-		Description:          profile.Description,
-		ProfessionCategory:   profile.ProfessionCategory,
-		EducationInstitution: profile.EducationInstitution,
-		SkillSlugs:           profile.SkillSlugs,
-		Github:               profile.Github,
+		ID:                       uuid.MustParse(profile.Id),
+		FirstName:                profile.FirstName,
+		LastName:                 profile.LastName,
+		Age:                      profile.Age,
+		Tg:                       profile.Tg,
+		Email:                    profile.Email,
+		Description:              profile.Description,
+		ProfessionCategory:       profile.ProfessionCategory,
+		EducationInstitution:     profile.EducationInstitution,
+		SkillSlugs:               profile.SkillSlugs,
+		VerifiedSkillSlugs:       profile.VerifiedSkillSlugs,
+		ExpertSkillSlugs:         profile.ExpertSkillSlugs,
+		ExpertVerifiedSkillSlugs: profile.ExpertVerifiedSkillSlugs,
+		Github:                   profile.Github,
 	}
 
 	// Обогащаем информацией о файлах
