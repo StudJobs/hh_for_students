@@ -31,6 +31,7 @@ type AchievementResponse struct {
 	ReviewComment      string
 	ExternalURL        string
 	Description        string
+	SkillSlug          string
 }
 
 func toResponse(a *repository.AchievementDB) *AchievementResponse {
@@ -61,6 +62,7 @@ func toResponse(a *repository.AchievementDB) *AchievementResponse {
 	if a.Description != nil {
 		r.Description = *a.Description
 	}
+	r.SkillSlug = a.SkillSlug
 	return r
 }
 
@@ -180,19 +182,22 @@ func (s *AchievementService) CreateMicrotaskAchievement(
 }
 
 // ReviewAchievement — эксперт принимает решение APPROVED(3) или REJECTED(4).
-func (s *AchievementService) ReviewAchievement(ctx context.Context, achievementID int64, reviewerUUID string, decision int32, comment string) error {
+// Возвращает обновлённый AchievementDB — handler использует его для side-effect'ов
+// (например, AddVerifiedSkills при approve SKILL_VERIFICATION).
+func (s *AchievementService) ReviewAchievement(ctx context.Context, achievementID int64, reviewerUUID string, decision int32, comment string) (*repository.AchievementDB, error) {
 	if achievementID <= 0 || reviewerUUID == "" {
-		return status.Error(codes.InvalidArgument, "achievement_id and reviewer_uuid are required")
+		return nil, status.Error(codes.InvalidArgument, "achievement_id and reviewer_uuid are required")
 	}
 	if decision != 3 && decision != 4 {
-		return status.Error(codes.InvalidArgument, "decision must be APPROVED or REJECTED")
+		return nil, status.Error(codes.InvalidArgument, "decision must be APPROVED or REJECTED")
 	}
 	// Переход разрешён только из PENDING(2).
-	if _, err := s.repo.Achievement.SetVerificationStatus(ctx, achievementID, decision, 2, reviewerUUID, comment); err != nil {
-		return err
+	a, err := s.repo.Achievement.SetVerificationStatus(ctx, achievementID, decision, 2, reviewerUUID, comment)
+	if err != nil {
+		return nil, err
 	}
-	log.Printf("Service: ReviewAchievement ok: id=%d, reviewer=%s, decision=%d", achievementID, reviewerUUID, decision)
-	return nil
+	log.Printf("Service: ReviewAchievement ok: id=%d, reviewer=%s, decision=%d, type=%d, slug=%q", achievementID, reviewerUUID, decision, a.Type, a.SkillSlug)
+	return a, nil
 }
 
 // GetAchievementDownloadURL генерирует URL для скачивания достижения
@@ -268,7 +273,7 @@ func (s *AchievementService) GetAchievementUploadURL(userUUID, achievementName, 
 // AddAchievementMeta добавляет метаданные достижения после успешной загрузки.
 // externalURL и description — опциональные ссылки/контекст работы, эксперт их
 // видит на странице проверки.
-func (s *AchievementService) AddAchievementMeta(userUUID, achievementName, fileName, fileType string, fileSize int64, s3Key string, achievementType int32, externalURL, description string) error {
+func (s *AchievementService) AddAchievementMeta(userUUID, achievementName, fileName, fileType string, fileSize int64, s3Key string, achievementType int32, externalURL, description, skillSlug string) error {
 	log.Printf("Service: Adding achievement metadata for user %s, achievement: %s, S3 key: %s, type: %d", userUUID, achievementName, s3Key, achievementType)
 
 	if userUUID == "" || achievementName == "" || fileName == "" || fileType == "" || s3Key == "" {
@@ -303,6 +308,9 @@ func (s *AchievementService) AddAchievementMeta(userUUID, achievementName, fileN
 	}
 	if description != "" {
 		achievement.Description = &description
+	}
+	if skillSlug != "" {
+		achievement.SkillSlug = skillSlug
 	}
 
 	if err := s.repo.Achievement.CreateAchievement(ctx, achievement); err != nil {

@@ -3,7 +3,7 @@ module github.com/studjobs/hh_for_students/api-gateway
 go 1.25.1
 
 require (
-	github.com/StudJobs/proto_srtucture v0.0.0-20260516102005-ecf2c4f50cba
+	github.com/StudJobs/proto_srtucture v0.0.0-20260516111934-1cf2c7cc4f5c
 	github.com/arsmn/fiber-swagger/v2 v2.31.1
 	github.com/gofiber/fiber/v2 v2.52.9
 	github.com/google/uuid v1.6.0

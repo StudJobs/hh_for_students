@@ -9,6 +9,7 @@ import (
 	"github.com/studjobs/hh_for_students/achievments/internal/repository"
 	"github.com/studjobs/hh_for_students/achievments/internal/repository/DB"
 	"github.com/studjobs/hh_for_students/achievments/internal/service"
+	"github.com/studjobs/hh_for_students/achievments/internal/usersclient"
 	"github.com/studjobs/hh_for_students/achievments/server"
 
 	"log"
@@ -87,8 +88,12 @@ func main() {
 	// Инициализация сервисного слоя
 	services := service.NewService(repo)
 
+	// gRPC-клиент к Users для AddVerifiedSkills (best-effort при approve SKILL_VERIFICATION).
+	usersCli := usersclient.New(getEnv("USERS_GRPC_ADDR", "user:50052"))
+	defer usersCli.Close()
+
 	// Инициализация gRPC обработчиков
-	handler := handlers.NewHandler(services)
+	handler := handlers.NewHandler(services, usersCli)
 
 	// Получение порта для gRPC сервера
 	grpcPort := getEnv("GRPC_PORT", viper.GetString("grpc.port"))

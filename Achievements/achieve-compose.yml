@@ -31,6 +31,7 @@ services:
       MINIO_USE_SSL: false
       MINIO_BUCKET: achievements
       METRICS_ADDR: ":9094"
+      USERS_GRPC_ADDR: user:50052
 
     volumes:
       - ./configs:/configs

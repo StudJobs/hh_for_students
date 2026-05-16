@@ -329,6 +329,9 @@ func (h *Handler) UpdateUser(c *fiber.Ctx) error {
 	if updateData.Github != nil {
 		profile.Github = *updateData.Github
 	}
+	if updateData.ExpertSkillSlugs != nil {
+		profile.ExpertSkillSlugs = updateData.ExpertSkillSlugs
+	}
 
 	// Вызываем users service
 	updatedProfile, err := h.apiService.User.UpdateUser(c.Context(), &usersv1.UpdateProfileRequest{

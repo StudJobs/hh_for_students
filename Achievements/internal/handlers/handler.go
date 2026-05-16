@@ -12,17 +12,17 @@ import (
 	commonv1 "github.com/StudJobs/proto_srtucture/gen/go/proto/common/v1"
 
 	"github.com/studjobs/hh_for_students/achievments/internal/service"
+	"github.com/studjobs/hh_for_students/achievments/internal/usersclient"
 )
 
 type Handler struct {
 	achievementv1.UnimplementedAchievementServiceServer
 	service *service.Service
+	users   *usersclient.Client
 }
 
-func NewHandler(service *service.Service) *Handler {
-	return &Handler{
-		service: service,
-	}
+func NewHandler(svc *service.Service, users *usersclient.Client) *Handler {
+	return &Handler{service: svc, users: users}
 }
 
 // GetAllAchievements возвращает все достижения пользователя
@@ -58,6 +58,9 @@ func toProtoMeta(a *service.AchievementResponse) *achievementv1.AchievementMeta 
 		VerificationStatus: achievementv1.VerificationStatus(a.VerificationStatus),
 		ReviewedBy:         a.ReviewedBy,
 		ReviewComment:      a.ReviewComment,
+		ExternalUrl:        a.ExternalURL,
+		Description:        a.Description,
+		SkillSlug:          a.SkillSlug,
 	}
 	if !a.ReviewedAt.IsZero() {
 		m.ReviewedAt = a.ReviewedAt.Format(time.RFC3339)
@@ -115,14 +118,21 @@ func (h *Handler) ReviewAchievement(ctx context.Context, req *achievementv1.Revi
 	if req.GetAchievementId() <= 0 || req.GetReviewerUuid() == "" {
 		return nil, status.Error(codes.InvalidArgument, "achievement_id and reviewer_uuid are required")
 	}
-	if err := h.service.Achievement.ReviewAchievement(
+	a, err := h.service.Achievement.ReviewAchievement(
 		ctx,
 		req.GetAchievementId(),
 		req.GetReviewerUuid(),
 		int32(req.GetDecision()),
 		req.GetComment(),
-	); err != nil {
+	)
+	if err != nil {
 		return nil, err
+	}
+	// Side-effect: при approve SKILL_VERIFICATION фиксируем навык в profile.verified_skill_slugs.
+	const APPROVED = int32(3)
+	const TYPE_SKILL_VERIFICATION = int32(7)
+	if a != nil && int32(req.GetDecision()) == APPROVED && a.Type == TYPE_SKILL_VERIFICATION && a.SkillSlug != "" {
+		h.users.AddVerifiedSkills(ctx, a.UserUUID, []string{a.SkillSlug})
 	}
 	return &commonv1.Empty{}, nil
 }
@@ -192,6 +202,7 @@ func (h *Handler) AddAchievementMeta(ctx context.Context, req *achievementv1.Add
 		int32(meta.GetType()),
 		meta.GetExternalUrl(),
 		meta.GetDescription(),
+		meta.GetSkillSlug(),
 	)
 	if err != nil {
 		return nil, err

@@ -46,4 +46,5 @@ type UserUpdateRequest struct {
 	ResumeID             *string  `json:"resume_id,omitempty" example:"550e8400-e29b-41d4-a716-446655440001"`
 	AvatarID             *string  `json:"avatar_id,omitempty" example:"550e8400-e29b-41d4-a716-446655440002"`
 	SkillSlugs           []string `json:"skill_slugs,omitempty" example:"go,postgresql,docker"`
+	ExpertSkillSlugs     []string `json:"expert_skill_slugs,omitempty" example:"go,react"`
 }

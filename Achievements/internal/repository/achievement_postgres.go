@@ -38,6 +38,7 @@ type AchievementDB struct {
 	ReviewComment      *string    `db:"review_comment"`
 	ExternalURL        *string    `db:"external_url"`
 	Description        *string    `db:"description"`
+	SkillSlug          string     `db:"skill_slug"`
 }
 
 // Колонки для SELECT — единый источник правды.
@@ -45,7 +46,7 @@ var achievementSelectColumns = []string{
 	"id", "name", "user_uuid", "file_name", "file_type", "file_size",
 	"s3_key", "type", "created_at",
 	"verification_status", "reviewed_by", "reviewed_at", "review_comment",
-	"external_url", "description",
+	"external_url", "description", "skill_slug",
 }
 
 func scanAchievement(scanner interface {
@@ -55,7 +56,7 @@ func scanAchievement(scanner interface {
 		&a.ID, &a.Name, &a.UserUUID, &a.FileName, &a.FileType, &a.FileSize,
 		&a.S3Key, &a.Type, &a.CreatedAt,
 		&a.VerificationStatus, &a.ReviewedBy, &a.ReviewedAt, &a.ReviewComment,
-		&a.ExternalURL, &a.Description,
+		&a.ExternalURL, &a.Description, &a.SkillSlug,
 	)
 }
 
@@ -96,10 +97,10 @@ func (r *AchievementRepository) CreateAchievement(ctx context.Context, achieveme
 	// Создаем новое достижение
 	query, args, err := r.sb.
 		Insert(ACHIEVEMENT_TABLE).
-		Columns("name", "user_uuid", "file_name", "file_type", "file_size", "s3_key", "type", "external_url", "description").
+		Columns("name", "user_uuid", "file_name", "file_type", "file_size", "s3_key", "type", "external_url", "description", "skill_slug").
 		Values(achievement.Name, achievement.UserUUID, achievement.FileName,
 			achievement.FileType, achievement.FileSize, achievement.S3Key, achievement.Type,
-			achievement.ExternalURL, achievement.Description).
+			achievement.ExternalURL, achievement.Description, achievement.SkillSlug).
 		ToSql()
 
 	if err != nil {
