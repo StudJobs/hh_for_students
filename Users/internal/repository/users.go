@@ -150,6 +150,8 @@ func (r *UsersRepository) GetAllProfiles(ctx context.Context, professionCategory
 			&skillSlugs,
 			&github,
 			&verifiedSlugs,
+			&expertSlugs,
+			&expertVerifiedSlugs,
 		)
 		if err != nil {
 			log.Printf("Repository: Failed to scan profile row: %v", err)
