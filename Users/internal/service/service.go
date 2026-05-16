@@ -21,6 +21,8 @@ type User interface {
 	GetProfile(ctx context.Context, id string) (*usersv1.Profile, error)
 	ListProfiles(ctx context.Context, professionCategory string, page, limit int32, role string) (*usersv1.ProfileList, error)
 	AddVerifiedSkills(ctx context.Context, userID string, slugs []string) (*usersv1.Profile, error)
+	GetExpertiseTest(ctx context.Context, slug string) (*usersv1.ExpertiseTest, error)
+	SubmitExpertiseTest(ctx context.Context, userID, slug string, answers []int32) (*usersv1.SubmitExpertiseTestResponse, error)
 }
 
 type Service struct {

@@ -73,6 +73,18 @@ func (s *usersService) UpdateUser(ctx context.Context, req *usersv1.UpdateProfil
 	return resp, nil
 }
 
+func (s *usersService) GetExpertiseTest(ctx context.Context, slug string) (*usersv1.ExpertiseTest, error) {
+	return s.client.GetExpertiseTest(ctx, &usersv1.GetExpertiseTestRequest{SkillSlug: slug})
+}
+
+func (s *usersService) SubmitExpertiseTest(ctx context.Context, userID, slug string, answers []int32) (*usersv1.SubmitExpertiseTestResponse, error) {
+	return s.client.SubmitExpertiseTest(ctx, &usersv1.SubmitExpertiseTestRequest{
+		UserId:        userID,
+		SkillSlug:     slug,
+		AnswerIndices: answers,
+	})
+}
+
 func (s *usersService) DeleteUser(ctx context.Context, userID string) error {
 	log.Printf("UsersService: DeleteUser attempt for user_id: %s", userID)
 

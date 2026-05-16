@@ -114,10 +114,41 @@ func (h *Handler) CreateMicrotaskAchievement(ctx context.Context, req *achieveme
 }
 
 // ReviewAchievement — эксперт принимает решение.
+//
+// Контроль права на ревью:
+//   - тип ∈ {PET_PROJECT(1), SKILL_VERIFICATION(7)} И ачивка имеет skill_slug:
+//     эксперт должен иметь этот slug в expert_verified_skill_slugs (пройденный тест).
+//   - типы COURSE(4)/HACKATHON(3)/COURSEWORK(2)/OTHER(6) — сертификатные, ревью без ограничений.
+//   - если usersclient не настроен — пропускаем (open mode, чтобы dev-окружение не блокировалось).
 func (h *Handler) ReviewAchievement(ctx context.Context, req *achievementv1.ReviewAchievementRequest) (*commonv1.Empty, error) {
 	if req.GetAchievementId() <= 0 || req.GetReviewerUuid() == "" {
 		return nil, status.Error(codes.InvalidArgument, "achievement_id and reviewer_uuid are required")
 	}
+
+	// Проверка экспертизы. Сначала достаём существующую запись чтобы знать type и skill_slug.
+	a0, err := h.service.Achievement.GetAchievement(ctx, req.GetAchievementId())
+	if err == nil && a0 != nil {
+		const TYPE_PET_PROJECT = int32(1)
+		const TYPE_SKILL_VERIFICATION = int32(7)
+		requiresExpertise := (a0.Type == TYPE_PET_PROJECT || a0.Type == TYPE_SKILL_VERIFICATION) && a0.SkillSlug != ""
+		if requiresExpertise {
+			p, perr := h.users.GetProfile(ctx, req.GetReviewerUuid())
+			if perr == nil && p != nil {
+				ok := false
+				for _, s := range p.GetExpertVerifiedSkillSlugs() {
+					if s == a0.SkillSlug {
+						ok = true
+						break
+					}
+				}
+				if !ok {
+					return nil, status.Errorf(codes.PermissionDenied,
+						"для ревью этой ачивки нужно пройти тест по навыку #%s в кабинете эксперта", a0.SkillSlug)
+				}
+			}
+		}
+	}
+
 	a, err := h.service.Achievement.ReviewAchievement(
 		ctx,
 		req.GetAchievementId(),

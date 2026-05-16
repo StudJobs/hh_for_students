@@ -111,6 +111,8 @@ func (h *Handler) initRoutes() {
 	expert.Get("/queue", RoleMiddleware(ROLE_DEVELOPER, ROLE_EXPERT), h.GetExpertQueue)
 	expert.Post("/achievements/:id/review", RoleMiddleware(ROLE_DEVELOPER, ROLE_EXPERT), h.ReviewAchievement)
 	expert.Post("/quests", RoleMiddleware(ROLE_DEVELOPER, ROLE_EXPERT), h.CreateSkillQuest)
+	expert.Get("/test/:slug", RoleMiddleware(ROLE_DEVELOPER, ROLE_EXPERT), h.GetExpertiseTest)
+	expert.Post("/test/:slug", RoleMiddleware(ROLE_DEVELOPER, ROLE_EXPERT), h.SubmitExpertiseTest)
 
 	// === Chat (минимальный polling, без WS) ===
 	// thread_id строится из двух path-сегментов: /chat/<kind>/<resource_uuid>.

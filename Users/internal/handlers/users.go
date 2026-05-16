@@ -142,6 +142,27 @@ func (h *UsersHandler) GetAllProfiles(ctx context.Context, req *usersv1.GetAllPr
 	return profiles, nil
 }
 
+func (h *UsersHandler) GetExpertiseTest(ctx context.Context, req *usersv1.GetExpertiseTestRequest) (*usersv1.ExpertiseTest, error) {
+	out, err := h.service.User.GetExpertiseTest(ctx, req.GetSkillSlug())
+	if err != nil {
+		log.Printf("Handlers: GetExpertiseTest slug=%s failed: %v", req.GetSkillSlug(), err)
+		return nil, status.Error(codes.InvalidArgument, "invalid skill slug")
+	}
+	return out, nil
+}
+
+func (h *UsersHandler) SubmitExpertiseTest(ctx context.Context, req *usersv1.SubmitExpertiseTestRequest) (*usersv1.SubmitExpertiseTestResponse, error) {
+	if req.GetUserId() == "" {
+		return nil, status.Error(codes.InvalidArgument, "user_id required")
+	}
+	out, err := h.service.User.SubmitExpertiseTest(ctx, req.GetUserId(), req.GetSkillSlug(), req.GetAnswerIndices())
+	if err != nil {
+		log.Printf("Handlers: SubmitExpertiseTest user=%s slug=%s failed: %v", req.GetUserId(), req.GetSkillSlug(), err)
+		return nil, status.Error(codes.InvalidArgument, err.Error())
+	}
+	return out, nil
+}
+
 func (h *UsersHandler) AddVerifiedSkills(ctx context.Context, req *usersv1.AddVerifiedSkillsRequest) (*usersv1.Profile, error) {
 	if req.GetUserId() == "" {
 		return nil, status.Error(codes.InvalidArgument, "user_id is required")

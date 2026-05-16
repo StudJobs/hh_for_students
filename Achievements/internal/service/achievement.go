@@ -181,6 +181,14 @@ func (s *AchievementService) CreateMicrotaskAchievement(
 	return nil
 }
 
+// GetAchievement — простой read-by-id, нужен handler'у для проверки прав ревью.
+func (s *AchievementService) GetAchievement(ctx context.Context, achievementID int64) (*repository.AchievementDB, error) {
+	if achievementID <= 0 {
+		return nil, status.Error(codes.InvalidArgument, "achievement_id is required")
+	}
+	return s.repo.Achievement.GetAchievementByID(ctx, achievementID)
+}
+
 // ReviewAchievement — эксперт принимает решение APPROVED(3) или REJECTED(4).
 // Возвращает обновлённый AchievementDB — handler использует его для side-effect'ов
 // (например, AddVerifiedSkills при approve SKILL_VERIFICATION).

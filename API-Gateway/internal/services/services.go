@@ -25,6 +25,27 @@ type AuthService interface {
 	DeleteUser(ctx context.Context, userID string) error
 }
 
+// ExpertiseTest — облёгчённая HTTP-модель теста для проброса в Gateway.
+type ExpertiseTestQuestion = struct {
+	ID      int32    `json:"id"`
+	Text    string   `json:"text"`
+	Options []string `json:"options"`
+}
+type ExpertiseTestResp = struct {
+	SkillSlug        string                  `json:"skill_slug"`
+	Available        bool                    `json:"available"`
+	Reason           string                  `json:"reason,omitempty"`
+	Questions        []ExpertiseTestQuestion `json:"questions"`
+	PassThresholdPct int32                   `json:"pass_threshold_pct"`
+}
+type ExpertiseSubmitResp = struct {
+	Passed   bool   `json:"passed"`
+	Correct  int32  `json:"correct"`
+	Total    int32  `json:"total"`
+	ScorePct int32  `json:"score_pct"`
+	Message  string `json:"message"`
+}
+
 // UsersService интерфейс для работы с пользователями
 type UsersService interface {
 	CreateUser(ctx context.Context, req *usersv1.NewProfileRequest) (*usersv1.Profile, error)
@@ -32,6 +53,8 @@ type UsersService interface {
 	GetUsers(ctx context.Context, req *usersv1.GetAllProfilesRequest) (*usersv1.ProfileList, error)
 	UpdateUser(ctx context.Context, req *usersv1.UpdateProfileRequest) (*usersv1.Profile, error)
 	DeleteUser(ctx context.Context, userID string) error
+	GetExpertiseTest(ctx context.Context, slug string) (*usersv1.ExpertiseTest, error)
+	SubmitExpertiseTest(ctx context.Context, userID, slug string, answers []int32) (*usersv1.SubmitExpertiseTestResponse, error)
 }
 
 type AchievementService interface {

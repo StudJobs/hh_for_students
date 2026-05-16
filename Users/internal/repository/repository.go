@@ -14,6 +14,7 @@ type Users interface {
 	UpdateProfile(ctx context.Context, id string, profile *usersv1.Profile) (*usersv1.Profile, error)
 	DeleteProfile(ctx context.Context, id string) error
 	AddVerifiedSkills(ctx context.Context, userID string, slugs []string) (*usersv1.Profile, error)
+	AddExpertVerifiedSkills(ctx context.Context, userID string, slugs []string) error
 }
 
 type Chat interface {

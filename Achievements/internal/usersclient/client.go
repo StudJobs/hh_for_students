@@ -37,6 +37,16 @@ func (c *Client) Close() {
 	}
 }
 
+// GetProfile — best-effort. Возвращает nil + nil-error если клиент не настроен (мягкое поведение).
+func (c *Client) GetProfile(ctx context.Context, userID string) (*usersv1.Profile, error) {
+	if c.cli == nil || userID == "" {
+		return nil, nil
+	}
+	cctx, cancel := context.WithTimeout(ctx, callTimeout)
+	defer cancel()
+	return c.cli.GetProfile(cctx, &usersv1.GetProfileRequest{Id: userID})
+}
+
 func (c *Client) AddVerifiedSkills(ctx context.Context, userID string, slugs []string) {
 	if c.cli == nil || userID == "" || len(slugs) == 0 {
 		return

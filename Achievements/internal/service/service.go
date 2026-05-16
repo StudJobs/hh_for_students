@@ -17,6 +17,7 @@ type Achievement interface {
 	GetExpertQueue(ctx context.Context, page, limit int32) ([]*AchievementResponse, error)
 	ReviewAchievement(ctx context.Context, achievementID int64, reviewerUUID string, decision int32, comment string) (*repository.AchievementDB, error)
 	CreateMicrotaskAchievement(ctx context.Context, userUUID, microtaskID, microtaskTitle, solutionURL, reviewerUUID, reviewComment string) error
+	GetAchievement(ctx context.Context, achievementID int64) (*repository.AchievementDB, error)
 }
 
 // Service объединяет все сервисы
