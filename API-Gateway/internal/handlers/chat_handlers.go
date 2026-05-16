@@ -11,25 +11,20 @@ import (
 	"github.com/studjobs/hh_for_students/api-gateway/internal/models"
 )
 
-// canAccessThread проверяет, имеет ли пользователь право читать/писать в thread_id.
-// thread_id-формат: "<kind>:<resource_uuid>".
-//   - application:<id>  → доступ у автора-студента или у HR-владельца вакансии.
-//   - task:<id>         → доступ у assigned студента и у владельца задачи.
-//   - quest:<id>        → доступ у target_student_id и у эксперта-создателя.
-// Возвращает (ok, errMessage).
-func (h *Handler) canAccessThread(ctx context.Context, userID, threadID string) (bool, string) {
-	parts := strings.SplitN(threadID, ":", 2)
-	if len(parts) != 2 || parts[1] == "" {
-		return false, "invalid thread_id"
+// canAccessThread проверяет, имеет ли пользователь право читать/писать в треде.
+//   - application/<id>  → доступ у автора-студента и у HR (упрощённо, см. ниже).
+//   - task/<id>         → доступ у assigned студента и у владельца задачи.
+//   - quest/<id>        → доступ у target_student_id и у эксперта-создателя.
+// Возвращает (ok, errMessage). На gRPC-уровне используется один объединённый
+// thread_id `<kind>:<rid>` — это контракт сервиса чата, никак не влияет на URL.
+func (h *Handler) canAccessThread(ctx context.Context, userID, kind, rid string) (bool, string) {
+	if rid == "" {
+		return false, "invalid resource id"
 	}
-	kind, rid := parts[0], parts[1]
 	switch kind {
 	case "application":
-		// Берём application через ListMine (нет публичного Get). Если application принадлежит
-		// текущему юзеру — он студент. Иначе считаем HR (best-effort).
-		// Дешевле: получить application id напрямую — но Application API не имеет такого метода.
-		// Для MVP разрешаем любому юзеру с непустым userID, ибо реальная проверка участников
-		// требует Application.Get RPC — отложено.
+		// Для MVP разрешаем любому залогиненному пользователю; полная проверка
+		// участников отклика требует Application.Get RPC (отложено).
 		_ = rid
 		return userID != "", ""
 	case "task":
@@ -58,13 +53,22 @@ func (h *Handler) canAccessThread(ctx context.Context, userID, threadID string) 
 	}
 }
 
+func threadIDFromParams(c *fiber.Ctx) (kind, rid, joined string) {
+	kind = c.Params("kind")
+	rid = c.Params("rid")
+	if kind == "" || rid == "" {
+		return "", "", ""
+	}
+	return kind, rid, kind + ":" + rid
+}
+
 func (h *Handler) GetChatMessages(c *fiber.Ctx) error {
-	threadID := c.Params("thread_id")
+	kind, rid, threadID := threadIDFromParams(c)
 	userID := getUserIDFromContext(c)
 	if threadID == "" || userID == "" {
 		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{"error": "invalid request"})
 	}
-	if ok, why := h.canAccessThread(c.Context(), userID, threadID); !ok {
+	if ok, why := h.canAccessThread(c.Context(), userID, kind, rid); !ok {
 		return c.Status(fiber.StatusForbidden).JSON(fiber.Map{"error": why})
 	}
 	page, _ := strconv.Atoi(c.Query("page", "1"))
@@ -79,12 +83,12 @@ func (h *Handler) GetChatMessages(c *fiber.Ctx) error {
 }
 
 func (h *Handler) SendChatMessage(c *fiber.Ctx) error {
-	threadID := c.Params("thread_id")
+	kind, rid, threadID := threadIDFromParams(c)
 	userID := getUserIDFromContext(c)
 	if threadID == "" || userID == "" {
 		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{"error": "invalid request"})
 	}
-	if ok, why := h.canAccessThread(c.Context(), userID, threadID); !ok {
+	if ok, why := h.canAccessThread(c.Context(), userID, kind, rid); !ok {
 		return c.Status(fiber.StatusForbidden).JSON(fiber.Map{"error": why})
 	}
 	var req models.ChatSendRequest

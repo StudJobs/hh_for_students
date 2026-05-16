@@ -80,9 +80,9 @@ func (h *Handler) initRoutes() {
 	// === User routes ===
 	users := api.Group("/users")
 	// ПРАВИЛЬНО: Middleware идут до обработчика
-	users.Get("/", RoleMiddleware(ROLE_DEVELOPER, ROLE_STUDENT, ROLE_HR, ROLE_COMPANY), h.GetUsers)
+	users.Get("/", RoleMiddleware(ROLE_DEVELOPER, ROLE_STUDENT, ROLE_HR, ROLE_COMPANY, ROLE_EXPERT), h.GetUsers)
 	users.Get("/me", RoleMiddleware(ROLE_DEVELOPER, ROLE_STUDENT), h.GetMe)
-	users.Get("/:id", RoleMiddleware(ROLE_DEVELOPER, ROLE_STUDENT, ROLE_HR), h.GetUser)
+	users.Get("/:id", RoleMiddleware(ROLE_DEVELOPER, ROLE_STUDENT, ROLE_HR, ROLE_COMPANY, ROLE_EXPERT), h.GetUser)
 	users.Get("/:id/achievements", RoleMiddleware(ROLE_DEVELOPER, ROLE_STUDENT, ROLE_HR, ROLE_COMPANY, ROLE_EXPERT), h.GetUserAchievementsByID)
 	// Для /edit нет параметра :id, поэтому используем RoleMiddleware.
 	// Проверка, что юзер меняет именно себя, должна быть внутри h.UpdateUser.
@@ -113,9 +113,11 @@ func (h *Handler) initRoutes() {
 	expert.Post("/quests", RoleMiddleware(ROLE_DEVELOPER, ROLE_EXPERT), h.CreateSkillQuest)
 
 	// === Chat (минимальный polling, без WS) ===
+	// thread_id строится из двух path-сегментов: /chat/<kind>/<resource_uuid>.
+	// Двоеточие в URL Fiber не декодирует надёжно — поэтому kind и id отдельно.
 	chat := api.Group("/chat")
-	chat.Get("/:thread_id", RoleMiddleware(ROLE_DEVELOPER, ROLE_STUDENT, ROLE_HR, ROLE_COMPANY, ROLE_EXPERT), h.GetChatMessages)
-	chat.Post("/:thread_id", RoleMiddleware(ROLE_DEVELOPER, ROLE_STUDENT, ROLE_HR, ROLE_COMPANY, ROLE_EXPERT), h.SendChatMessage)
+	chat.Get("/:kind/:rid", RoleMiddleware(ROLE_DEVELOPER, ROLE_STUDENT, ROLE_HR, ROLE_COMPANY, ROLE_EXPERT), h.GetChatMessages)
+	chat.Post("/:kind/:rid", RoleMiddleware(ROLE_DEVELOPER, ROLE_STUDENT, ROLE_HR, ROLE_COMPANY, ROLE_EXPERT), h.SendChatMessage)
 
 	// === HR routes ===
 	profileHR := api.Group("/hr")
@@ -162,9 +164,9 @@ func (h *Handler) initRoutes() {
 
 	// === Skills (справочник тегов компетенций) ===
 	skills := api.Group("/skills")
-	skills.Get("/search", RoleMiddleware(ROLE_DEVELOPER, ROLE_STUDENT, ROLE_HR, ROLE_COMPANY), h.SearchSkills)
-	skills.Get("/popular", RoleMiddleware(ROLE_DEVELOPER, ROLE_STUDENT, ROLE_HR, ROLE_COMPANY), h.PopularSkills)
-	skills.Get("/bulk", RoleMiddleware(ROLE_DEVELOPER, ROLE_STUDENT, ROLE_HR, ROLE_COMPANY), h.BulkSkills)
+	skills.Get("/search", RoleMiddleware(ROLE_DEVELOPER, ROLE_STUDENT, ROLE_HR, ROLE_COMPANY, ROLE_EXPERT), h.SearchSkills)
+	skills.Get("/popular", RoleMiddleware(ROLE_DEVELOPER, ROLE_STUDENT, ROLE_HR, ROLE_COMPANY, ROLE_EXPERT), h.PopularSkills)
+	skills.Get("/bulk", RoleMiddleware(ROLE_DEVELOPER, ROLE_STUDENT, ROLE_HR, ROLE_COMPANY, ROLE_EXPERT), h.BulkSkills)
 
 	// === MicroTasks: студенческие операции ===
 	tasks := api.Group("/tasks")
