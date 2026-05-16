@@ -290,15 +290,19 @@ func (s *AchievementService) AddAchievementMeta(userUUID, achievementName, fileN
 
 	ctx := context.Background()
 
-	// Проверяем, что файл действительно загружен в S3
-	exists, err := s.repo.S3.ObjectExists(ctx, s3Key)
-	if err != nil {
-		log.Printf("Service: Error checking file existence: %v", err)
-		return status.Error(codes.Internal, "error verifying file upload")
-	}
-	if !exists {
-		log.Printf("Service: File not found in S3: %s", s3Key)
-		return status.Error(codes.FailedPrecondition, "file not uploaded to storage")
+	// Для «link-only» ачивок (file_type=external/url) реального файла в S3 нет —
+	// пропускаем ObjectExists. Сценарий: студент сохраняет ссылку на GitHub-репо
+	// или резюме без загрузки PDF. Аналогично используется в F5 (микрозадачи).
+	if fileType != "external/url" {
+		exists, err := s.repo.S3.ObjectExists(ctx, s3Key)
+		if err != nil {
+			log.Printf("Service: Error checking file existence: %v", err)
+			return status.Error(codes.Internal, "error verifying file upload")
+		}
+		if !exists {
+			log.Printf("Service: File not found in S3: %s", s3Key)
+			return status.Error(codes.FailedPrecondition, "file not uploaded to storage")
+		}
 	}
 
 	achievement := &repository.AchievementDB{
