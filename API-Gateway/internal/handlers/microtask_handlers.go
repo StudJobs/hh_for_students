@@ -104,6 +104,25 @@ func (h *Handler) SubmitTask(c *fiber.Ctx) error {
 	return c.Status(fiber.StatusCreated).JSON(s)
 }
 
+// GetMyTasks — все микрозадачи, которые текущий студент взял в работу или завершил.
+// Используется страницей «Мои отклики» → таб «Микрозадачи».
+func (h *Handler) GetMyTasks(c *fiber.Ctx) error {
+	studentID := getUserIDFromContext(c)
+	if studentID == "" {
+		return c.Status(fiber.StatusUnauthorized).JSON(fiber.Map{"error": "unauthorized"})
+	}
+	page, _ := strconv.Atoi(c.Query("page", "1"))
+	limit, _ := strconv.Atoi(c.Query("limit", "50"))
+	page, limit = normalizePagination(page, limit)
+	statusInt, _ := strconv.Atoi(c.Query("status", "0"))
+	list, err := h.apiService.MicroTasks.ListByStudent(c.Context(), studentID, clampInt32(statusInt), int32(page), int32(limit))
+	if err != nil {
+		log.Printf("GetMyTasks: failed student=%s: %v", studentID, err)
+		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{"error": "Failed to load my tasks"})
+	}
+	return c.JSON(list)
+}
+
 // ListMySubmissions — студент видит свои отправленные решения.
 func (h *Handler) ListMySubmissions(c *fiber.Ctx) error {
 	studentID := getUserIDFromContext(c)

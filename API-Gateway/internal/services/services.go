@@ -79,6 +79,7 @@ type MicroTaskService interface {
 	Get(ctx context.Context, id string) (*models.MicroTask, error)
 	List(ctx context.Context, status int32, skillSlugs []string, page, limit int32) (*models.MicroTaskList, error)
 	ListByCompany(ctx context.Context, companyID string, page, limit int32) (*models.MicroTaskList, error)
+	ListByStudent(ctx context.Context, studentID string, status int32, page, limit int32) (*models.MicroTaskList, error)
 	Apply(ctx context.Context, taskID, studentID string) (*models.MicroTask, error)
 	Submit(ctx context.Context, taskID, studentID, solutionURL, comment string) (*models.Submission, error)
 	ListSubmissions(ctx context.Context, taskID, studentID string, page, limit int32) (*models.SubmissionList, error)

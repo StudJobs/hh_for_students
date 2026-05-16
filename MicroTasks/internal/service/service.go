@@ -76,6 +76,13 @@ func (s *MicroTaskService) ListByCompany(ctx context.Context, companyID string, 
 	return s.repo.Tasks.ListByCompany(ctx, companyID, page, limit)
 }
 
+func (s *MicroTaskService) ListByStudent(ctx context.Context, studentID string, status microtaskv1.MicroTaskStatus, page, limit int32) (*microtaskv1.MicroTaskList, error) {
+	if studentID == "" {
+		return nil, ErrInvalidArg
+	}
+	return s.repo.Tasks.ListByStudent(ctx, studentID, status, page, limit)
+}
+
 func (s *MicroTaskService) Apply(ctx context.Context, taskID, studentID string) (*microtaskv1.MicroTask, error) {
 	if taskID == "" || studentID == "" {
 		return nil, ErrInvalidArg

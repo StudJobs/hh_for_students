@@ -80,6 +80,15 @@ func (h *Handler) ListByCompany(ctx context.Context, req *microtaskv1.ListByComp
 	return list, nil
 }
 
+func (h *Handler) ListByStudent(ctx context.Context, req *microtaskv1.ListByStudentRequest) (*microtaskv1.MicroTaskList, error) {
+	page, limit := normalizePagination(req.GetPagination())
+	list, err := h.svc.Tasks.ListByStudent(ctx, req.GetStudentId(), req.GetStatus(), page, limit)
+	if err != nil {
+		return nil, mapErr(err, "list-by-student")
+	}
+	return list, nil
+}
+
 func (h *Handler) Apply(ctx context.Context, req *microtaskv1.ApplyRequest) (*microtaskv1.MicroTask, error) {
 	t, err := h.svc.Tasks.Apply(ctx, req.GetMicrotaskId(), req.GetStudentId())
 	if err != nil {

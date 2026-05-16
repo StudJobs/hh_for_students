@@ -163,6 +163,7 @@ func (h *Handler) initRoutes() {
 	// === MicroTasks: студенческие операции ===
 	tasks := api.Group("/tasks")
 	tasks.Get("/", RoleMiddleware(ROLE_DEVELOPER, ROLE_STUDENT, ROLE_HR, ROLE_COMPANY), h.GetTasks)
+	tasks.Get("/mine", RoleMiddleware(ROLE_DEVELOPER, ROLE_STUDENT), h.GetMyTasks)
 	tasks.Get("/my-submissions", RoleMiddleware(ROLE_DEVELOPER, ROLE_STUDENT), h.ListMySubmissions)
 	tasks.Get("/:id", RoleMiddleware(ROLE_DEVELOPER, ROLE_STUDENT, ROLE_HR, ROLE_COMPANY), h.GetTask)
 	tasks.Post("/:id/apply", RoleMiddleware(ROLE_DEVELOPER, ROLE_STUDENT), h.ApplyToTask)

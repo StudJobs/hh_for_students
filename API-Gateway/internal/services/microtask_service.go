@@ -75,6 +75,18 @@ func (s *microTaskService) ListByCompany(ctx context.Context, companyID string, 
 	return listFromProto(resp), nil
 }
 
+func (s *microTaskService) ListByStudent(ctx context.Context, studentID string, status int32, page, limit int32) (*models.MicroTaskList, error) {
+	resp, err := s.client.ListByStudent(ctx, &microtaskv1.ListByStudentRequest{
+		StudentId:  studentID,
+		Status:     microtaskv1.MicroTaskStatus(status),
+		Pagination: &commonv1.Pagination{Page: page, Limit: limit},
+	})
+	if err != nil {
+		return nil, err
+	}
+	return listFromProto(resp), nil
+}
+
 func (s *microTaskService) Apply(ctx context.Context, taskID, studentID string) (*models.MicroTask, error) {
 	resp, err := s.client.Apply(ctx, &microtaskv1.ApplyRequest{MicrotaskId: taskID, StudentId: studentID})
 	if err != nil {

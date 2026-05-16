@@ -251,6 +251,65 @@ func (r *MicroTaskRepository) ListByCompany(ctx context.Context, companyID strin
 	}, nil
 }
 
+func (r *MicroTaskRepository) ListByStudent(ctx context.Context, studentID string, status microtaskv1.MicroTaskStatus, page, limit int32) (*microtaskv1.MicroTaskList, error) {
+	if page < 1 {
+		page = 1
+	}
+	if limit < 1 {
+		limit = 10
+	}
+	offset := (page - 1) * limit
+
+	qb := r.sb.
+		Select(taskCols).
+		From("microtasks").
+		Where("deleted_at IS NULL").
+		Where(squirrel.Eq{"assigned_to": studentID})
+	cb := r.sb.
+		Select("COUNT(*)").
+		From("microtasks").
+		Where("deleted_at IS NULL").
+		Where(squirrel.Eq{"assigned_to": studentID})
+
+	if status != microtaskv1.MicroTaskStatus_MICROTASK_STATUS_UNSPECIFIED {
+		qb = qb.Where(squirrel.Eq{"status": int16(status)})
+		cb = cb.Where(squirrel.Eq{"status": int16(status)})
+	}
+
+	query, args, err := qb.OrderBy("updated_at DESC").Limit(uint64(limit)).Offset(uint64(offset)).ToSql()
+	if err != nil {
+		return nil, fmt.Errorf("build list-by-student query: %w", err)
+	}
+	rows, err := r.db.Query(ctx, query, args...)
+	if err != nil {
+		return nil, fmt.Errorf("list-by-student: %w", err)
+	}
+	defer rows.Close()
+
+	var tasks []*microtaskv1.MicroTask
+	for rows.Next() {
+		t, err := scanTask(rows)
+		if err != nil {
+			return nil, fmt.Errorf("scan: %w", err)
+		}
+		tasks = append(tasks, t)
+	}
+
+	countQuery, countArgs, err := cb.ToSql()
+	if err != nil {
+		return nil, fmt.Errorf("build count query: %w", err)
+	}
+	var total int32
+	if err := r.db.QueryRow(ctx, countQuery, countArgs...).Scan(&total); err != nil {
+		return nil, fmt.Errorf("count: %w", err)
+	}
+
+	return &microtaskv1.MicroTaskList{
+		Tasks:      tasks,
+		Pagination: paginationResponse(total, limit, page),
+	}, nil
+}
+
 // Apply переводит задачу из OPEN в ASSIGNED атомарно. Возвращает ErrTaskNotOpen, если статус не OPEN.
 func (r *MicroTaskRepository) Apply(ctx context.Context, taskID, studentID string) (*microtaskv1.MicroTask, error) {
 	query, args, err := r.sb.

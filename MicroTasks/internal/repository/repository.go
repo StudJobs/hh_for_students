@@ -22,6 +22,7 @@ type MicroTasks interface {
 	Get(ctx context.Context, id string) (*microtaskv1.MicroTask, error)
 	List(ctx context.Context, status microtaskv1.MicroTaskStatus, skillSlugs []string, page, limit int32) (*microtaskv1.MicroTaskList, error)
 	ListByCompany(ctx context.Context, companyID string, page, limit int32) (*microtaskv1.MicroTaskList, error)
+	ListByStudent(ctx context.Context, studentID string, status microtaskv1.MicroTaskStatus, page, limit int32) (*microtaskv1.MicroTaskList, error)
 
 	Apply(ctx context.Context, taskID, studentID string) (*microtaskv1.MicroTask, error)
 	SetStatus(ctx context.Context, id string, status microtaskv1.MicroTaskStatus) (*microtaskv1.MicroTask, error)
