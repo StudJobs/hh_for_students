@@ -4,6 +4,8 @@ import (
 	"github.com/gofiber/fiber/v2"
 	"github.com/google/uuid"
 	"github.com/studjobs/hh_for_students/api-gateway/internal/models"
+	grpccodes "google.golang.org/grpc/codes"
+	grpcstatus "google.golang.org/grpc/status"
 	"log"
 	"strconv"
 	"time"
@@ -137,15 +139,18 @@ func (h *Handler) CreateUserAchievement(c *fiber.Ctx) error {
 		})
 	}
 
-	// Создаем метаданные достижения
+	// Создаем метаданные достижения (поля пробрасываются в confirm-фазу через клиента).
 	achievementMeta := models.AchievementMeta{
-		Name:      uploadReq.Name,
-		UserUUID:  userID,
-		FileName:  uploadReq.FileName,
-		FileType:  uploadReq.FileType,
-		FileSize:  uploadReq.FileSize,
-		Type:      uploadReq.Type,
-		CreatedAt: time.Now().Format(time.RFC3339),
+		Name:        uploadReq.Name,
+		UserUUID:    userID,
+		FileName:    uploadReq.FileName,
+		FileType:    uploadReq.FileType,
+		FileSize:    uploadReq.FileSize,
+		Type:        uploadReq.Type,
+		ExternalURL: uploadReq.ExternalURL,
+		Description: uploadReq.Description,
+		SkillSlug:   uploadReq.SkillSlug,
+		CreatedAt:   time.Now().Format(time.RFC3339),
 	}
 
 	// Формируем полный ответ
@@ -211,6 +216,7 @@ func (h *Handler) ConfirmAchievementUpload(c *fiber.Ctx) error {
 		Type        int32  `json:"type"`
 		ExternalURL string `json:"external_url"`
 		Description string `json:"description"`
+		SkillSlug   string `json:"skill_slug"`
 	}
 	if err := c.BodyParser(&confirmReq); err != nil {
 		log.Printf("ConfirmAchievementUpload: Failed to parse request body: %v", err)
@@ -237,6 +243,7 @@ func (h *Handler) ConfirmAchievementUpload(c *fiber.Ctx) error {
 			Type:        confirmReq.Type,
 			ExternalURL: confirmReq.ExternalURL,
 			Description: confirmReq.Description,
+			SkillSlug:   confirmReq.SkillSlug,
 			CreatedAt:   time.Now().Format(time.RFC3339),
 		}
 	} else {
@@ -476,6 +483,20 @@ func (h *Handler) ReviewAchievement(c *fiber.Ctx) error {
 
 	if err := h.apiService.Achievement.ReviewAchievement(c.Context(), achievementID, reviewerID, req.Decision, req.Comment); err != nil {
 		log.Printf("ReviewAchievement: failed for reviewer %s, id %d: %v", reviewerID, achievementID, err)
+		// Маппинг gRPC-кодов в HTTP — иначе любая ошибка превращается в 500
+		// и фронт не различает «нет прав» от настоящего сбоя.
+		if st, okSt := grpcstatus.FromError(err); okSt {
+			switch st.Code() {
+			case grpccodes.PermissionDenied:
+				return c.Status(fiber.StatusForbidden).JSON(fiber.Map{"error": st.Message()})
+			case grpccodes.InvalidArgument:
+				return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{"error": st.Message()})
+			case grpccodes.NotFound:
+				return c.Status(fiber.StatusNotFound).JSON(fiber.Map{"error": st.Message()})
+			case grpccodes.FailedPrecondition:
+				return c.Status(fiber.StatusConflict).JSON(fiber.Map{"error": st.Message()})
+			}
+		}
 		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{"error": err.Error()})
 	}
 	return c.JSON(fiber.Map{"message": "review submitted"})

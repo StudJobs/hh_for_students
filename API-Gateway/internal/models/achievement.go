@@ -17,6 +17,7 @@ type AchievementMeta struct {
 	ReviewComment      string `json:"review_comment,omitempty"`
 	ExternalURL        string `json:"external_url,omitempty"` // ссылка от студента (репо/демо/презентация)
 	Description        string `json:"description,omitempty"`  // описание / контекст работы
+	SkillSlug          string `json:"skill_slug,omitempty"`   // для SKILL_VERIFICATION — slug подтверждаемого навыка
 	URL                string `json:"url,omitempty"`          // presigned GET (заполняется только в expert/queue)
 }
 
@@ -51,11 +52,14 @@ type UploadUrlResponse struct {
 // AchievementUploadRequest HTTP модель запроса на создание достижения
 // @Description Запрос на подготовку загрузки достижения
 type AchievementUploadRequest struct {
-	Name     string `json:"name" example:"Диплом бакалавра" validate:"required"`
-	FileName string `json:"file_name" example:"diploma.pdf" validate:"required"`
-	FileType string `json:"file_type" example:"application/pdf" validate:"required"`
-	FileSize int64  `json:"file_size" example:"2048576" validate:"required,min=1"`
-	Type     int32  `json:"type" example:"1"`
+	Name        string `json:"name" example:"Диплом бакалавра" validate:"required"`
+	FileName    string `json:"file_name" example:"diploma.pdf" validate:"required"`
+	FileType    string `json:"file_type" example:"application/pdf" validate:"required"`
+	FileSize    int64  `json:"file_size" example:"2048576" validate:"required,min=1"`
+	Type        int32  `json:"type" example:"1"`
+	ExternalURL string `json:"external_url,omitempty"`
+	Description string `json:"description,omitempty"`
+	SkillSlug   string `json:"skill_slug,omitempty"`
 }
 
 // AchievementCreateResponse HTTP модель ответа при создании достижения

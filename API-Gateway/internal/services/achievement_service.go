@@ -61,6 +61,7 @@ func protoToModelMeta(p *achievementv1.AchievementMeta) models.AchievementMeta {
 		ReviewComment:      p.GetReviewComment(),
 		ExternalURL:        p.GetExternalUrl(),
 		Description:        p.GetDescription(),
+		SkillSlug:          p.GetSkillSlug(),
 	}
 }
 
@@ -177,6 +178,7 @@ func (s *achievementService) AddAchievementMeta(ctx context.Context, meta *model
 		VerificationStatus: achievementv1.VerificationStatus(meta.VerificationStatus),
 		ExternalUrl:        meta.ExternalURL,
 		Description:        meta.Description,
+		SkillSlug:          meta.SkillSlug,
 	}
 
 	req := &achievementv1.AddAchievementMetaRequest{
