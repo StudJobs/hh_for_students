@@ -25,6 +25,7 @@ type Vacancy interface {
 		minSalary, maxSalary, minExperience, maxExperience int32,
 		searchTitle string, page, limit int32) (*vacancyv1.VacancyList, error)
 	GetAllExistPositions(ctx context.Context, req *vacancyv1.PositionsRequest) (*vacancyv1.PositionsResponse, error)
+	Moderate(ctx context.Context, id string, status int32, comment string) (*vacancyv1.Vacancy, error)
 }
 
 type Service struct {

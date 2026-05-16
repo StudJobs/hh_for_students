@@ -24,6 +24,7 @@ type Vacancy interface {
 		minSalary, maxSalary, minExperience, maxExperience int32,
 		searchTitle string, limit, offset int32) (*vacancyv1.VacancyList, error)
 	GetAllExistPositions(ctx context.Context) ([]string, error)
+	Moderate(ctx context.Context, id string, status int32, comment string) (*vacancyv1.Vacancy, error)
 }
 
 type Repository struct {

@@ -14,12 +14,21 @@ type Company interface {
 	DeleteCompany(ctx context.Context, id string) error
 }
 
+type Membership interface {
+	Apply(ctx context.Context, companyID, userID, note string) (*companyv1.CompanyMember, error)
+	Review(ctx context.Context, membershipID string, status companyv1.MembershipStatus) (*companyv1.CompanyMember, error)
+	ListByCompany(ctx context.Context, companyID string, status companyv1.MembershipStatus) ([]*companyv1.CompanyMember, error)
+	GetByUser(ctx context.Context, userID string) (*companyv1.CompanyMember, error)
+}
+
 type Repository struct {
-	Company Company
+	Company    Company
+	Membership Membership
 }
 
 func NewRepository(db *pgxpool.Pool) *Repository {
 	return &Repository{
-		Company: NewCompanyRepository(db),
+		Company:    NewCompanyRepository(db),
+		Membership: NewMembershipRepository(db),
 	}
 }

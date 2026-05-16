@@ -18,12 +18,14 @@ type CompanyInterface interface {
 }
 
 type Service struct {
-	Company CompanyInterface
+	Company    CompanyInterface
+	Membership MembershipInterface
 }
 
 func NewService(repo *repository.Repository) *Service {
 	log.Println("Service: Initializing Service")
 	return &Service{
-		Company: NewCompanyService(repo.Company),
+		Company:    NewCompanyService(repo.Company),
+		Membership: NewMembershipService(repo.Membership),
 	}
 }

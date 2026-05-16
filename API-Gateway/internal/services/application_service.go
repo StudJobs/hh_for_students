@@ -86,15 +86,32 @@ func protoToModel(a *applicationv1.Application) *models.Application {
 		return nil
 	}
 	return &models.Application{
-		ID:          a.Id,
-		VacancyID:   a.VacancyId,
-		StudentID:   a.StudentId,
-		CoverLetter: a.CoverLetter,
-		Status:      int32(a.Status),
-		HRComment:   a.HrComment,
-		CreatedAt:   a.CreatedAt,
-		UpdatedAt:   a.UpdatedAt,
+		ID:           a.Id,
+		VacancyID:    a.VacancyId,
+		StudentID:    a.StudentId,
+		CoverLetter:  a.CoverLetter,
+		Status:       int32(a.Status),
+		HRComment:    a.HrComment,
+		CreatedAt:    a.CreatedAt,
+		UpdatedAt:    a.UpdatedAt,
+		HRAssigneeID: a.HrAssigneeId,
 	}
+}
+
+func (s *applicationService) Get(ctx context.Context, id string) (*models.Application, error) {
+	resp, err := s.client.Get(ctx, &applicationv1.GetRequest{Id: id})
+	if err != nil {
+		return nil, err
+	}
+	return protoToModel(resp), nil
+}
+
+func (s *applicationService) AssignHR(ctx context.Context, id, hrUserID string) (*models.Application, error) {
+	resp, err := s.client.AssignHR(ctx, &applicationv1.AssignHRRequest{Id: id, HrUserId: hrUserID})
+	if err != nil {
+		return nil, err
+	}
+	return protoToModel(resp), nil
 }
 
 func protoListToModel(l *applicationv1.ApplicationList) *models.ApplicationList {

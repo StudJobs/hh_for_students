@@ -26,6 +26,7 @@ type Application interface {
 	ListByStudent(ctx context.Context, studentID string, status applicationv1.ApplicationStatus, page, limit int32) (*applicationv1.ApplicationList, error)
 	ListByVacancy(ctx context.Context, vacancyID string, status applicationv1.ApplicationStatus, page, limit int32) (*applicationv1.ApplicationList, error)
 	UpdateStatus(ctx context.Context, id string, status applicationv1.ApplicationStatus, hrComment string) (*applicationv1.Application, error)
+	AssignHR(ctx context.Context, id, hrUserID string) (*applicationv1.Application, error)
 }
 
 type ApplicationRepository struct {
@@ -55,7 +56,7 @@ func (r *ApplicationRepository) Apply(ctx context.Context, vacancyID, studentID,
 
 	selectQuery, selectArgs, err := r.sb.
 		Select("id", "vacancy_id", "student_id", "cover_letter", "status",
-			"hr_comment", "created_at", "updated_at").
+			"hr_comment", "created_at", "updated_at", "COALESCE(hr_assignee_id::text, '')").
 		From(APPLICATIONS_TABLE).
 		Where(squirrel.Eq{"vacancy_id": vacancyID, "student_id": studentID}).
 		Where("deleted_at IS NULL").
@@ -80,7 +81,7 @@ func (r *ApplicationRepository) Apply(ctx context.Context, vacancyID, studentID,
 		Insert(APPLICATIONS_TABLE).
 		Columns("vacancy_id", "student_id", "cover_letter").
 		Values(vacancyID, studentID, coverLetter).
-		Suffix("RETURNING id, vacancy_id, student_id, cover_letter, status, hr_comment, created_at, updated_at").
+		Suffix("RETURNING id, vacancy_id, student_id, cover_letter, status, hr_comment, created_at, updated_at, COALESCE(hr_assignee_id::text, '')").
 		ToSql()
 	if err != nil {
 		return nil, fmt.Errorf("build insert: %w", err)
@@ -124,7 +125,7 @@ func (r *ApplicationRepository) Withdraw(ctx context.Context, id, studentID stri
 func (r *ApplicationRepository) GetByID(ctx context.Context, id string) (*applicationv1.Application, error) {
 	query, args, err := r.sb.
 		Select("id", "vacancy_id", "student_id", "cover_letter", "status",
-			"hr_comment", "created_at", "updated_at").
+			"hr_comment", "created_at", "updated_at", "COALESCE(hr_assignee_id::text, '')").
 		From(APPLICATIONS_TABLE).
 		Where(squirrel.Eq{"id": id}).
 		Where("deleted_at IS NULL").
@@ -162,7 +163,7 @@ func (r *ApplicationRepository) list(ctx context.Context, filter squirrel.Sqlize
 
 	listQB := r.sb.
 		Select("id", "vacancy_id", "student_id", "cover_letter", "status",
-			"hr_comment", "created_at", "updated_at").
+			"hr_comment", "created_at", "updated_at", "COALESCE(hr_assignee_id::text, '')").
 		From(APPLICATIONS_TABLE).
 		Where(filter).
 		Where("deleted_at IS NULL").
@@ -244,7 +245,7 @@ func (r *ApplicationRepository) UpdateStatus(ctx context.Context, id string, sta
 		Set("updated_at", squirrel.Expr("NOW()")).
 		Where(squirrel.Eq{"id": id}).
 		Where("deleted_at IS NULL").
-		Suffix("RETURNING id, vacancy_id, student_id, cover_letter, status, hr_comment, created_at, updated_at").
+		Suffix("RETURNING id, vacancy_id, student_id, cover_letter, status, hr_comment, created_at, updated_at, COALESCE(hr_assignee_id::text, '')").
 		ToSql()
 	if err != nil {
 		return nil, fmt.Errorf("build update: %w", err)
@@ -260,6 +261,17 @@ func (r *ApplicationRepository) UpdateStatus(ctx context.Context, id string, sta
 	return app, nil
 }
 
+// AssignHR проставляет hr_assignee_id только если он ещё NULL (идемпотентно).
+func (r *ApplicationRepository) AssignHR(ctx context.Context, id, hrUserID string) (*applicationv1.Application, error) {
+	query := `
+UPDATE vacancy_applications
+SET hr_assignee_id = COALESCE(hr_assignee_id, $2::uuid),
+    updated_at = NOW()
+WHERE id = $1 AND deleted_at IS NULL
+RETURNING id, vacancy_id, student_id, cover_letter, status, hr_comment, created_at, updated_at, COALESCE(hr_assignee_id::text, '')`
+	return scanApplicationRow(r.db.QueryRow(ctx, query, id, hrUserID))
+}
+
 func scanApplicationRow(scanner interface {
 	Scan(dest ...interface{}) error
 }) (*applicationv1.Application, error) {
@@ -267,6 +279,7 @@ func scanApplicationRow(scanner interface {
 		app                  applicationv1.Application
 		status               int16
 		createdAt, updatedAt time.Time
+		hrAssigneeID         string
 	)
 	if err := scanner.Scan(
 		&app.Id,
@@ -277,11 +290,13 @@ func scanApplicationRow(scanner interface {
 		&app.HrComment,
 		&createdAt,
 		&updatedAt,
+		&hrAssigneeID,
 	); err != nil {
 		return nil, err
 	}
 	app.Status = applicationv1.ApplicationStatus(status)
 	app.CreatedAt = createdAt.UTC().Format(time.RFC3339)
 	app.UpdatedAt = updatedAt.UTC().Format(time.RFC3339)
+	app.HrAssigneeId = hrAssigneeID
 	return &app, nil
 }

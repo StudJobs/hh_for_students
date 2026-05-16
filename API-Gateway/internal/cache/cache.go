@@ -187,6 +187,8 @@ func ShouldExclude(path string) bool {
 		"/api/v1/hr/",
 		"/api/v1/auth/",
 		"/api/v1/company/me",
+		"/api/v1/company/membership/",
+		"/api/v1/company/members",
 	}
 	for _, ex := range exclusions {
 		if strings.HasPrefix(path, ex) {

@@ -74,6 +74,12 @@ type CompanyService interface {
 	GetAllCompanies(ctx context.Context, pagination *models.Pagination, city, companyType, query string) (*models.CompanyList, error)
 	UpdateCompany(ctx context.Context, id string, company *models.Company) (*models.Company, error)
 	DeleteCompany(ctx context.Context, id string) error
+
+	// HR-membership
+	ApplyMembership(ctx context.Context, companyID, userID, note string) (*models.CompanyMember, error)
+	ReviewMembership(ctx context.Context, membershipID string, status int32) (*models.CompanyMember, error)
+	ListMembers(ctx context.Context, companyID string, status int32) ([]*models.CompanyMember, error)
+	GetMembershipByUser(ctx context.Context, userID string) (*models.CompanyMember, error)
 }
 
 type SkillsService interface {
@@ -120,6 +126,8 @@ type ApplicationService interface {
 	ListMine(ctx context.Context, studentID string, status int32, page, limit int32) (*models.ApplicationList, error)
 	ListForVacancy(ctx context.Context, vacancyID string, status int32, page, limit int32) (*models.ApplicationList, error)
 	UpdateStatus(ctx context.Context, id string, status int32, hrComment string) (*models.Application, error)
+	Get(ctx context.Context, id string) (*models.Application, error)
+	AssignHR(ctx context.Context, id, hrUserID string) (*models.Application, error)
 }
 
 type VacancyService interface {
@@ -136,11 +144,13 @@ type VacancyService interface {
 	UpdateVacancy(ctx context.Context, id string, vacancy *models.Vacancy) (*models.Vacancy, error)
 	DeleteVacancy(ctx context.Context, id string) error
 	GetAllPositions(ctx context.Context) ([]string, error)
+	ModerateVacancy(ctx context.Context, id string, status int32, comment string) (*models.Vacancy, error)
 }
 
 type ChatService interface {
 	SendMessage(ctx context.Context, threadID, fromUser, body string) (*models.ChatMessage, error)
 	ListMessages(ctx context.Context, threadID string, page, limit int32) (*models.ChatMessageList, error)
+	ListUserThreads(ctx context.Context, userID string, limit int32) ([]*models.ChatThread, error)
 }
 
 // ApiGateway объединяет все сервисы

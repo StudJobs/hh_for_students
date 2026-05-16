@@ -216,3 +216,64 @@ func (s *companyService) DeleteCompany(ctx context.Context, id string) error {
 	log.Printf("CompanyService: DeleteCompany successful for id: %s", id)
 	return nil
 }
+
+// HR-membership wrappers.
+
+func memberToModel(m *companyv1.CompanyMember) *models.CompanyMember {
+	if m == nil {
+		return nil
+	}
+	return &models.CompanyMember{
+		ID:         m.GetId(),
+		CompanyID:  m.GetCompanyId(),
+		UserID:     m.GetUserId(),
+		Status:     int32(m.GetStatus()),
+		Note:       m.GetNote(),
+		CreatedAt:  m.GetCreatedAt(),
+		ReviewedAt: m.GetReviewedAt(),
+	}
+}
+
+func (s *companyService) ApplyMembership(ctx context.Context, companyID, userID, note string) (*models.CompanyMember, error) {
+	m, err := s.client.ApplyMembership(ctx, &companyv1.ApplyMembershipRequest{
+		CompanyId: companyID, UserId: userID, Note: note,
+	})
+	if err != nil {
+		return nil, err
+	}
+	return memberToModel(m), nil
+}
+
+func (s *companyService) ReviewMembership(ctx context.Context, membershipID string, status int32) (*models.CompanyMember, error) {
+	m, err := s.client.ReviewMembership(ctx, &companyv1.ReviewMembershipRequest{
+		MembershipId: membershipID,
+		Status:       companyv1.MembershipStatus(status),
+	})
+	if err != nil {
+		return nil, err
+	}
+	return memberToModel(m), nil
+}
+
+func (s *companyService) ListMembers(ctx context.Context, companyID string, status int32) ([]*models.CompanyMember, error) {
+	resp, err := s.client.ListMembers(ctx, &companyv1.ListMembersRequest{
+		CompanyId: companyID,
+		Status:    companyv1.MembershipStatus(status),
+	})
+	if err != nil {
+		return nil, err
+	}
+	out := make([]*models.CompanyMember, 0, len(resp.GetMembers()))
+	for _, m := range resp.GetMembers() {
+		out = append(out, memberToModel(m))
+	}
+	return out, nil
+}
+
+func (s *companyService) GetMembershipByUser(ctx context.Context, userID string) (*models.CompanyMember, error) {
+	m, err := s.client.GetMembershipByUser(ctx, &companyv1.GetMembershipByUserRequest{UserId: userID})
+	if err != nil {
+		return nil, err
+	}
+	return memberToModel(m), nil
+}

@@ -12,8 +12,9 @@ type Application struct {
 	CoverLetter string `json:"cover_letter"`
 	Status      int32  `json:"status"`
 	HRComment   string `json:"hr_comment"`
-	CreatedAt   string `json:"created_at"`
-	UpdatedAt   string `json:"updated_at"`
+	CreatedAt    string `json:"created_at"`
+	UpdatedAt    string `json:"updated_at"`
+	HRAssigneeID string `json:"hr_assignee_id,omitempty"`
 }
 
 // ApplicationList — список откликов с пагинацией.

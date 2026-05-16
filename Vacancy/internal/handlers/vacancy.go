@@ -30,8 +30,27 @@ func (h *VacancyHandler) NewVacancy(ctx context.Context, req *vacancyv1.NewVacan
 	}
 
 	log.Printf("Handlers: NewVacancy completed successfully for ID: %s", vacancy.Id)
-	h.search.IndexVacancy(ctx, vacancy)
+	// Индексируем в Search только опубликованные — PENDING студенты не должны видеть.
+	if vacancy.GetModerationStatus() != 1 {
+		h.search.IndexVacancy(ctx, vacancy)
+	}
 	return vacancy, nil
+}
+
+func (h *VacancyHandler) ModerateVacancy(ctx context.Context, req *vacancyv1.ModerateVacancyRequest) (*vacancyv1.Vacancy, error) {
+	if req.GetId() == "" {
+		return nil, status.Error(codes.InvalidArgument, "id required")
+	}
+	v, err := h.service.Vacancy.Moderate(ctx, req.GetId(), req.GetModerationStatus(), req.GetComment())
+	if err != nil {
+		log.Printf("ModerateVacancy failed: %v", err)
+		return nil, status.Error(codes.Internal, "moderate failed")
+	}
+	// Если опубликовано — переиндексируем в Search.
+	if req.GetModerationStatus() == 2 {
+		h.search.IndexVacancy(ctx, v)
+	}
+	return v, nil
 }
 
 func (h *VacancyHandler) UpdateVacancy(ctx context.Context, req *vacancyv1.UpdateVacancyRequest) (*vacancyv1.Vacancy, error) {

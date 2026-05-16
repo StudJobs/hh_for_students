@@ -23,14 +23,16 @@ func (s *vacancyService) CreateVacancy(ctx context.Context, vacancy *models.Vaca
 	log.Printf("VacancyService: CreateVacancy attempt for title: %s", vacancy.Title)
 
 	protoVacancy := &vacancyv1.Vacancy{
-		Title:          vacancy.Title,
-		Experience:     vacancy.Experience,
-		Salary:         vacancy.Salary,
-		PositionStatus: vacancy.PositionStatus,
-		Schedule:       vacancy.Schedule,
-		WorkFormat:     vacancy.WorkFormat,
-		CompanyId:      vacancy.CompanyID,
-		SkillSlugs:     vacancy.SkillSlugs,
+		Title:            vacancy.Title,
+		Experience:       vacancy.Experience,
+		Salary:           vacancy.Salary,
+		PositionStatus:   vacancy.PositionStatus,
+		Schedule:         vacancy.Schedule,
+		WorkFormat:       vacancy.WorkFormat,
+		CompanyId:        vacancy.CompanyID,
+		SkillSlugs:       vacancy.SkillSlugs,
+		ModerationStatus: vacancy.ModerationStatus,
+		AuthorId:         vacancy.AuthorID,
 	}
 
 	// Добавляем AttachmentID если он есть
@@ -47,16 +49,19 @@ func (s *vacancyService) CreateVacancy(ctx context.Context, vacancy *models.Vaca
 	}
 
 	result := &models.Vacancy{
-		ID:             resp.Id,
-		Title:          resp.Title,
-		Experience:     resp.Experience,
-		Salary:         resp.Salary,
-		PositionStatus: resp.PositionStatus,
-		Schedule:       resp.Schedule,
-		WorkFormat:     resp.WorkFormat,
-		CompanyID:      resp.CompanyId,
-		CreateAt:       resp.CreateAt,
-		SkillSlugs:     resp.SkillSlugs,
+		ID:                resp.Id,
+		Title:             resp.Title,
+		Experience:        resp.Experience,
+		Salary:            resp.Salary,
+		PositionStatus:    resp.PositionStatus,
+		Schedule:          resp.Schedule,
+		WorkFormat:        resp.WorkFormat,
+		CompanyID:         resp.CompanyId,
+		CreateAt:          resp.CreateAt,
+		SkillSlugs:        resp.SkillSlugs,
+		ModerationStatus:  resp.ModerationStatus,
+		AuthorID:          resp.AuthorId,
+		ModerationComment: resp.ModerationComment,
 	}
 
 	// Сохраняем AttachmentID из ответа
@@ -326,4 +331,35 @@ func (s *vacancyService) GetAllPositions(ctx context.Context) ([]string, error) 
 
 	log.Printf("VacancyService: GetAllPositions successful, found %d positions", len(resp.Position))
 	return resp.Position, nil
+}
+
+func (s *vacancyService) ModerateVacancy(ctx context.Context, id string, status int32, comment string) (*models.Vacancy, error) {
+	resp, err := s.client.ModerateVacancy(ctx, &vacancyv1.ModerateVacancyRequest{
+		Id:               id,
+		ModerationStatus: status,
+		Comment:          comment,
+	})
+	if err != nil {
+		return nil, err
+	}
+	v := &models.Vacancy{
+		ID:                resp.Id,
+		Title:             resp.Title,
+		Experience:        resp.Experience,
+		Salary:            resp.Salary,
+		PositionStatus:    resp.PositionStatus,
+		Schedule:          resp.Schedule,
+		WorkFormat:        resp.WorkFormat,
+		CompanyID:         resp.CompanyId,
+		CreateAt:          resp.CreateAt,
+		SkillSlugs:        resp.SkillSlugs,
+		ModerationStatus:  resp.ModerationStatus,
+		AuthorID:          resp.AuthorId,
+		ModerationComment: resp.ModerationComment,
+	}
+	if resp.AttachmentId != "" {
+		aid := resp.AttachmentId
+		v.AttachmentID = &aid
+	}
+	return v, nil
 }

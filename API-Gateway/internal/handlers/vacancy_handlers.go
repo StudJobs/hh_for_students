@@ -230,19 +230,25 @@ func (h *Handler) CreateHRVacancy(c *fiber.Ctx) error {
 		})
 	}
 
-	// Закрытие B3+B4: владелец компании всегда публикует под СВОЙ company_id
-	// (= его userID, так устроен Company-сервис, см. company_handlers.go::GetCompanyMe).
-	// HR-без-membership пока заблокирован (membership-flow отложен по STATUS.md);
-	// иначе любой HR смог бы публиковать под чужим брендом.
+	// Закрытие B3+B4: владелец компании публикует под СВОЙ company_id напрямую (PUBLISHED).
+	// HR-сотрудник публикует под company_id компании, в которой состоит (APPROVED-membership),
+	// но в статусе PENDING — owner затем модерирует.
 	switch userRole {
 	case ROLE_COMPANY:
 		req.CompanyID = userID
+		req.ModerationStatus = 2 // PUBLISHED
+		req.AuthorID = userID
 	case ROLE_HR:
-		log.Printf("CreateHRVacancy: ROLE_HR blocked — membership flow not implemented (B4)")
-		return c.Status(fiber.StatusForbidden).JSON(models.Error{
-			Code:    "MEMBERSHIP_REQUIRED",
-			Message: "HR может публиковать вакансии только в составе компании; HR-membership пока не реализован",
-		})
+		ms, err := h.apiService.Company.GetMembershipByUser(c.Context(), userID)
+		if err != nil || ms == nil || ms.Status != 2 { // 2 = APPROVED
+			return c.Status(fiber.StatusForbidden).JSON(models.Error{
+				Code:    "MEMBERSHIP_REQUIRED",
+				Message: "HR должен быть подтверждённым сотрудником компании. Подайте заявку через /hr-profile.",
+			})
+		}
+		req.CompanyID = ms.CompanyID
+		req.ModerationStatus = 1 // PENDING — owner смодерирует
+		req.AuthorID = userID
 	case ROLE_DEVELOPER:
 		// devloper-режим — оставляем как есть, требуем явный company_id
 		if req.CompanyID == "" {

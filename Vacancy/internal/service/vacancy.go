@@ -208,3 +208,10 @@ func (s *VacancyService) GetAllExistPositions(ctx context.Context, req *vacancyv
 		Position: positions,
 	}, nil
 }
+
+func (s *VacancyService) Moderate(ctx context.Context, id string, status int32, comment string) (*vacancyv1.Vacancy, error) {
+	if id == "" || (status != 2 && status != 3) {
+		return nil, fmt.Errorf("%w: id and status (2=PUBLISHED,3=REJECTED) required", ErrInvalidVacancyData)
+	}
+	return s.repo.Vacancy.Moderate(ctx, id, status, comment)
+}

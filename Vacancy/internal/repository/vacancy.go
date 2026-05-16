@@ -56,8 +56,10 @@ func (r *VacancyRepository) GetAllVacancies(ctx context.Context, companyID, posi
 	// Расчет offset
 	offset := (page - 1) * limit
 
+	// Студентам показываем только опубликованные (прошедшие модерацию owner-ом).
 	query, args, err := r.buildVacancyQueryBuilder(companyID, positionStatus, workFormat, schedule,
 		minSalary, maxSalary, minExperience, maxExperience, searchTitle).
+		Where(squirrel.Eq{"moderation_status": 2}).
 		OrderBy("created_at DESC").
 		Limit(uint64(limit)).
 		Offset(uint64(offset)).
@@ -92,7 +94,9 @@ func (r *VacancyRepository) GetAllVacancies(ctx context.Context, companyID, posi
 
 	// Get total count
 	countQuery, countArgs, err := r.buildVacancyCountBuilder(companyID, positionStatus, workFormat, schedule,
-		minSalary, maxSalary, minExperience, maxExperience, searchTitle).ToSql()
+		minSalary, maxSalary, minExperience, maxExperience, searchTitle).
+		Where(squirrel.Eq{"moderation_status": 2}).
+		ToSql()
 	if err != nil {
 		log.Printf("Repository: Failed to build count query: %v", err)
 		return nil, fmt.Errorf("failed to build count query: %w", err)
@@ -142,10 +146,20 @@ func (r *VacancyRepository) CreateVacancy(ctx context.Context, vacancy *vacancyv
 		insertBuilder = insertBuilder.Columns("skill_slugs")
 		values = append(values, vacancy.SkillSlugs)
 	}
+	// Moderation: если задан явный статус (1=PENDING / 2=PUBLISHED) — пишем его.
+	// Иначе оставляем DEFAULT 2 (PUBLISHED, обратная совместимость).
+	if vacancy.ModerationStatus > 0 {
+		insertBuilder = insertBuilder.Columns("moderation_status")
+		values = append(values, int16(vacancy.ModerationStatus))
+	}
+	if vacancy.AuthorId != "" {
+		insertBuilder = insertBuilder.Columns("author_id")
+		values = append(values, vacancy.AuthorId)
+	}
 
 	query, args, err := insertBuilder.
 		Values(values...).
-		Suffix("RETURNING id, title, experience, salary, position_status, schedule, work_format, company_id, attachment_id, created_at, skill_slugs").
+		Suffix("RETURNING id, title, experience, salary, position_status, schedule, work_format, company_id, attachment_id, created_at, skill_slugs, moderation_status, COALESCE(author_id::text, ''), moderation_comment").
 		ToSql()
 	if err != nil {
 		log.Printf("Repository: Failed to build create vacancy query: %v", err)
@@ -202,7 +216,7 @@ func (r *VacancyRepository) UpdateVacancy(ctx context.Context, id string, vacanc
 	}
 
 	query, args, err := updateBuilder.
-		Suffix("RETURNING id, title, experience, salary, position_status, schedule, work_format, company_id, attachment_id, created_at, skill_slugs").
+		Suffix("RETURNING id, title, experience, salary, position_status, schedule, work_format, company_id, attachment_id, created_at, skill_slugs, moderation_status, COALESCE(author_id::text, ''), moderation_comment").
 		ToSql()
 	if err != nil {
 		log.Printf("Repository: Failed to build update vacancy query: %v", err)
@@ -290,6 +304,23 @@ func (r *VacancyRepository) DeleteVacancy(ctx context.Context, id string) error 
 	return nil
 }
 
+// Moderate меняет moderation_status вакансии (approve=2 / reject=3) с комментарием.
+func (r *VacancyRepository) Moderate(ctx context.Context, id string, status int32, comment string) (*vacancyv1.Vacancy, error) {
+	query, args, err := r.sb.
+		Update(VACANCY_TABLE).
+		Set("moderation_status", int16(status)).
+		Set("moderation_comment", comment).
+		Set("updated_at", squirrel.Expr("NOW()")).
+		Where(squirrel.Eq{"id": id}).
+		Where("deleted_at IS NULL").
+		Suffix("RETURNING id, title, experience, salary, position_status, schedule, work_format, company_id, attachment_id, created_at, skill_slugs, moderation_status, COALESCE(author_id::text, ''), moderation_comment").
+		ToSql()
+	if err != nil {
+		return nil, fmt.Errorf("build moderate query: %w", err)
+	}
+	return scanVacancyRow(r.db.QueryRow(ctx, query, args...))
+}
+
 // scanVacancyRow сканирует строку из БД в Vacancy объект
 func scanVacancyRow(scanner interface {
 	Scan(dest ...interface{}) error
@@ -299,6 +330,9 @@ func scanVacancyRow(scanner interface {
 	var attachmentID sql.NullString
 	var createdAt time.Time
 	var skillSlugs []string
+	var moderationStatus int32
+	var authorID string
+	var moderationComment string
 
 	err := scanner.Scan(
 		&vacancy.Id,
@@ -312,6 +346,9 @@ func scanVacancyRow(scanner interface {
 		&attachmentID,
 		&createdAt,
 		&skillSlugs,
+		&moderationStatus,
+		&authorID,
+		&moderationComment,
 	)
 	if err != nil {
 		return nil, err
@@ -322,6 +359,9 @@ func scanVacancyRow(scanner interface {
 	vacancy.AttachmentId = nullStringToString(attachmentID)
 	vacancy.CreateAt = timeToString(createdAt)
 	vacancy.SkillSlugs = skillSlugs
+	vacancy.ModerationStatus = moderationStatus
+	vacancy.AuthorId = authorID
+	vacancy.ModerationComment = moderationComment
 
 	return &vacancy, nil
 }
@@ -346,7 +386,8 @@ func (r *VacancyRepository) buildVacancyQueryBuilder(companyID, positionStatus, 
 
 	queryBuilder := r.sb.
 		Select("id", "title", "experience", "salary", "position_status",
-			"schedule", "work_format", "company_id", "attachment_id", "created_at", "skill_slugs").
+			"schedule", "work_format", "company_id", "attachment_id", "created_at", "skill_slugs",
+			"moderation_status", "COALESCE(author_id::text, '')", "moderation_comment").
 		From(VACANCY_TABLE).
 		Where("deleted_at IS NULL")
 

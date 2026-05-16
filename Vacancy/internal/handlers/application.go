@@ -23,6 +23,32 @@ func NewApplicationHandler(svc *service.Service) *ApplicationHandler {
 	return &ApplicationHandler{service: svc}
 }
 
+func (h *ApplicationHandler) Get(ctx context.Context, req *applicationv1.GetRequest) (*applicationv1.Application, error) {
+	if req.GetId() == "" {
+		return nil, status.Error(codes.InvalidArgument, "id required")
+	}
+	app, err := h.service.Application.Get(ctx, req.GetId())
+	if err != nil {
+		if errors.Is(err, service.ErrApplicationNotFound) {
+			return nil, status.Error(codes.NotFound, "application not found")
+		}
+		return nil, status.Error(codes.Internal, "get failed")
+	}
+	return app, nil
+}
+
+func (h *ApplicationHandler) AssignHR(ctx context.Context, req *applicationv1.AssignHRRequest) (*applicationv1.Application, error) {
+	if req.GetId() == "" || req.GetHrUserId() == "" {
+		return nil, status.Error(codes.InvalidArgument, "id and hr_user_id required")
+	}
+	app, err := h.service.Application.AssignHR(ctx, req.GetId(), req.GetHrUserId())
+	if err != nil {
+		log.Printf("AppHandlers: AssignHR failed: %v", err)
+		return nil, status.Error(codes.Internal, "assign failed")
+	}
+	return app, nil
+}
+
 func (h *ApplicationHandler) Apply(ctx context.Context, req *applicationv1.ApplyRequest) (*applicationv1.Application, error) {
 	app, err := h.service.Application.Apply(ctx, req.GetVacancyId(), req.GetStudentId(), req.GetCoverLetter())
 	if err != nil {

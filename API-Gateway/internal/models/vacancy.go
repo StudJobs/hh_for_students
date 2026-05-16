@@ -14,6 +14,11 @@ type Vacancy struct {
 	AttachmentID   *string  `json:"attachment_id,omitempty"`
 	AttachmentURL  *string  `json:"attachment_url,omitempty"`
 	SkillSlugs     []string `json:"skill_slugs,omitempty"`
+
+	// Модерация вакансии (для HR-flow).
+	ModerationStatus  int32  `json:"moderation_status,omitempty"`
+	AuthorID          string `json:"author_id,omitempty"`
+	ModerationComment string `json:"moderation_comment,omitempty"`
 }
 
 // VacancyList представляет список вакансий с пагинацией

@@ -118,6 +118,7 @@ func (h *Handler) initRoutes() {
 	// thread_id строится из двух path-сегментов: /chat/<kind>/<resource_uuid>.
 	// Двоеточие в URL Fiber не декодирует надёжно — поэтому kind и id отдельно.
 	chat := api.Group("/chat")
+	chat.Get("/threads", RoleMiddleware(ROLE_DEVELOPER, ROLE_STUDENT, ROLE_HR, ROLE_COMPANY, ROLE_EXPERT), h.GetChatThreads)
 	chat.Get("/:kind/:rid", RoleMiddleware(ROLE_DEVELOPER, ROLE_STUDENT, ROLE_HR, ROLE_COMPANY, ROLE_EXPERT), h.GetChatMessages)
 	chat.Post("/:kind/:rid", RoleMiddleware(ROLE_DEVELOPER, ROLE_STUDENT, ROLE_HR, ROLE_COMPANY, ROLE_EXPERT), h.SendChatMessage)
 
@@ -139,6 +140,8 @@ func (h *Handler) initRoutes() {
 	HRVacancy.Post("/", RoleMiddleware(ROLE_DEVELOPER, ROLE_HR, ROLE_COMPANY), h.CreateHRVacancy)
 	HRVacancy.Patch("/:id", OwnerOrRoleMiddleware(ID, ROLE_DEVELOPER, ROLE_HR, ROLE_COMPANY), h.UpdateVacancy)
 	HRVacancy.Delete("/:id", OwnerOrRoleMiddleware(ID, ROLE_DEVELOPER, ROLE_HR, ROLE_COMPANY), h.DeleteVacancy)
+	// Модерация (только owner компании).
+	HRVacancy.Post("/:id/moderate", RoleMiddleware(ROLE_DEVELOPER, ROLE_COMPANY), h.ModerateVacancy)
 
 	api.Get("/positions", OwnerOrRoleMiddleware(ID, ROLE_DEVELOPER, ROLE_HR), h.GetPositions)
 
@@ -194,6 +197,11 @@ func (h *Handler) initRoutes() {
 	company := api.Group("/company")
 	company.Get("/", RoleMiddleware(ROLE_DEVELOPER, ROLE_STUDENT, ROLE_HR, ROLE_COMPANY), h.GetCompanies)
 	company.Get("/me", RoleMiddleware(ROLE_DEVELOPER, ROLE_COMPANY), h.GetCompanyMe)
+	// HR-membership-эндпоинты регистрируются ДО /:id, иначе Fiber интерпретирует
+	// "members" / "membership" как :id и роутит в GetCompanyByID → "Company not found".
+	company.Get("/membership/my", RoleMiddleware(ROLE_DEVELOPER, ROLE_HR, ROLE_COMPANY), h.MyMembership)
+	company.Get("/members", RoleMiddleware(ROLE_DEVELOPER, ROLE_COMPANY), h.ListMyCompanyMembers)
+	company.Post("/membership/:membership_id/review", RoleMiddleware(ROLE_DEVELOPER, ROLE_COMPANY), h.ReviewMembership)
 	company.Get("/:id", RoleMiddleware(ROLE_DEVELOPER, ROLE_STUDENT, ROLE_HR, ROLE_COMPANY), h.GetCompanyByID)
 	company.Patch("/", RoleMiddleware(ROLE_DEVELOPER, ROLE_COMPANY), h.UpdateCompany)  // Нет :id
 	company.Delete("/", RoleMiddleware(ROLE_DEVELOPER, ROLE_COMPANY), h.DeleteCompany) // Нет :id
@@ -203,6 +211,8 @@ func (h *Handler) initRoutes() {
 	companyFiles.Post("/logo", OwnerOrRoleMiddleware(ID, ROLE_DEVELOPER, ROLE_COMPANY), h.UploadCompanyLogo)
 	companyFiles.Post("/documents", OwnerOrRoleMiddleware(ID, ROLE_DEVELOPER, ROLE_COMPANY), h.UploadCompanyDocument)
 	companyFiles.Delete("/logo", OwnerOrRoleMiddleware(ID, ROLE_DEVELOPER, ROLE_COMPANY), h.DeleteCompanyLogo)
+
+	company.Post("/:id/membership/apply", RoleMiddleware(ROLE_DEVELOPER, ROLE_HR), h.ApplyMembership)
 }
 
 const (

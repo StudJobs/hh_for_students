@@ -43,6 +43,26 @@ func (s *chatService) ListMessages(ctx context.Context, threadID string, page, l
 	return out, nil
 }
 
+func (s *chatService) ListUserThreads(ctx context.Context, userID string, limit int32) ([]*models.ChatThread, error) {
+	resp, err := s.client.ListUserThreads(ctx, &chatv1.ListUserThreadsRequest{
+		UserId:     userID,
+		Pagination: &commonv1.Pagination{Page: 1, Limit: limit},
+	})
+	if err != nil {
+		return nil, err
+	}
+	out := make([]*models.ChatThread, 0, len(resp.GetThreads()))
+	for _, t := range resp.GetThreads() {
+		out = append(out, &models.ChatThread{
+			ThreadID:    t.GetThreadId(),
+			LastMessage: t.GetLastMessage(),
+			LastAt:      t.GetLastAt(),
+			UnreadCount: t.GetUnreadCount(),
+		})
+	}
+	return out, nil
+}
+
 func chatMessageFromProto(p *chatv1.Message) *models.ChatMessage {
 	if p == nil {
 		return nil

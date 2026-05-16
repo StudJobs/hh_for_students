@@ -20,6 +20,7 @@ type Users interface {
 type Chat interface {
 	Insert(ctx context.Context, threadID, fromUser, body string) (*chatv1.Message, error)
 	ListByThread(ctx context.Context, threadID string, page, limit int32) (*chatv1.MessageList, error)
+	ListUserThreads(ctx context.Context, userID string, limit int32) ([]*chatv1.Thread, error)
 }
 
 type Repository struct {

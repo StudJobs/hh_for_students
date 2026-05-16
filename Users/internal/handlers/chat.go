@@ -54,7 +54,18 @@ func (h *ChatHandler) ListMessages(ctx context.Context, req *chatv1.ListMessages
 	return list, nil
 }
 
-// ListUserThreads — заглушка, чтобы proto-интерфейс был покрыт. Реализация — после v1.0.
-func (h *ChatHandler) ListUserThreads(_ context.Context, _ *chatv1.ListUserThreadsRequest) (*chatv1.ThreadList, error) {
-	return &chatv1.ThreadList{Threads: nil, Pagination: &commonv1.PaginationResponse{}}, nil
+func (h *ChatHandler) ListUserThreads(ctx context.Context, req *chatv1.ListUserThreadsRequest) (*chatv1.ThreadList, error) {
+	if req.GetUserId() == "" {
+		return nil, status.Error(codes.InvalidArgument, "user_id required")
+	}
+	limit := int32(100)
+	if p := req.GetPagination(); p != nil && p.GetLimit() > 0 {
+		limit = p.GetLimit()
+	}
+	threads, err := h.repo.Chat.ListUserThreads(ctx, req.GetUserId(), limit)
+	if err != nil {
+		log.Printf("ChatHandler: ListUserThreads user=%s failed: %v", req.GetUserId(), err)
+		return nil, status.Error(codes.Internal, "failed to list threads")
+	}
+	return &chatv1.ThreadList{Threads: threads, Pagination: &commonv1.PaginationResponse{Total: int32(len(threads))}}, nil
 }

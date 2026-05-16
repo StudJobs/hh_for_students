@@ -93,3 +93,48 @@ func (r *ChatRepository) ListByThread(ctx context.Context, threadID string, page
 		},
 	}, nil
 }
+
+// ListUserThreads возвращает агрегаты по тредам, в которых юзер хотя бы раз писал
+// или ему писали. Для каждого треда: последний message_body, last_at, last_from_user_id.
+// Гейтвей дополняет ответ метаданными «собеседник + контекст» из MicroTasks/Vacancy/Users.
+//
+// Алгоритм: берём все thread_id, где from_user_id=userID,
+// а также все thread_id, где userID встречается среди сообщений (упрощённо — берём треды
+// где этот юзер уже хоть раз писал; собеседник тогда — другой автор сообщений в этом треде).
+// Это лёгкая реализация: если юзер ещё ни разу не написал, тред в inbox не появится.
+// Для MVP достаточно — собеседник сам напишет первым в новом треде, и он у себя увидит.
+func (r *ChatRepository) ListUserThreads(ctx context.Context, userID string, limit int32) ([]*chatv1.Thread, error) {
+	if limit < 1 || limit > 200 {
+		limit = 50
+	}
+	// Берём треды, где юзер был хоть раз автором.
+	query := `
+SELECT
+    cm.thread_id,
+    (SELECT body FROM chat_messages WHERE thread_id = cm.thread_id ORDER BY created_at DESC LIMIT 1) AS last_message,
+    MAX(cm.created_at) AS last_at
+FROM chat_messages cm
+WHERE cm.thread_id IN (
+    SELECT DISTINCT thread_id FROM chat_messages WHERE from_user_id = $1
+)
+GROUP BY cm.thread_id
+ORDER BY last_at DESC
+LIMIT $2`
+	rows, err := r.db.Query(ctx, query, userID, limit)
+	if err != nil {
+		return nil, fmt.Errorf("list threads: %w", err)
+	}
+	defer rows.Close()
+
+	var out []*chatv1.Thread
+	for rows.Next() {
+		var t chatv1.Thread
+		var lastAt time.Time
+		if err := rows.Scan(&t.ThreadId, &t.LastMessage, &lastAt); err != nil {
+			return nil, fmt.Errorf("scan thread: %w", err)
+		}
+		t.LastAt = lastAt.Format(time.RFC3339)
+		out = append(out, &t)
+	}
+	return out, nil
+}
