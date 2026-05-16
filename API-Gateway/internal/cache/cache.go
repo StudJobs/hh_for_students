@@ -182,6 +182,7 @@ func ShouldExclude(path string) bool {
 		"/api/v1/user/", // /user/achievements/...
 		"/api/v1/tasks/my-submissions",
 		"/api/v1/tasks/mine",
+		"/api/v1/chat/",
 		"/api/v1/expert/",
 		"/api/v1/hr/",
 		"/api/v1/auth/",

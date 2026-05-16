@@ -79,7 +79,7 @@ func main() {
 	}
 	metrics.ServeMetrics(metricsAddr)
 
-	apiGateway := services.NewApiGateway(clients.Auth, clients.Users, clients.Achievement, clients.Company, clients.Vacancy, clients.Application, clients.Skills, clients.Search, clients.MicroTasks)
+	apiGateway := services.NewApiGateway(clients.Auth, clients.Users, clients.Achievement, clients.Company, clients.Vacancy, clients.Application, clients.Skills, clients.Search, clients.MicroTasks, clients.Chat)
 
 	// Redis-кэш (cache-aside). Если REDIS_ADDR не задан — кэш отключён.
 	redisAddr := os.Getenv("REDIS_ADDR")

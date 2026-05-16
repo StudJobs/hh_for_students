@@ -20,6 +20,7 @@ type User interface {
 	DeleteProfile(ctx context.Context, id string) error
 	GetProfile(ctx context.Context, id string) (*usersv1.Profile, error)
 	ListProfiles(ctx context.Context, professionCategory string, page, limit int32, role string) (*usersv1.ProfileList, error)
+	AddVerifiedSkills(ctx context.Context, userID string, slugs []string) (*usersv1.Profile, error)
 }
 
 type Service struct {

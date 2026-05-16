@@ -4,6 +4,7 @@ import (
 	"log"
 	"os"
 	"os/signal"
+	"strconv"
 	"syscall"
 
 	"github.com/joho/godotenv"
@@ -15,6 +16,8 @@ import (
 	"github.com/studjobs/hh_for_students/microtasks/internal/repository"
 	"github.com/studjobs/hh_for_students/microtasks/internal/searchclient"
 	"github.com/studjobs/hh_for_students/microtasks/internal/service"
+	"github.com/studjobs/hh_for_students/microtasks/internal/storage"
+	"github.com/studjobs/hh_for_students/microtasks/internal/usersclient"
 	"github.com/studjobs/hh_for_students/microtasks/server"
 )
 
@@ -46,6 +49,40 @@ func main() {
 	defer db.Close()
 
 	repo := repository.NewRepository(db)
+
+	// MinIO: внутренний клиент для HEAD/упаковки, public — для presigned URL клиенту-браузеру.
+	s3Bucket := getEnv("MINIO_BUCKET", "achievements")
+	s3UseSSL, _ := strconv.ParseBool(getEnv("MINIO_USE_SSL", "false"))
+	// MinIO опционален: если недоступен — file-upload отключён, но сервис стартует.
+	var solutionsStore *storage.Solutions
+	s3Internal, err := storage.NewInternalClient(storage.S3Config{
+		Endpoint:  getEnv("MINIO_ENDPOINT", "minio:9000"),
+		AccessKey: getEnv("MINIO_ACCESS_KEY", ""),
+		SecretKey: getEnv("MINIO_SECRET_KEY", ""),
+		UseSSL:    s3UseSSL,
+		Bucket:    s3Bucket,
+	})
+	if err != nil {
+		log.Printf("warning: MinIO init failed: %v — file-upload disabled", err)
+	} else {
+		s3Public := s3Internal
+		if pubEP := getEnv("MINIO_PUBLIC_ENDPOINT", ""); pubEP != "" {
+			pubCli, pubErr := storage.NewPublicClient(storage.S3Config{
+				Endpoint:  pubEP,
+				AccessKey: getEnv("MINIO_ACCESS_KEY", ""),
+				SecretKey: getEnv("MINIO_SECRET_KEY", ""),
+				UseSSL:    s3UseSSL,
+				Bucket:    s3Bucket,
+			})
+			if pubErr != nil {
+				log.Printf("warning: MinIO public client init failed: %v — using internal endpoint for presign", pubErr)
+			} else {
+				s3Public = pubCli
+			}
+		}
+		solutionsStore = storage.NewSolutions(s3Internal, s3Public, s3Bucket)
+	}
+
 	svc := service.NewService(repo)
 
 	searchCli := searchclient.New(getEnv("SEARCH_GRPC_ADDR", viper.GetString("clients.search_addr")))
@@ -54,7 +91,10 @@ func main() {
 	achievementsCli := achievementclient.New(getEnv("ACHIEVEMENTS_GRPC_ADDR", viper.GetString("clients.achievements_addr")))
 	defer achievementsCli.Close()
 
-	handler := handlers.New(svc, searchCli, achievementsCli)
+	usersCli := usersclient.New(getEnv("USERS_GRPC_ADDR", "user:50052"))
+	defer usersCli.Close()
+
+	handler := handlers.New(svc, searchCli, achievementsCli, usersCli, solutionsStore)
 
 	grpcPort := getEnv("GRPC_PORT", viper.GetString("grpc.port"))
 	if grpcPort == "" {

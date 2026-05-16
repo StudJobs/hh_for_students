@@ -107,6 +107,23 @@ func (s *UsersService) GetProfile(ctx context.Context, id string) (*usersv1.Prof
 	return profile, nil
 }
 
+func (s *UsersService) AddVerifiedSkills(ctx context.Context, userID string, slugs []string) (*usersv1.Profile, error) {
+	if _, err := uuid.Parse(userID); err != nil {
+		return nil, fmt.Errorf("%w: invalid uuid format", ErrInvalidProfileData)
+	}
+	if len(slugs) == 0 {
+		return s.GetProfile(ctx, userID)
+	}
+	p, err := s.repo.Users.AddVerifiedSkills(ctx, userID, slugs)
+	if err != nil {
+		if errors.Is(err, repository.ErrProfileNotFound) {
+			return nil, ErrProfileNotFound
+		}
+		return nil, fmt.Errorf("failed to add verified skills: %w", err)
+	}
+	return p, nil
+}
+
 func (s *UsersService) ListProfiles(ctx context.Context, professionCategory string, page, limit int32, role string) (*usersv1.ProfileList, error) {
 	log.Printf("Service: Listing profiles - page: %d, limit: %d, category: %s", page, limit, professionCategory)
 

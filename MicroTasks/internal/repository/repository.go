@@ -26,6 +26,7 @@ type MicroTasks interface {
 
 	Apply(ctx context.Context, taskID, studentID string) (*microtaskv1.MicroTask, error)
 	SetStatus(ctx context.Context, id string, status microtaskv1.MicroTaskStatus) (*microtaskv1.MicroTask, error)
+	CreateSkillQuest(ctx context.Context, expertID, studentID, slug, title, description, deadline string) (*microtaskv1.MicroTask, error)
 }
 
 type Submissions interface {

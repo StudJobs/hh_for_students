@@ -141,3 +141,18 @@ func (h *UsersHandler) GetAllProfiles(ctx context.Context, req *usersv1.GetAllPr
 	log.Printf("Handlers: GetAllProfiles completed successfully, returned %d profiles", len(profiles.Profiles))
 	return profiles, nil
 }
+
+func (h *UsersHandler) AddVerifiedSkills(ctx context.Context, req *usersv1.AddVerifiedSkillsRequest) (*usersv1.Profile, error) {
+	if req.GetUserId() == "" {
+		return nil, status.Error(codes.InvalidArgument, "user_id is required")
+	}
+	p, err := h.service.User.AddVerifiedSkills(ctx, req.GetUserId(), req.GetSkillSlugs())
+	if err != nil {
+		log.Printf("Handlers: AddVerifiedSkills user=%s failed: %v", req.GetUserId(), err)
+		return nil, status.Error(codes.Internal, "failed to add verified skills")
+	}
+	if h.search != nil {
+		h.search.IndexProfile(ctx, p) // переиндексировать чтобы новые навыки попали в Search
+	}
+	return p, nil
+}

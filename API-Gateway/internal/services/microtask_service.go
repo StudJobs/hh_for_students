@@ -95,14 +95,42 @@ func (s *microTaskService) Apply(ctx context.Context, taskID, studentID string) 
 	return fromProto(resp), nil
 }
 
-func (s *microTaskService) Submit(ctx context.Context, taskID, studentID, solutionURL, comment string) (*models.Submission, error) {
+func (s *microTaskService) Submit(ctx context.Context, taskID, studentID, solutionURL, comment, fileName string) (*models.Submission, error) {
 	resp, err := s.client.Submit(ctx, &microtaskv1.SubmitRequest{
-		MicrotaskId: taskID, StudentId: studentID, SolutionUrl: solutionURL, Comment: comment,
+		MicrotaskId: taskID, StudentId: studentID, SolutionUrl: solutionURL, Comment: comment, SolutionFileName: fileName,
 	})
 	if err != nil {
 		return nil, err
 	}
 	return submissionFromProto(resp), nil
+}
+
+func (s *microTaskService) SolutionUploadInit(ctx context.Context, taskID, studentID, fileName string) (string, string, error) {
+	resp, err := s.client.SolutionUploadInit(ctx, &microtaskv1.SolutionUploadInitRequest{
+		MicrotaskId: taskID, StudentId: studentID, FileName: fileName,
+	})
+	if err != nil {
+		return "", "", err
+	}
+	return resp.GetFileId(), resp.GetUploadUrl(), nil
+}
+
+func (s *microTaskService) SolutionUploadConfirm(ctx context.Context, taskID, studentID, fileID string) error {
+	_, err := s.client.SolutionUploadConfirm(ctx, &microtaskv1.SolutionUploadConfirmRequest{
+		MicrotaskId: taskID, StudentId: studentID, FileId: fileID,
+	})
+	return err
+}
+
+func (s *microTaskService) CreateSkillQuest(ctx context.Context, expertID, studentID, slug, title, description, deadline string) (*models.MicroTask, error) {
+	resp, err := s.client.CreateSkillQuest(ctx, &microtaskv1.CreateSkillQuestRequest{
+		ExpertId: expertID, TargetStudentId: studentID, TargetSkillSlug: slug,
+		Title: title, Description: description, Deadline: deadline,
+	})
+	if err != nil {
+		return nil, err
+	}
+	return fromProto(resp), nil
 }
 
 func (s *microTaskService) ListSubmissions(ctx context.Context, taskID, studentID string, page, limit int32) (*models.SubmissionList, error) {
@@ -142,15 +170,18 @@ func toProto(m *models.MicroTask) *microtaskv1.MicroTask {
 		return nil
 	}
 	return &microtaskv1.MicroTask{
-		Id:          m.ID,
-		CompanyId:   m.CompanyID,
-		Title:       m.Title,
-		Description: m.Description,
-		Reward:      m.Reward,
-		Deadline:    m.Deadline,
-		SkillSlugs:  m.SkillSlugs,
-		Status:      microtaskv1.MicroTaskStatus(m.Status),
-		AssignedTo:  m.AssignedTo,
+		Id:              m.ID,
+		CompanyId:       m.CompanyID,
+		Title:           m.Title,
+		Description:     m.Description,
+		Reward:          m.Reward,
+		Deadline:        m.Deadline,
+		SkillSlugs:      m.SkillSlugs,
+		Status:          microtaskv1.MicroTaskStatus(m.Status),
+		AssignedTo:      m.AssignedTo,
+		IsSkillQuest:    m.IsSkillQuest,
+		TargetStudentId: m.TargetStudentID,
+		TargetSkillSlug: m.TargetSkillSlug,
 	}
 }
 
@@ -159,17 +190,20 @@ func fromProto(p *microtaskv1.MicroTask) *models.MicroTask {
 		return nil
 	}
 	return &models.MicroTask{
-		ID:          p.GetId(),
-		CompanyID:   p.GetCompanyId(),
-		Title:       p.GetTitle(),
-		Description: p.GetDescription(),
-		Reward:      p.GetReward(),
-		Deadline:    p.GetDeadline(),
-		SkillSlugs:  p.GetSkillSlugs(),
-		Status:      int32(p.GetStatus()),
-		AssignedTo:  p.GetAssignedTo(),
-		CreatedAt:   p.GetCreatedAt(),
-		UpdatedAt:   p.GetUpdatedAt(),
+		ID:              p.GetId(),
+		CompanyID:       p.GetCompanyId(),
+		Title:           p.GetTitle(),
+		Description:     p.GetDescription(),
+		Reward:          p.GetReward(),
+		Deadline:        p.GetDeadline(),
+		SkillSlugs:      p.GetSkillSlugs(),
+		Status:          int32(p.GetStatus()),
+		AssignedTo:      p.GetAssignedTo(),
+		CreatedAt:       p.GetCreatedAt(),
+		UpdatedAt:       p.GetUpdatedAt(),
+		IsSkillQuest:    p.GetIsSkillQuest(),
+		TargetStudentID: p.GetTargetStudentId(),
+		TargetSkillSlug: p.GetTargetSkillSlug(),
 	}
 }
 
@@ -193,14 +227,16 @@ func submissionFromProto(p *microtaskv1.Submission) *models.Submission {
 		return nil
 	}
 	return &models.Submission{
-		ID:            p.GetId(),
-		MicrotaskID:   p.GetMicrotaskId(),
-		StudentID:     p.GetStudentId(),
-		SolutionURL:   p.GetSolutionUrl(),
-		Comment:       p.GetComment(),
-		Status:        int32(p.GetStatus()),
-		ReviewComment: p.GetReviewComment(),
-		SubmittedAt:   p.GetSubmittedAt(),
-		ReviewedAt:    p.GetReviewedAt(),
+		ID:               p.GetId(),
+		MicrotaskID:      p.GetMicrotaskId(),
+		StudentID:        p.GetStudentId(),
+		SolutionURL:      p.GetSolutionUrl(),
+		Comment:          p.GetComment(),
+		Status:           int32(p.GetStatus()),
+		ReviewComment:    p.GetReviewComment(),
+		SubmittedAt:      p.GetSubmittedAt(),
+		ReviewedAt:       p.GetReviewedAt(),
+		SolutionFileName: p.GetSolutionFileName(),
+		SolutionFileURL:  p.GetSolutionFileUrl(),
 	}
 }

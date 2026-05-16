@@ -13,7 +13,7 @@ import (
 	"github.com/jackc/pgx/v4/pgxpool"
 )
 
-const submissionCols = "id, microtask_id, student_id, solution_url, comment, status, review_comment, submitted_at, reviewed_at"
+const submissionCols = "id, microtask_id, student_id, COALESCE(solution_url, ''), comment, status, review_comment, submitted_at, reviewed_at, solution_file_name"
 
 type SubmissionRepository struct {
 	db *pgxpool.Pool
@@ -28,11 +28,19 @@ func NewSubmissionRepository(db *pgxpool.Pool) *SubmissionRepository {
 }
 
 func (r *SubmissionRepository) Create(ctx context.Context, s *microtaskv1.Submission) (*microtaskv1.Submission, error) {
+	// solution_url теперь nullable — если пустое, передаём NULL, чтобы CHECK / индексы
+	// потом могли отличать «нет ссылки» от «пустая строка».
+	var solutionURL interface{}
+	if u := s.GetSolutionUrl(); u != "" {
+		solutionURL = u
+	} else {
+		solutionURL = nil
+	}
 	query, args, err := r.sb.
 		Insert("microtask_submissions").
-		Columns("microtask_id", "student_id", "solution_url", "comment", "status").
-		Values(s.GetMicrotaskId(), s.GetStudentId(), s.GetSolutionUrl(), s.GetComment(),
-			int16(microtaskv1.SubmissionStatus_SUBMISSION_STATUS_PENDING)).
+		Columns("microtask_id", "student_id", "solution_url", "comment", "status", "solution_file_name").
+		Values(s.GetMicrotaskId(), s.GetStudentId(), solutionURL, s.GetComment(),
+			int16(microtaskv1.SubmissionStatus_SUBMISSION_STATUS_PENDING), s.GetSolutionFileName()).
 		Suffix("RETURNING " + submissionCols).
 		ToSql()
 	if err != nil {
@@ -157,6 +165,7 @@ func scanSubmission(scanner interface {
 		&s.ReviewComment,
 		&submittedAt,
 		&reviewedAt,
+		&s.SolutionFileName,
 	)
 	if err != nil {
 		return nil, err

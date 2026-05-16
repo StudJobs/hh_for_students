@@ -110,6 +110,12 @@ func (h *Handler) initRoutes() {
 	expert := api.Group("/expert")
 	expert.Get("/queue", RoleMiddleware(ROLE_DEVELOPER, ROLE_EXPERT), h.GetExpertQueue)
 	expert.Post("/achievements/:id/review", RoleMiddleware(ROLE_DEVELOPER, ROLE_EXPERT), h.ReviewAchievement)
+	expert.Post("/quests", RoleMiddleware(ROLE_DEVELOPER, ROLE_EXPERT), h.CreateSkillQuest)
+
+	// === Chat (минимальный polling, без WS) ===
+	chat := api.Group("/chat")
+	chat.Get("/:thread_id", RoleMiddleware(ROLE_DEVELOPER, ROLE_STUDENT, ROLE_HR, ROLE_COMPANY, ROLE_EXPERT), h.GetChatMessages)
+	chat.Post("/:thread_id", RoleMiddleware(ROLE_DEVELOPER, ROLE_STUDENT, ROLE_HR, ROLE_COMPANY, ROLE_EXPERT), h.SendChatMessage)
 
 	// === HR routes ===
 	profileHR := api.Group("/hr")
@@ -168,6 +174,8 @@ func (h *Handler) initRoutes() {
 	tasks.Get("/:id", RoleMiddleware(ROLE_DEVELOPER, ROLE_STUDENT, ROLE_HR, ROLE_COMPANY), h.GetTask)
 	tasks.Post("/:id/apply", RoleMiddleware(ROLE_DEVELOPER, ROLE_STUDENT), h.ApplyToTask)
 	tasks.Post("/:id/submit", RoleMiddleware(ROLE_DEVELOPER, ROLE_STUDENT), h.SubmitTask)
+	tasks.Post("/:id/solution-upload-init", RoleMiddleware(ROLE_DEVELOPER, ROLE_STUDENT), h.SolutionUploadInit)
+	tasks.Post("/:id/solution-upload-confirm", RoleMiddleware(ROLE_DEVELOPER, ROLE_STUDENT), h.SolutionUploadConfirm)
 
 	// === MicroTasks: HR-операции ===
 	hrTasks := profileHR.Group("/tasks")

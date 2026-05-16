@@ -25,7 +25,15 @@ services:
       DB_SSLMODE: disable
       SEARCH_GRPC_ADDR: search:50057
       ACHIEVEMENTS_GRPC_ADDR: achieve:50053
+      USERS_GRPC_ADDR: user:50052
       METRICS_ADDR: ":9099"
+      # MinIO для file-upload решений (тот же бакет, что у Achievements).
+      MINIO_ENDPOINT: minio:9000
+      MINIO_PUBLIC_ENDPOINT: localhost:9000
+      MINIO_ACCESS_KEY: minioadmin
+      MINIO_SECRET_KEY: minioadmin
+      MINIO_USE_SSL: "false"
+      MINIO_BUCKET: achievements
 
     volumes:
       - ./configs:/configs

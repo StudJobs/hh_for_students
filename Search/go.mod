@@ -3,7 +3,7 @@ module github.com/studjobs/hh_for_students/search
 go 1.25.1
 
 require (
-	github.com/StudJobs/proto_srtucture v0.0.0-20260508221126-a4a1183aca88
+	github.com/StudJobs/proto_srtucture v0.0.0-20260516102005-ecf2c4f50cba
 	github.com/elastic/go-elasticsearch/v8 v8.13.1
 	github.com/joho/godotenv v1.5.1
 	github.com/prometheus/client_golang v1.23.2

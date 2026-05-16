@@ -3,6 +3,7 @@ package grpc
 import (
 	"context"
 	applicationv1 "github.com/StudJobs/proto_srtucture/gen/go/proto/application/v1"
+	chatv1 "github.com/StudJobs/proto_srtucture/gen/go/proto/chat/v1"
 	companyv1 "github.com/StudJobs/proto_srtucture/gen/go/proto/company/v1"
 	microtaskv1 "github.com/StudJobs/proto_srtucture/gen/go/proto/microtask/v1"
 	searchv1 "github.com/StudJobs/proto_srtucture/gen/go/proto/search/v1"
@@ -29,6 +30,7 @@ type Clients struct {
 	Skills      skillsv1.SkillsServiceClient
 	Search      searchv1.SearchServiceClient
 	MicroTasks  microtaskv1.MicroTaskServiceClient
+	Chat        chatv1.ChatServiceClient
 }
 
 // Config конфигурация для gRPC подключений
@@ -58,8 +60,11 @@ func NewClients(cfg Config) (*Clients, error) {
 	}
 
 	if cfg.UsersAddress != "" {
+		// Chat-сервис подключается к тому же gRPC-серверу, что и Users (порт 50052):
+		// мы зарегистрировали ChatServiceServer там же, чтобы не плодить новый микросервис.
 		if conn := mustConn(cfg.UsersAddress, cfg.Timeout); conn != nil {
 			clients.Users = usersv1.NewUsersServiceClient(conn)
+			clients.Chat = chatv1.NewChatServiceClient(conn)
 		}
 	}
 

@@ -83,6 +83,13 @@ func (s *MicroTaskService) ListByStudent(ctx context.Context, studentID string, 
 	return s.repo.Tasks.ListByStudent(ctx, studentID, status, page, limit)
 }
 
+func (s *MicroTaskService) CreateSkillQuest(ctx context.Context, expertID, studentID, slug, title, description, deadline string) (*microtaskv1.MicroTask, error) {
+	if expertID == "" || studentID == "" || slug == "" || title == "" {
+		return nil, ErrInvalidArg
+	}
+	return s.repo.Tasks.CreateSkillQuest(ctx, expertID, studentID, slug, title, description, deadline)
+}
+
 func (s *MicroTaskService) Apply(ctx context.Context, taskID, studentID string) (*microtaskv1.MicroTask, error) {
 	if taskID == "" || studentID == "" {
 		return nil, ErrInvalidArg
@@ -98,8 +105,12 @@ func NewSubmissionService(repo *repository.Repository) *SubmissionService {
 	return &SubmissionService{repo: repo}
 }
 
-func (s *SubmissionService) Submit(ctx context.Context, taskID, studentID, solutionURL, comment string) (*microtaskv1.Submission, error) {
-	if taskID == "" || studentID == "" || solutionURL == "" {
+func (s *SubmissionService) Submit(ctx context.Context, taskID, studentID, solutionURL, comment, fileName string) (*microtaskv1.Submission, error) {
+	if taskID == "" || studentID == "" {
+		return nil, ErrInvalidArg
+	}
+	// Хотя бы один из (solutionURL, fileName) должен быть заполнен.
+	if solutionURL == "" && fileName == "" {
 		return nil, ErrInvalidArg
 	}
 	// Проверяем, что задача существует и студент имеет к ней доступ (он её взял).
@@ -111,10 +122,11 @@ func (s *SubmissionService) Submit(ctx context.Context, taskID, studentID, solut
 		return nil, ErrInvalidArg
 	}
 	return s.repo.Submissions.Create(ctx, &microtaskv1.Submission{
-		MicrotaskId: taskID,
-		StudentId:   studentID,
-		SolutionUrl: solutionURL,
-		Comment:     comment,
+		MicrotaskId:      taskID,
+		StudentId:        studentID,
+		SolutionUrl:      solutionURL,
+		Comment:          comment,
+		SolutionFileName: fileName,
 	})
 }
 

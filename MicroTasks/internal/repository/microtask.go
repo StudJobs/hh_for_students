@@ -14,7 +14,7 @@ import (
 	"github.com/jackc/pgx/v4/pgxpool"
 )
 
-const taskCols = "id, company_id, title, description, reward, deadline, skill_slugs, status, assigned_to, created_at, updated_at"
+const taskCols = "id, company_id, title, description, reward, deadline, skill_slugs, status, assigned_to, created_at, updated_at, is_skill_quest, COALESCE(target_student_id, '00000000-0000-0000-0000-000000000000'), target_skill_slug"
 
 type MicroTaskRepository struct {
 	db *pgxpool.Pool
@@ -142,11 +142,13 @@ func (r *MicroTaskRepository) List(ctx context.Context, status microtaskv1.Micro
 	qb := r.sb.
 		Select(taskCols).
 		From("microtasks").
-		Where("deleted_at IS NULL")
+		Where("deleted_at IS NULL").
+		Where("is_skill_quest = FALSE") // квесты не показываем в публичной выдаче
 	cb := r.sb.
 		Select("COUNT(*)").
 		From("microtasks").
-		Where("deleted_at IS NULL")
+		Where("deleted_at IS NULL").
+		Where("is_skill_quest = FALSE")
 
 	if status != microtaskv1.MicroTaskStatus_MICROTASK_STATUS_UNSPECIFIED {
 		qb = qb.Where(squirrel.Eq{"status": int16(status)})
@@ -310,6 +312,36 @@ func (r *MicroTaskRepository) ListByStudent(ctx context.Context, studentID strin
 	}, nil
 }
 
+// CreateSkillQuest создаёт задачу типа квест: статус сразу ASSIGNED на target_student_id,
+// is_skill_quest=true, target_skill_slug заполнен. Квест не показывается в публичной выдаче.
+func (r *MicroTaskRepository) CreateSkillQuest(ctx context.Context, expertID, studentID, slug, title, description, deadline string) (*microtaskv1.MicroTask, error) {
+	cols := []string{
+		"company_id", "title", "description", "reward", "skill_slugs", "status",
+		"assigned_to", "is_skill_quest", "target_student_id", "target_skill_slug",
+	}
+	vals := []interface{}{
+		expertID, title, description, int32(0),
+		stringSlice([]string{slug}),
+		int16(microtaskv1.MicroTaskStatus_MICROTASK_STATUS_ASSIGNED),
+		studentID, true, studentID, slug,
+	}
+	if deadline != "" {
+		cols = append(cols, "deadline")
+		vals = append(vals, deadline)
+	}
+
+	query, args, err := r.sb.
+		Insert("microtasks").
+		Columns(cols...).
+		Values(vals...).
+		Suffix("RETURNING " + taskCols).
+		ToSql()
+	if err != nil {
+		return nil, fmt.Errorf("build create-quest query: %w", err)
+	}
+	return scanTask(r.db.QueryRow(ctx, query, args...))
+}
+
 // Apply переводит задачу из OPEN в ASSIGNED атомарно. Возвращает ErrTaskNotOpen, если статус не OPEN.
 func (r *MicroTaskRepository) Apply(ctx context.Context, taskID, studentID string) (*microtaskv1.MicroTask, error) {
 	query, args, err := r.sb.
@@ -363,13 +395,16 @@ func scanTask(scanner interface {
 	Scan(dest ...interface{}) error
 }) (*microtaskv1.MicroTask, error) {
 	var (
-		t           microtaskv1.MicroTask
-		deadline    sql.NullTime
-		assignedTo  sql.NullString
-		statusInt   int16
-		createdAt   time.Time
-		updatedAt   time.Time
-		skillSlugs  []string
+		t                 microtaskv1.MicroTask
+		deadline          sql.NullTime
+		assignedTo        sql.NullString
+		statusInt         int16
+		createdAt         time.Time
+		updatedAt         time.Time
+		skillSlugs        []string
+		isSkillQuest      bool
+		targetStudentID   string
+		targetSkillSlug   string
 	)
 	err := scanner.Scan(
 		&t.Id,
@@ -383,6 +418,9 @@ func scanTask(scanner interface {
 		&assignedTo,
 		&createdAt,
 		&updatedAt,
+		&isSkillQuest,
+		&targetStudentID,
+		&targetSkillSlug,
 	)
 	if err != nil {
 		return nil, err
@@ -397,6 +435,11 @@ func scanTask(scanner interface {
 	}
 	t.CreatedAt = createdAt.Format(time.RFC3339)
 	t.UpdatedAt = updatedAt.Format(time.RFC3339)
+	t.IsSkillQuest = isSkillQuest
+	if targetStudentID != "00000000-0000-0000-0000-000000000000" {
+		t.TargetStudentId = targetStudentID
+	}
+	t.TargetSkillSlug = targetSkillSlug
 	return &t, nil
 }
 

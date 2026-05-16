@@ -5,6 +5,7 @@ import (
 	"log"
 	"net"
 
+	chatv1 "github.com/StudJobs/proto_srtucture/gen/go/proto/chat/v1"
 	usersv1 "github.com/StudJobs/proto_srtucture/gen/go/proto/users/v1"
 	"github.com/studjobs/hh_for_students/users/internal/metrics"
 	"google.golang.org/grpc"
@@ -19,11 +20,14 @@ type Server struct {
 	healthServer *health.Server
 }
 
-func New(port string, usersService usersv1.UsersServiceServer) *Server {
+func New(port string, usersService usersv1.UsersServiceServer, chatService chatv1.ChatServiceServer) *Server {
 	grpcServer := grpc.NewServer(grpc.UnaryInterceptor(metrics.UnaryInterceptor()))
 
 	// Регистрация сервисов
 	usersv1.RegisterUsersServiceServer(grpcServer, usersService)
+	if chatService != nil {
+		chatv1.RegisterChatServiceServer(grpcServer, chatService)
+	}
 
 	// Создание и настройка health сервера
 	healthServer := health.NewServer()

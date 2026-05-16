@@ -93,15 +93,76 @@ func (h *Handler) SubmitTask(c *fiber.Ctx) error {
 	if err := c.BodyParser(&req); err != nil {
 		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{"error": "Invalid request body"})
 	}
-	if req.SolutionURL == "" {
-		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{"error": "solution_url is required"})
+	if req.SolutionURL == "" && req.SolutionFileName == "" {
+		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{"error": "solution_url or solution_file_name is required"})
 	}
-	s, err := h.apiService.MicroTasks.Submit(c.Context(), id, studentID, req.SolutionURL, req.Comment)
+	s, err := h.apiService.MicroTasks.Submit(c.Context(), id, studentID, req.SolutionURL, req.Comment, req.SolutionFileName)
 	if err != nil {
 		log.Printf("SubmitTask: failed task=%s student=%s: %v", id, studentID, err)
 		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{"error": err.Error()})
 	}
 	return c.Status(fiber.StatusCreated).JSON(s)
+}
+
+// SolutionUploadInit — студент инициирует загрузку файла-решения, получает presigned PUT URL.
+func (h *Handler) SolutionUploadInit(c *fiber.Ctx) error {
+	id := c.Params("id")
+	studentID := getUserIDFromContext(c)
+	if id == "" || studentID == "" {
+		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{"error": "Invalid request"})
+	}
+	var req models.SolutionUploadInitRequest
+	if err := c.BodyParser(&req); err != nil || req.FileName == "" {
+		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{"error": "file_name is required"})
+	}
+	fileID, uploadURL, err := h.apiService.MicroTasks.SolutionUploadInit(c.Context(), id, studentID, req.FileName)
+	if err != nil {
+		log.Printf("SolutionUploadInit: task=%s student=%s failed: %v", id, studentID, err)
+		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{"error": err.Error()})
+	}
+	// Browser получит host из public-MinIO (см. MINIO_PUBLIC_ENDPOINT). Если URL пришёл
+	// с internal-host (например тест без public env), пытаемся подменить на localhost:9000.
+	// На проде это уже сделано на уровне MicroTasks через NewPublicClient.
+	return c.JSON(models.SolutionUploadInitResponse{FileID: fileID, UploadURL: uploadURL})
+}
+
+// SolutionUploadConfirm — студент подтверждает успешный PUT в S3.
+func (h *Handler) SolutionUploadConfirm(c *fiber.Ctx) error {
+	id := c.Params("id")
+	studentID := getUserIDFromContext(c)
+	if id == "" || studentID == "" {
+		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{"error": "Invalid request"})
+	}
+	var req models.SolutionUploadConfirmRequest
+	if err := c.BodyParser(&req); err != nil || req.FileID == "" {
+		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{"error": "file_id is required"})
+	}
+	if err := h.apiService.MicroTasks.SolutionUploadConfirm(c.Context(), id, studentID, req.FileID); err != nil {
+		log.Printf("SolutionUploadConfirm: task=%s student=%s file=%s failed: %v", id, studentID, req.FileID, err)
+		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{"error": err.Error()})
+	}
+	return c.JSON(fiber.Map{"ok": true})
+}
+
+// CreateSkillQuest — эксперт создаёт квест-задачу для конкретного студента по конкретному навыку.
+func (h *Handler) CreateSkillQuest(c *fiber.Ctx) error {
+	expertID := getUserIDFromContext(c)
+	if expertID == "" {
+		return c.Status(fiber.StatusUnauthorized).JSON(fiber.Map{"error": "unauthorized"})
+	}
+	var req models.CreateSkillQuestRequest
+	if err := c.BodyParser(&req); err != nil {
+		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{"error": "Invalid request body"})
+	}
+	if req.TargetStudentID == "" || req.TargetSkillSlug == "" || req.Title == "" {
+		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{"error": "target_student_id, target_skill_slug, title are required"})
+	}
+	t, err := h.apiService.MicroTasks.CreateSkillQuest(c.Context(), expertID, req.TargetStudentID, req.TargetSkillSlug, req.Title, req.Description, req.Deadline)
+	if err != nil {
+		log.Printf("CreateSkillQuest: expert=%s student=%s failed: %v", expertID, req.TargetStudentID, err)
+		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{"error": err.Error()})
+	}
+	return c.Status(fiber.StatusCreated).JSON(t)
 }
 
 // GetMyTasks — все микрозадачи, которые текущий студент взял в работу или завершил.

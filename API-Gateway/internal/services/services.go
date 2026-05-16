@@ -4,6 +4,7 @@ import (
 	"context"
 	achievementv1 "github.com/StudJobs/proto_srtucture/gen/go/proto/achievement/v1"
 	applicationv1 "github.com/StudJobs/proto_srtucture/gen/go/proto/application/v1"
+	chatv1 "github.com/StudJobs/proto_srtucture/gen/go/proto/chat/v1"
 	companyv1 "github.com/StudJobs/proto_srtucture/gen/go/proto/company/v1"
 	microtaskv1 "github.com/StudJobs/proto_srtucture/gen/go/proto/microtask/v1"
 	searchv1 "github.com/StudJobs/proto_srtucture/gen/go/proto/search/v1"
@@ -81,7 +82,10 @@ type MicroTaskService interface {
 	ListByCompany(ctx context.Context, companyID string, page, limit int32) (*models.MicroTaskList, error)
 	ListByStudent(ctx context.Context, studentID string, status int32, page, limit int32) (*models.MicroTaskList, error)
 	Apply(ctx context.Context, taskID, studentID string) (*models.MicroTask, error)
-	Submit(ctx context.Context, taskID, studentID, solutionURL, comment string) (*models.Submission, error)
+	Submit(ctx context.Context, taskID, studentID, solutionURL, comment, fileName string) (*models.Submission, error)
+	SolutionUploadInit(ctx context.Context, taskID, studentID, fileName string) (fileID, uploadURL string, err error)
+	SolutionUploadConfirm(ctx context.Context, taskID, studentID, fileID string) error
+	CreateSkillQuest(ctx context.Context, expertID, studentID, slug, title, description, deadline string) (*models.MicroTask, error)
 	ListSubmissions(ctx context.Context, taskID, studentID string, page, limit int32) (*models.SubmissionList, error)
 	Review(ctx context.Context, submissionID string, status int32, reviewComment string) (*models.Submission, error)
 }
@@ -111,6 +115,11 @@ type VacancyService interface {
 	GetAllPositions(ctx context.Context) ([]string, error)
 }
 
+type ChatService interface {
+	SendMessage(ctx context.Context, threadID, fromUser, body string) (*models.ChatMessage, error)
+	ListMessages(ctx context.Context, threadID string, page, limit int32) (*models.ChatMessageList, error)
+}
+
 // ApiGateway объединяет все сервисы
 type ApiGateway struct {
 	Auth        AuthService
@@ -122,6 +131,7 @@ type ApiGateway struct {
 	Skills      SkillsService
 	Search      SearchService
 	MicroTasks  MicroTaskService
+	Chat        ChatService
 }
 
 // NewApiGateway создает новый экземпляр ApiGateway
@@ -135,6 +145,7 @@ func NewApiGateway(
 	skillsClient skillsv1.SkillsServiceClient,
 	searchClient searchv1.SearchServiceClient,
 	microtasksClient microtaskv1.MicroTaskServiceClient,
+	chatClient chatv1.ChatServiceClient,
 ) *ApiGateway {
 	return &ApiGateway{
 		Auth:        NewAuthService(authClient),
@@ -146,5 +157,6 @@ func NewApiGateway(
 		Skills:      NewSkillsService(skillsClient),
 		Search:      NewSearchService(searchClient),
 		MicroTasks:  NewMicroTaskService(microtasksClient),
+		Chat:        NewChatService(chatClient),
 	}
 }
