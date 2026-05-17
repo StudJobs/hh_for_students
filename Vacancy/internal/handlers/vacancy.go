@@ -2,6 +2,7 @@ package handlers
 
 import (
 	"context"
+	"errors"
 	commonv1 "github.com/StudJobs/proto_srtucture/gen/go/proto/common/v1"
 	vacancyv1 "github.com/StudJobs/proto_srtucture/gen/go/proto/vacancy/v1"
 	"google.golang.org/grpc/codes"
@@ -21,12 +22,14 @@ func (h *VacancyHandler) NewVacancy(ctx context.Context, req *vacancyv1.NewVacan
 	vacancy, err := h.service.Vacancy.CreateVacancy(ctx, req.Vacancy)
 	if err != nil {
 		log.Printf("Handlers: NewVacancy failed for title %s: %v", req.Vacancy.GetTitle(), err)
-		switch err {
-		case service.ErrInvalidVacancyData:
+		// validateVacancy оборачивает ErrInvalidVacancyData через %w, поэтому
+		// прямое сравнение `err == service.ErrInvalidVacancyData` не работает —
+		// нужно errors.Is. Без этого все ошибки валидации шли как Internal,
+		// и Gateway возвращал 500 «Failed to create vacancy» без причины.
+		if errors.Is(err, service.ErrInvalidVacancyData) {
 			return nil, status.Error(codes.InvalidArgument, err.Error())
-		default:
-			return nil, status.Error(codes.Internal, "failed to create vacancy")
 		}
+		return nil, status.Error(codes.Internal, "failed to create vacancy")
 	}
 
 	log.Printf("Handlers: NewVacancy completed successfully for ID: %s", vacancy.Id)

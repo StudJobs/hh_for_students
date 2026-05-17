@@ -7,6 +7,8 @@ import (
 
 	"github.com/gofiber/fiber/v2"
 	"github.com/studjobs/hh_for_students/api-gateway/internal/models"
+	grpccodes "google.golang.org/grpc/codes"
+	grpcstatus "google.golang.org/grpc/status"
 )
 
 // GetVacancies возвращает список вакансий с пагинацией и фильтрами
@@ -267,6 +269,22 @@ func (h *Handler) CreateHRVacancy(c *fiber.Ctx) error {
 	vacancy, err := h.apiService.Vacancy.CreateVacancy(c.Context(), &req)
 	if err != nil {
 		log.Printf("CreateHRVacancy: Failed to create vacancy: %v", err)
+		// Маппим gRPC-коды Vacancy-сервиса в HTTP: InvalidArgument → 400 с
+		// человекочитаемым сообщением (его потом покажет фронт), иначе 500.
+		if st, ok := grpcstatus.FromError(err); ok {
+			switch st.Code() {
+			case grpccodes.InvalidArgument:
+				return c.Status(fiber.StatusBadRequest).JSON(models.Error{
+					Code:    "INVALID_VACANCY_DATA",
+					Message: st.Message(),
+				})
+			case grpccodes.PermissionDenied:
+				return c.Status(fiber.StatusForbidden).JSON(models.Error{
+					Code:    "FORBIDDEN",
+					Message: st.Message(),
+				})
+			}
+		}
 		return c.Status(fiber.StatusInternalServerError).JSON(models.Error{
 			Code:    "CREATE_FAILED",
 			Message: "Failed to create vacancy",
