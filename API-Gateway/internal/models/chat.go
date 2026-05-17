@@ -23,9 +23,10 @@ type ChatThread struct {
 	ThreadID    string `json:"thread_id"`
 	Kind        string `json:"kind,omitempty"`     // "application" | "task" | "quest"
 	ResourceID  string `json:"resource_id,omitempty"`
-	LastMessage string `json:"last_message,omitempty"`
-	LastAt      string `json:"last_at,omitempty"`
-	UnreadCount int32  `json:"unread_count,omitempty"`
+	LastMessage    string `json:"last_message,omitempty"`
+	LastAt         string `json:"last_at,omitempty"`
+	LastFromUserID string `json:"last_from_user_id,omitempty"`
+	UnreadCount    int32  `json:"unread_count,omitempty"`
 
 	// Метаданные собеседника (заполняет Gateway).
 	PeerID        string `json:"peer_id,omitempty"`

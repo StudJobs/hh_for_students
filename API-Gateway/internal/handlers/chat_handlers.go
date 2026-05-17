@@ -262,15 +262,19 @@ func (h *Handler) GetChatThreads(c *fiber.Ctx) error {
 		}
 	}
 
-	// Подтягиваем last_message по каждому треду (N+1 — для inbox ≤ 100 ок).
+	// Подтягиваем last_message + автора по каждому треду (N+1 — для inbox ≤ 100 ок).
+	// Запрашиваем всегда, не только для пустых — нужно знать from_user_id, чтобы
+	// фронт мог отличать «своё» сообщение от «чужого» (для уведомлений).
+	//
+	// ListByThread в репо отдаёт ORDER BY created_at ASC. Берём последний из
+	// первой страницы как «свежайший». 50 — потолок, для активных тредов хватает;
+	// уведомления приходят не позже чем после следующего тика.
 	for _, t := range threads {
-		if t.LastMessage != "" {
-			continue // уже заполнено fallback'ом
-		}
-		if msgs, err := h.apiService.Chat.ListMessages(ctx, t.ThreadID, 1, 1); err == nil && msgs != nil && len(msgs.Messages) > 0 {
+		if msgs, err := h.apiService.Chat.ListMessages(ctx, t.ThreadID, 1, 50); err == nil && msgs != nil && len(msgs.Messages) > 0 {
 			last := msgs.Messages[len(msgs.Messages)-1]
 			t.LastMessage = last.Body
 			t.LastAt = last.CreatedAt
+			t.LastFromUserID = last.FromUserID
 		}
 	}
 
