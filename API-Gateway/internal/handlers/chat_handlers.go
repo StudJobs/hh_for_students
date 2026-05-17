@@ -41,11 +41,15 @@ func (h *Handler) canAccessThread(ctx context.Context, userID, kind, rid string)
 		if vErr == nil && v != nil && v.CompanyID == userID {
 			return true, ""
 		}
-		// HR ещё не assignee, но является сотрудником компании этой вакансии — auto-assign + пускаем.
+		// HR-сотрудник компании этой вакансии — пускаем.
+		// Если membership APPROVED — auto-assign'имся как HR этого отклика.
+		// Если PENDING — впускаем только на чтение (assign не делаем).
 		if v != nil {
 			ms, mErr := h.apiService.Company.GetMembershipByUser(ctx, userID)
 			if mErr == nil && ms != nil && ms.CompanyID == v.CompanyID {
-				_, _ = h.apiService.Application.AssignHR(ctx, rid, userID)
+				if ms.Status == 2 { // APPROVED
+					_, _ = h.apiService.Application.AssignHR(ctx, rid, userID)
+				}
 				return true, ""
 			}
 		}
