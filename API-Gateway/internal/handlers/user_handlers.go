@@ -149,6 +149,15 @@ func (h *Handler) GetUser(c *fiber.Ctx) error {
 		return err
 	}
 
+	// Приватность: если профиль скрыт и смотрит другой студент — отдаём 404.
+	// HR/COMPANY/EXPERT/DEVELOPER видят всех (им подбирать кандидатов).
+	viewerID := getUserIDFromContext(c)
+	viewerRole := getRoleFromContext(c)
+	if user.IsHidden && viewerRole == ROLE_STUDENT && viewerID != userID {
+		log.Printf("GetUser: hidden profile %s — not exposed to student %s", userID, viewerID)
+		return c.Status(fiber.StatusNotFound).JSON(fiber.Map{"error": "Profile not found"})
+	}
+
 	log.Printf("GetUser: Successfully retrieved user: %s", userID)
 	return c.JSON(user)
 }
@@ -187,6 +196,7 @@ func (h *Handler) getUserWithFiles(c *fiber.Ctx, userID string) (*models.User, e
 		VerifiedSkillSlugs:       profile.VerifiedSkillSlugs,
 		ExpertSkillSlugs:         profile.ExpertSkillSlugs,
 		ExpertVerifiedSkillSlugs: profile.ExpertVerifiedSkillSlugs,
+		IsHidden:                 profile.IsHidden,
 		Github:                   profile.Github,
 	}
 
@@ -334,6 +344,9 @@ func (h *Handler) UpdateUser(c *fiber.Ctx) error {
 	}
 	if updateData.ExpertSkillSlugs != nil {
 		profile.ExpertSkillSlugs = updateData.ExpertSkillSlugs
+	}
+	if updateData.IsHidden != nil {
+		profile.IsHidden = *updateData.IsHidden
 	}
 
 	// Вызываем users service

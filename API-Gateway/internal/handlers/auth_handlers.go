@@ -116,17 +116,23 @@ func (h *Handler) Register(c *fiber.Ctx) error {
 			Name: "Без названия",
 		}); err != nil {
 			log.Printf("API Gateway Create failed for email %s: %v", req.Email, err)
-
-			//if err1 := h.apiService.Company.DeleteCompany(c.Context(), resp.UserUUID); err1 != nil {
-			//	log.Printf("API Gateway delete company failed for email %s: %v", req.Email, err1)
-			//	return h.handleAuthError(c, err)
-			//}
-
 			if err2 := h.apiService.Auth.DeleteUser(c.Context(), resp.UserUUID); err2 != nil {
 				log.Printf("API Gateway LogOut company for email %s: %v", req.Email, err2)
 			}
-
 			return h.handleAuthError(c, err)
+		}
+		// Заодно создаём Profile-stub: иначе /u/<owner_uuid> отдаёт 404
+		// (студент в чате кликает «Профиль кандидата» → пусто).
+		if _, perr := h.apiService.User.CreateUser(c.Context(), &usersv1.NewProfileRequest{
+			Profile: &usersv1.Profile{
+				Id:    resp.UserUUID,
+				Email: req.Email,
+				Age:   18,
+				Role:  resp.Role,
+			},
+		}); perr != nil {
+			log.Printf("API Gateway: profile-stub for owner %s failed: %v", req.Email, perr)
+			// не блокируем регистрацию — профиль не критичен, owner и без него работает
 		}
 	} else {
 		if _, err = h.apiService.User.CreateUser(c.Context(), &usersv1.NewProfileRequest{

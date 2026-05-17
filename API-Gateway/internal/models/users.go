@@ -18,6 +18,7 @@ type User struct {
 	VerifiedSkillSlugs   []string `json:"verified_skill_slugs,omitempty" example:"go,docker"`
 	ExpertSkillSlugs     []string `json:"expert_skill_slugs,omitempty" example:"go,react"`
 	ExpertVerifiedSkillSlugs []string `json:"expert_verified_skill_slugs,omitempty" example:"go"`
+	IsHidden             bool     `json:"is_hidden,omitempty" example:"false"`
 	Github               string   `json:"github,omitempty" example:"https://github.com/ivanov"`
 
 	// Ссылки на файлы
@@ -50,4 +51,5 @@ type UserUpdateRequest struct {
 	AvatarID             *string  `json:"avatar_id,omitempty" example:"550e8400-e29b-41d4-a716-446655440002"`
 	SkillSlugs           []string `json:"skill_slugs,omitempty" example:"go,postgresql,docker"`
 	ExpertSkillSlugs     []string `json:"expert_skill_slugs,omitempty" example:"go,react"`
+	IsHidden             *bool    `json:"is_hidden,omitempty"`
 }
