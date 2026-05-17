@@ -116,13 +116,61 @@ func (r *VacancyRepository) GetAllVacancies(ctx context.Context, companyID, posi
 	}, nil
 }
 
+// GetHRVacancies возвращает все вакансии компании ВКЛЮЧАЯ PENDING / REJECTED —
+// автор должен видеть свежесозданную вакансию сразу, не дожидаясь модерации.
+// Студенческая выборка фильтрует moderation_status=PUBLISHED отдельно
+// (см. GetAllVacancies).
 func (r *VacancyRepository) GetHRVacancies(ctx context.Context, companyID, positionStatus, workFormat, schedule string,
 	minSalary, maxSalary, minExperience, maxExperience int32,
 	searchTitle string, page, limit int32) (*vacancyv1.VacancyList, error) {
 
-	// Для HR вакансий используем ту же логику, но можно добавить дополнительные фильтры если нужно
-	return r.GetAllVacancies(ctx, companyID, positionStatus, workFormat, schedule,
-		minSalary, maxSalary, minExperience, maxExperience, searchTitle, page, limit)
+	log.Printf("Repository: Getting HR vacancies - page: %d, limit: %d, company: '%s'", page, limit, companyID)
+
+	offset := (page - 1) * limit
+
+	query, args, err := r.buildVacancyQueryBuilder(companyID, positionStatus, workFormat, schedule,
+		minSalary, maxSalary, minExperience, maxExperience, searchTitle).
+		OrderBy("created_at DESC").
+		Limit(uint64(limit)).
+		Offset(uint64(offset)).
+		ToSql()
+	if err != nil {
+		return nil, fmt.Errorf("failed to build query: %w", err)
+	}
+
+	rows, err := r.db.Query(ctx, query, args...)
+	if err != nil {
+		return nil, fmt.Errorf("failed to get hr vacancies: %w", err)
+	}
+	defer rows.Close()
+
+	var vacancies []*vacancyv1.Vacancy
+	for rows.Next() {
+		v, err := scanVacancyRow(rows)
+		if err != nil {
+			return nil, fmt.Errorf("failed to scan vacancy: %w", err)
+		}
+		vacancies = append(vacancies, v)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, fmt.Errorf("rows: %w", err)
+	}
+
+	countQuery, countArgs, err := r.buildVacancyCountBuilder(companyID, positionStatus, workFormat, schedule,
+		minSalary, maxSalary, minExperience, maxExperience, searchTitle).
+		ToSql()
+	if err != nil {
+		return nil, fmt.Errorf("failed to build count: %w", err)
+	}
+	var total int32
+	if err := r.db.QueryRow(ctx, countQuery, countArgs...).Scan(&total); err != nil {
+		return nil, fmt.Errorf("failed to count: %w", err)
+	}
+
+	return &vacancyv1.VacancyList{
+		Vacancies:  vacancies,
+		Pagination: calculatePagination(total, limit, page),
+	}, nil
 }
 
 func (r *VacancyRepository) CreateVacancy(ctx context.Context, vacancy *vacancyv1.Vacancy) (*vacancyv1.Vacancy, error) {

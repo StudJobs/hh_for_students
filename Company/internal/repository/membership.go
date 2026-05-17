@@ -42,12 +42,18 @@ func scanMember(row pgx.Row) (*companyv1.CompanyMember, error) {
 }
 
 // Apply создаёт PENDING-заявку. Идемпотентно по UNIQUE(company_id, user_id):
-// повторный вызов возвращает уже существующую запись.
+// повторный вызов возвращает уже существующую запись, но если она была в
+// REJECTED (owner кик'нул HR) — сбрасываем статус обратно в PENDING, иначе
+// HR не сможет повторно подать заявку и навсегда останется «вне команды».
+// reviewed_at тоже зануляем, чтобы UI понимал, что это свежая попытка.
 func (r *MembershipRepository) Apply(ctx context.Context, companyID, userID, note string) (*companyv1.CompanyMember, error) {
 	query := `
 INSERT INTO company_members (company_id, user_id, status, note)
 VALUES ($1, $2, 1, $3)
-ON CONFLICT (company_id, user_id) DO UPDATE SET note = EXCLUDED.note
+ON CONFLICT (company_id, user_id) DO UPDATE
+SET note = EXCLUDED.note,
+    status = CASE WHEN company_members.status = 3 THEN 1 ELSE company_members.status END,
+    reviewed_at = CASE WHEN company_members.status = 3 THEN NULL ELSE company_members.reviewed_at END
 RETURNING ` + membershipCols
 	row := r.db.QueryRow(ctx, query, companyID, userID, note)
 	m, err := scanMember(row)
