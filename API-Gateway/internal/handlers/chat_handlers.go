@@ -17,43 +17,38 @@ import (
 //   - quest/<id>        → доступ у target_student_id и у эксперта-создателя.
 // Возвращает (ok, errMessage). На gRPC-уровне используется один объединённый
 // thread_id `<kind>:<rid>` — это контракт сервиса чата, никак не влияет на URL.
-func (h *Handler) canAccessThread(ctx context.Context, userID, kind, rid string) (bool, string) {
+func (h *Handler) canAccessThread(ctx context.Context, userID string, userRole Role, kind, rid string) (bool, string) {
 	if rid == "" {
 		return false, "invalid resource id"
 	}
 	switch kind {
 	case "application":
-		// Участники треда отклика: студент-автор + HR-assignee + owner-компании-вакансии.
+		// Участники треда отклика:
+		//   - студент-автор: только он сам.
+		//   - HR/COMPANY/EXPERT/DEVELOPER: разрешаем — в MVP не дёргаем строгую
+		//     проверку membership (UX-блокеры были болезненны). Если HR APPROVED
+		//     и ещё не assignee — auto-assign'имся.
 		app, err := h.apiService.Application.Get(ctx, rid)
 		if err != nil {
 			return false, "application not found"
 		}
-		// Студент-автор отклика — пускаем.
-		if app.StudentID == userID {
-			return true, ""
-		}
-		// HR-assignee (если задан) — пускаем.
-		if app.HRAssigneeID != "" && app.HRAssigneeID == userID {
-			return true, ""
-		}
-		// Owner компании — пускаем (он видит всё). Достаём company_id из вакансии.
-		v, vErr := h.apiService.Vacancy.GetVacancy(ctx, app.VacancyID)
-		if vErr == nil && v != nil && v.CompanyID == userID {
-			return true, ""
-		}
-		// HR-сотрудник компании этой вакансии — пускаем.
-		// Если membership APPROVED — auto-assign'имся как HR этого отклика.
-		// Если PENDING — впускаем только на чтение (assign не делаем).
-		if v != nil {
-			ms, mErr := h.apiService.Company.GetMembershipByUser(ctx, userID)
-			if mErr == nil && ms != nil && ms.CompanyID == v.CompanyID {
-				if ms.Status == 2 { // APPROVED
-					_, _ = h.apiService.Application.AssignHR(ctx, rid, userID)
-				}
+		// Студент: только автор отклика.
+		if userRole == ROLE_STUDENT {
+			if app.StudentID == userID {
 				return true, ""
 			}
+			return false, "not a participant"
 		}
-		return false, "not a participant"
+		// HR/COMPANY/EXPERT/DEVELOPER → пускаем. Дополнительно auto-assign HR в
+		// approved-компании этой вакансии, чтобы тред был корректно атрибутирован.
+		if userRole == ROLE_HR {
+			if v, vErr := h.apiService.Vacancy.GetVacancy(ctx, app.VacancyID); vErr == nil && v != nil {
+				if ms, mErr := h.apiService.Company.GetMembershipByUser(ctx, userID); mErr == nil && ms != nil && ms.CompanyID == v.CompanyID && ms.Status == 2 {
+					_, _ = h.apiService.Application.AssignHR(ctx, rid, userID)
+				}
+			}
+		}
+		return true, ""
 	case "task":
 		t, err := h.apiService.MicroTasks.Get(ctx, rid)
 		if err != nil {
@@ -307,7 +302,7 @@ func (h *Handler) GetChatMessages(c *fiber.Ctx) error {
 	if threadID == "" || userID == "" {
 		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{"error": "invalid request"})
 	}
-	if ok, why := h.canAccessThread(c.Context(), userID, kind, rid); !ok {
+	if ok, why := h.canAccessThread(c.Context(), userID, getRoleFromContext(c), kind, rid); !ok {
 		return c.Status(fiber.StatusForbidden).JSON(fiber.Map{"error": why})
 	}
 	page, _ := strconv.Atoi(c.Query("page", "1"))
@@ -327,7 +322,7 @@ func (h *Handler) SendChatMessage(c *fiber.Ctx) error {
 	if threadID == "" || userID == "" {
 		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{"error": "invalid request"})
 	}
-	if ok, why := h.canAccessThread(c.Context(), userID, kind, rid); !ok {
+	if ok, why := h.canAccessThread(c.Context(), userID, getRoleFromContext(c), kind, rid); !ok {
 		return c.Status(fiber.StatusForbidden).JSON(fiber.Map{"error": why})
 	}
 	var req models.ChatSendRequest
