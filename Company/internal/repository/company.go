@@ -61,7 +61,7 @@ func (r *CompanyRepository) GetAllCompanies(ctx context.Context, city, companyTy
 	// Расчет offset
 	offset := (page - 1) * limit
 
-	query, args, err := r.buildCompanyQueryBuilder(city, companyType, search).
+	query, args, err := excludeStubCompanies(r.buildCompanyQueryBuilder(city, companyType, search)).
 		OrderBy("created_at DESC").
 		Limit(uint64(limit)).
 		Offset(uint64(offset)).
@@ -95,7 +95,7 @@ func (r *CompanyRepository) GetAllCompanies(ctx context.Context, city, companyTy
 	}
 
 	// Получаем общее количество
-	countQuery, countArgs, err := r.buildCompanyCountBuilder(city, companyType, search).ToSql()
+	countQuery, countArgs, err := excludeStubCompanies(r.buildCompanyCountBuilder(city, companyType, search)).ToSql()
 	if err != nil {
 		log.Printf("Repository: Failed to build count query: %v", err)
 		return nil, fmt.Errorf("failed to build count query: %w", err)
@@ -307,6 +307,17 @@ func (r *CompanyRepository) buildCompanyQueryBuilder(city, companyType, search s
 
 	queryBuilder = applyCompanyFilters(queryBuilder, city, companyType, search)
 	return queryBuilder
+}
+
+// excludeStubCompanies прячет дефолтные company-stubs (создаются автоматически
+// при регистрации COMPANY_OWNER с name="Без названия"). Применяется только в
+// публичных листингах (GetAllCompanies), но НЕ в GetCompany(id) — owner всегда
+// должен получить свой профиль, даже если ещё не заполнил.
+func excludeStubCompanies(b squirrel.SelectBuilder) squirrel.SelectBuilder {
+	return b.
+		Where(squirrel.NotEq{"name": "Без названия"}).
+		Where(squirrel.NotEq{"name": "new"}).
+		Where(squirrel.NotEq{"name": ""})
 }
 
 // buildCompanyCountBuilder создает builder для подсчета компаний
