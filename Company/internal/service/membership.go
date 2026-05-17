@@ -13,6 +13,7 @@ type MembershipInterface interface {
 	Review(ctx context.Context, membershipID string, status companyv1.MembershipStatus) (*companyv1.CompanyMember, error)
 	ListByCompany(ctx context.Context, companyID string, status companyv1.MembershipStatus) ([]*companyv1.CompanyMember, error)
 	GetByUser(ctx context.Context, userID string) (*companyv1.CompanyMember, error)
+	ListByUser(ctx context.Context, userID string, status companyv1.MembershipStatus) ([]*companyv1.CompanyMember, error)
 }
 
 type membershipService struct {
@@ -37,4 +38,8 @@ func (s *membershipService) ListByCompany(ctx context.Context, companyID string,
 
 func (s *membershipService) GetByUser(ctx context.Context, userID string) (*companyv1.CompanyMember, error) {
 	return s.repo.GetByUser(ctx, userID)
+}
+
+func (s *membershipService) ListByUser(ctx context.Context, userID string, status companyv1.MembershipStatus) ([]*companyv1.CompanyMember, error) {
+	return s.repo.ListByUser(ctx, userID, status)
 }

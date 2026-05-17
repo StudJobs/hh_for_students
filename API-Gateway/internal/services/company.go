@@ -277,3 +277,18 @@ func (s *companyService) GetMembershipByUser(ctx context.Context, userID string)
 	}
 	return memberToModel(m), nil
 }
+
+func (s *companyService) ListMembershipsByUser(ctx context.Context, userID string, status int32) ([]*models.CompanyMember, error) {
+	resp, err := s.client.ListMembershipsByUser(ctx, &companyv1.ListMembershipsByUserRequest{
+		UserId: userID,
+		Status: companyv1.MembershipStatus(status),
+	})
+	if err != nil {
+		return nil, err
+	}
+	out := make([]*models.CompanyMember, 0, len(resp.GetMembers()))
+	for _, m := range resp.GetMembers() {
+		out = append(out, memberToModel(m))
+	}
+	return out, nil
+}

@@ -15,6 +15,9 @@ import (
 //   - application/<id>  → доступ у автора-студента и у HR (упрощённо, см. ниже).
 //   - task/<id>         → доступ у assigned студента и у владельца задачи.
 //   - quest/<id>        → доступ у target_student_id и у эксперта-создателя.
+//   - direct/<idA>_<idB> → 1:1 чат; rid — это пара UUID, отсортированных по
+//     возрастанию (фронт строит детерминированно). Тред создаётся «на лету» при
+//     первом сообщении; ListUserThreads потом вернёт его обеим сторонам.
 // Возвращает (ok, errMessage). На gRPC-уровне используется один объединённый
 // thread_id `<kind>:<rid>` — это контракт сервиса чата, никак не влияет на URL.
 func (h *Handler) canAccessThread(ctx context.Context, userID string, userRole Role, kind, rid string) (bool, string) {
@@ -22,6 +25,16 @@ func (h *Handler) canAccessThread(ctx context.Context, userID string, userRole R
 		return false, "invalid resource id"
 	}
 	switch kind {
+	case "direct":
+		// rid: "<uuidA>_<uuidB>". Доступ — если userID совпадает с любым из них.
+		parts := strings.Split(rid, "_")
+		if len(parts) != 2 || parts[0] == "" || parts[1] == "" {
+			return false, "invalid direct id"
+		}
+		if parts[0] == userID || parts[1] == userID {
+			return true, ""
+		}
+		return false, "not a participant"
 	case "application":
 		// Участники треда отклика:
 		//   - студент-автор: только он сам.
@@ -257,6 +270,17 @@ func (h *Handler) GetChatThreads(c *fiber.Ctx) error {
 						thread.PeerID = a.HRAssigneeID
 					}
 				}
+			case "direct":
+				// rid = "<uuidA>_<uuidB>" — peer == та сторона, что не я.
+				parts := strings.SplitN(rid, "_", 2)
+				if len(parts) == 2 {
+					if parts[0] == userID {
+						thread.PeerID = parts[1]
+					} else if parts[1] == userID {
+						thread.PeerID = parts[0]
+					}
+				}
+				thread.ContextTitle = "Личный чат"
 			}
 			add(thread)
 		}

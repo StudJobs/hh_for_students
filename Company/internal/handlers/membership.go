@@ -65,3 +65,15 @@ func (h *CompanyHandlers) GetMembershipByUser(ctx context.Context, req *companyv
 	}
 	return m, nil
 }
+
+func (h *CompanyHandlers) ListMembershipsByUser(ctx context.Context, req *companyv1.ListMembershipsByUserRequest) (*companyv1.CompanyMemberList, error) {
+	if req.GetUserId() == "" {
+		return nil, status.Error(codes.InvalidArgument, "user_id required")
+	}
+	list, err := h.service.Membership.ListByUser(ctx, req.GetUserId(), req.GetStatus())
+	if err != nil {
+		log.Printf("ListMembershipsByUser failed: %v", err)
+		return nil, status.Error(codes.Internal, "list failed")
+	}
+	return &companyv1.CompanyMemberList{Members: list}, nil
+}

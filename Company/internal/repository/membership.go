@@ -111,3 +111,32 @@ LIMIT 1`
 	}
 	return m, err
 }
+
+// ListByUser возвращает ВСЕ memberships пользователя для дашборда HR-кабинета.
+// По умолчанию (status=UNSPECIFIED) — PENDING+APPROVED (REJECTED скрываем,
+// чтобы дашборд не пестрел старыми отказами; пользователь может подать снова).
+func (r *MembershipRepository) ListByUser(ctx context.Context, userID string, status companyv1.MembershipStatus) ([]*companyv1.CompanyMember, error) {
+	q := "SELECT " + membershipCols + " FROM company_members WHERE user_id = $1"
+	args := []interface{}{userID}
+	if status == companyv1.MembershipStatus_MEMBERSHIP_STATUS_UNSPECIFIED {
+		q += " AND status IN (1, 2)"
+	} else {
+		q += " AND status = $2"
+		args = append(args, int16(status))
+	}
+	q += " ORDER BY (status = 2) DESC, created_at DESC"
+	rows, err := r.db.Query(ctx, q, args...)
+	if err != nil {
+		return nil, fmt.Errorf("list memberships by user: %w", err)
+	}
+	defer rows.Close()
+	var out []*companyv1.CompanyMember
+	for rows.Next() {
+		m, err := scanMember(rows)
+		if err != nil {
+			return nil, err
+		}
+		out = append(out, m)
+	}
+	return out, nil
+}

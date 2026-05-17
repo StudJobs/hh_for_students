@@ -9,6 +9,7 @@ import (
 	"github.com/studjobs/hh_for_students/api-gateway/internal/models"
 	"log"
 	"strconv"
+	"strings"
 )
 
 // GetUsers возвращает список пользователей с пагинацией
@@ -210,8 +211,11 @@ func (h *Handler) getUserWithFiles(c *fiber.Ctx, userID string) (*models.User, e
 func (h *Handler) enrichUserWithFiles(ctx context.Context, user *models.User, profile *usersv1.Profile) {
 	// Обрабатываем аватар
 	if profile.AvatarId != "" {
-		avatarUUID := uuid.MustParse(profile.AvatarId)
-		user.AvatarID = &avatarUUID
+		// Старые записи могли сохранять avatar_id в формате "user_avatar_..." (не UUID),
+		// поэтому парсим в UUID мягко — иначе MustParse падает на legacy-данных.
+		if u, err := uuid.Parse(profile.AvatarId); err == nil {
+			user.AvatarID = &u
+		}
 
 		fileInfo, err := h.fileHandler.GetFileInfo(ctx, profile.Id, profile.AvatarId, "avatar")
 		if err == nil && fileInfo != nil {
@@ -224,10 +228,36 @@ func (h *Handler) enrichUserWithFiles(ctx context.Context, user *models.User, pr
 		}
 	}
 
+	// Fallback: avatar_id мог не записаться в profile (легаси-flow через ачивки —
+	// пользователь грузил «фото» как достижение с именем user_avatar_<uid>_<ts>).
+	// Тогда HR/чужой просмотр profile.avatar_url пустой → лезем в Achievements.
+	if user.AvatarURL == nil {
+		if items, err := h.apiService.Achievement.GetAllAchievements(ctx, profile.Id); err == nil && items != nil {
+			for _, a := range items.Achievements {
+				name := a.Name
+				if name == "" {
+					name = a.FileName
+				}
+				if !strings.HasPrefix(name, "user_avatar_") {
+					continue
+				}
+				if fi, ferr := h.fileHandler.GetFileInfo(ctx, profile.Id, name, "avatar"); ferr == nil && fi != nil {
+					if fi.DirectURL != nil {
+						user.AvatarURL = fi.DirectURL
+					} else {
+						user.AvatarURL = fi.URL
+					}
+					break
+				}
+			}
+		}
+	}
+
 	// Обрабатываем резюме
 	if profile.ResumeId != "" {
-		resumeUUID := uuid.MustParse(profile.ResumeId)
-		user.ResumeID = &resumeUUID
+		if u, err := uuid.Parse(profile.ResumeId); err == nil {
+			user.ResumeID = &u
+		}
 
 		fileInfo, err := h.fileHandler.GetFileInfo(ctx, profile.Id, profile.ResumeId, "resume")
 		if err == nil && fileInfo != nil {
@@ -242,8 +272,9 @@ func (h *Handler) enrichUserListWithFiles(ctx context.Context, users []models.Us
 	for i, profile := range profiles {
 		// Обрабатываем аватар для каждого пользователя
 		if profile.AvatarId != "" {
-			avatarUUID := uuid.MustParse(profile.AvatarId)
-			users[i].AvatarID = &avatarUUID
+			if u, err := uuid.Parse(profile.AvatarId); err == nil {
+				users[i].AvatarID = &u
+			}
 
 			fileInfo, err := h.fileHandler.GetFileInfo(ctx, profile.Id, profile.AvatarId, "avatar")
 			if err == nil && fileInfo != nil {
@@ -255,10 +286,34 @@ func (h *Handler) enrichUserListWithFiles(ctx context.Context, users []models.Us
 			}
 		}
 
+		// Fallback: см. enrichUserWithFiles — поднимаем avatar из ачивок.
+		if users[i].AvatarURL == nil {
+			if items, err := h.apiService.Achievement.GetAllAchievements(ctx, profile.Id); err == nil && items != nil {
+				for _, a := range items.Achievements {
+					name := a.Name
+					if name == "" {
+						name = a.FileName
+					}
+					if !strings.HasPrefix(name, "user_avatar_") {
+						continue
+					}
+					if fi, ferr := h.fileHandler.GetFileInfo(ctx, profile.Id, name, "avatar"); ferr == nil && fi != nil {
+						if fi.DirectURL != nil {
+							users[i].AvatarURL = fi.DirectURL
+						} else {
+							users[i].AvatarURL = fi.URL
+						}
+						break
+					}
+				}
+			}
+		}
+
 		// Обрабатываем резюме для каждого пользователя
 		if profile.ResumeId != "" {
-			resumeUUID := uuid.MustParse(profile.ResumeId)
-			users[i].ResumeID = &resumeUUID
+			if u, err := uuid.Parse(profile.ResumeId); err == nil {
+				users[i].ResumeID = &u
+			}
 
 			fileInfo, err := h.fileHandler.GetFileInfo(ctx, profile.Id, profile.ResumeId, "resume")
 			if err == nil && fileInfo != nil {

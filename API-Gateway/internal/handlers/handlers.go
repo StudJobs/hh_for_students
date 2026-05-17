@@ -81,7 +81,7 @@ func (h *Handler) initRoutes() {
 	users := api.Group("/users")
 	// ПРАВИЛЬНО: Middleware идут до обработчика
 	users.Get("/", RoleMiddleware(ROLE_DEVELOPER, ROLE_STUDENT, ROLE_HR, ROLE_COMPANY, ROLE_EXPERT), h.GetUsers)
-	users.Get("/me", RoleMiddleware(ROLE_DEVELOPER, ROLE_STUDENT, ROLE_EXPERT), h.GetMe)
+	users.Get("/me", RoleMiddleware(ROLE_DEVELOPER, ROLE_STUDENT, ROLE_EXPERT, ROLE_HR, ROLE_COMPANY), h.GetMe)
 	users.Get("/:id", RoleMiddleware(ROLE_DEVELOPER, ROLE_STUDENT, ROLE_HR, ROLE_COMPANY, ROLE_EXPERT), h.GetUser)
 	users.Get("/:id/achievements", RoleMiddleware(ROLE_DEVELOPER, ROLE_STUDENT, ROLE_HR, ROLE_COMPANY, ROLE_EXPERT), h.GetUserAchievementsByID)
 	// Для /edit нет параметра :id, поэтому используем RoleMiddleware.
@@ -202,6 +202,7 @@ func (h *Handler) initRoutes() {
 	// HR-membership-эндпоинты регистрируются ДО /:id, иначе Fiber интерпретирует
 	// "members" / "membership" как :id и роутит в GetCompanyByID → "Company not found".
 	company.Get("/membership/my", RoleMiddleware(ROLE_DEVELOPER, ROLE_HR, ROLE_COMPANY), h.MyMembership)
+	company.Get("/memberships/my", RoleMiddleware(ROLE_DEVELOPER, ROLE_HR, ROLE_COMPANY), h.MyMemberships)
 	company.Get("/members", RoleMiddleware(ROLE_DEVELOPER, ROLE_COMPANY), h.ListMyCompanyMembers)
 	company.Post("/membership/:membership_id/review", RoleMiddleware(ROLE_DEVELOPER, ROLE_COMPANY), h.ReviewMembership)
 	company.Get("/:id", RoleMiddleware(ROLE_DEVELOPER, ROLE_STUDENT, ROLE_HR, ROLE_COMPANY), h.GetCompanyByID)

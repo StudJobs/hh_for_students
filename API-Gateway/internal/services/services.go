@@ -80,6 +80,7 @@ type CompanyService interface {
 	ReviewMembership(ctx context.Context, membershipID string, status int32) (*models.CompanyMember, error)
 	ListMembers(ctx context.Context, companyID string, status int32) ([]*models.CompanyMember, error)
 	GetMembershipByUser(ctx context.Context, userID string) (*models.CompanyMember, error)
+	ListMembershipsByUser(ctx context.Context, userID string, status int32) ([]*models.CompanyMember, error)
 }
 
 type SkillsService interface {

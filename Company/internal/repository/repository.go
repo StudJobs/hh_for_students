@@ -19,6 +19,7 @@ type Membership interface {
 	Review(ctx context.Context, membershipID string, status companyv1.MembershipStatus) (*companyv1.CompanyMember, error)
 	ListByCompany(ctx context.Context, companyID string, status companyv1.MembershipStatus) ([]*companyv1.CompanyMember, error)
 	GetByUser(ctx context.Context, userID string) (*companyv1.CompanyMember, error)
+	ListByUser(ctx context.Context, userID string, status companyv1.MembershipStatus) ([]*companyv1.CompanyMember, error)
 }
 
 type Repository struct {

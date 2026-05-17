@@ -40,6 +40,24 @@ func (h *Handler) MyMembership(c *fiber.Ctx) error {
 	return c.JSON(m)
 }
 
+// MyMemberships — ВСЕ memberships текущего HR (PENDING+APPROVED) для дашборда.
+// Используется ProfileHRFull (показывает карточки компаний) и HRMembership
+// (показывает список заявок). REJECTED не возвращаются — UI для них отдельный.
+func (h *Handler) MyMemberships(c *fiber.Ctx) error {
+	userID := getUserIDFromContext(c)
+	if userID == "" {
+		return c.Status(fiber.StatusUnauthorized).JSON(fiber.Map{"error": "unauthorized"})
+	}
+	statusStr := c.Query("status", "0")
+	st, _ := strconv.Atoi(statusStr)
+	list, err := h.apiService.Company.ListMembershipsByUser(c.Context(), userID, int32(st))
+	if err != nil {
+		log.Printf("MyMemberships failed: %v", err)
+		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{"error": err.Error()})
+	}
+	return c.JSON(fiber.Map{"memberships": list})
+}
+
 // ListMyCompanyMembers — owner видит сотрудников своей компании (с фильтром по статусу).
 func (h *Handler) ListMyCompanyMembers(c *fiber.Ctx) error {
 	ownerID := getUserIDFromContext(c)
