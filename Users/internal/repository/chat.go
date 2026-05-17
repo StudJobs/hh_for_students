@@ -199,15 +199,22 @@ func (r *ChatRepository) ListUserThreads(ctx context.Context, userID string, lim
 	if limit < 1 || limit > 200 {
 		limit = 50
 	}
-	// Берём треды, где юзер был хоть раз автором, исключая те что он сам скрыл.
+	// Треды берём из двух источников:
+	//   (a) where from_user_id = userID — классика, юзер хоть раз писал;
+	//   (b) thread_id вида 'direct:<a>_<b>' и userID == a или b — получатель DM
+	//       ещё не отвечал, но обязан видеть тред в своём inbox'е. Без этого HR
+	//       пишет студенту первым, у студента диалог не появляется до его ответа.
+	// Hidden — фильтруем по chat_thread_hides.
 	query := `
 SELECT
     cm.thread_id,
     (SELECT body FROM chat_messages WHERE thread_id = cm.thread_id ORDER BY created_at DESC LIMIT 1) AS last_message,
     MAX(cm.created_at) AS last_at
 FROM chat_messages cm
-WHERE cm.thread_id IN (
-    SELECT DISTINCT thread_id FROM chat_messages WHERE from_user_id = $1
+WHERE (
+    cm.thread_id IN (SELECT DISTINCT thread_id FROM chat_messages WHERE from_user_id = $1)
+    OR cm.thread_id LIKE 'direct:' || $1 || '_%'
+    OR cm.thread_id LIKE 'direct:%_' || $1
 )
 AND cm.thread_id NOT IN (
     SELECT thread_id FROM chat_thread_hides WHERE user_id = $1
