@@ -85,69 +85,151 @@ func threadIDFromParams(c *fiber.Ctx) (kind, rid, joined string) {
 	return kind, rid, kind + ":" + rid
 }
 
-// GetChatThreads — inbox юзера. Обогащает тред метаданными собеседника и контекста
-// (название вакансии / задачи / навыка квеста). Делаем дополнительные RPC-вызовы на чтение,
-// что для inbox-страницы приемлемо (N тредов, обычно <50).
+// GetChatThreads — inbox юзера. Собирает треды из бизнес-источников
+// (application / task / quest), а не из chat_messages — это даёт получателю
+// видеть тред даже если он ещё ни разу не отвечал.
+//
+// По ролям:
+//   - STUDENT: свои applications, свои task/quest (assigned_to=me).
+//   - HR (EMPLOYER): applications и task'и компании (через membership).
+//   - COMPANY_OWNER: applications своих вакансий + task своей компании.
+//   - EXPERT: квесты, которые он создал (company_id=expert_id).
 func (h *Handler) GetChatThreads(c *fiber.Ctx) error {
 	userID := getUserIDFromContext(c)
+	role := getRoleFromContext(c)
 	if userID == "" {
 		return c.Status(fiber.StatusUnauthorized).JSON(fiber.Map{"error": "unauthorized"})
 	}
-	threads, err := h.apiService.Chat.ListUserThreads(c.Context(), userID, 100)
-	if err != nil {
-		log.Printf("GetChatThreads user=%s failed: %v", userID, err)
-		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{"error": "failed to load threads"})
+
+	threads := make([]*models.ChatThread, 0, 32)
+	added := make(map[string]bool)
+	add := func(t *models.ChatThread) {
+		if t == nil || t.ThreadID == "" || added[t.ThreadID] {
+			return
+		}
+		added[t.ThreadID] = true
+		threads = append(threads, t)
 	}
 
-	// Обогащаем: для каждого треда определяем собеседника и контекст.
-	for _, t := range threads {
-		parts := strings.SplitN(t.ThreadID, ":", 2)
-		if len(parts) != 2 {
-			continue
-		}
-		t.Kind = parts[0]
-		t.ResourceID = parts[1]
+	ctx := c.Context()
 
-		switch t.Kind {
-		case "task", "quest":
-			task, err := h.apiService.MicroTasks.Get(c.Context(), t.ResourceID)
-			if err != nil {
-				continue
+	// Определяем company-id для HR/OWNER. У OWNER company_id == userID.
+	companyID := ""
+	if role == ROLE_COMPANY {
+		companyID = userID
+	} else if role == ROLE_HR {
+		if ms, err := h.apiService.Company.GetMembershipByUser(ctx, userID); err == nil && ms != nil && ms.Status == 2 {
+			companyID = ms.CompanyID
+		}
+	}
+
+	// 1) STUDENT (и DEVELOPER) — свои отклики, свои микрозадачи/квесты.
+	if role == ROLE_STUDENT || role == ROLE_DEVELOPER {
+		if list, err := h.apiService.Application.ListMine(ctx, userID, 0, 1, 100); err == nil && list != nil {
+			for _, a := range list.Applications {
+				add(&models.ChatThread{
+					ThreadID:     "application:" + a.ID,
+					Kind:         "application",
+					ResourceID:   a.ID,
+					PeerID:       a.HRAssigneeID,
+					ContextTitle: "Отклик",
+				})
 			}
-			t.ContextTitle = task.Title
-			// Собеседник = тот участник, кто НЕ я.
-			peerID := task.AssignedTo
-			if peerID == userID {
-				peerID = task.CompanyID
+		}
+		if mine, err := h.apiService.MicroTasks.ListByStudent(ctx, userID, 0, 1, 100); err == nil && mine != nil {
+			for _, t := range mine.Tasks {
+				kind := "task"
+				if t.IsSkillQuest {
+					kind = "quest"
+				}
+				add(&models.ChatThread{
+					ThreadID:     kind + ":" + t.ID,
+					Kind:         kind,
+					ResourceID:   t.ID,
+					PeerID:       t.CompanyID,
+					ContextTitle: t.Title,
+				})
 			}
-			t.PeerID = peerID
-		case "application":
-			// applications.Get RPC отсутствует — собеседника берём по первому сообщению (other_party).
-			// ContextTitle подгружается через первый last_message preview.
-			t.ContextTitle = "Отклик"
-			// Возьмём сообщения треда, найдём first author != me.
-			msgs, _ := h.apiService.Chat.ListMessages(c.Context(), t.ThreadID, 1, 100)
-			if msgs != nil {
-				for _, m := range msgs.Messages {
-					if m.FromUserID != userID {
-						t.PeerID = m.FromUserID
-						break
+		}
+	}
+
+	// 2) HR / OWNER — отклики на вакансии компании + микрозадачи компании.
+	if companyID != "" {
+		if vacList, err := h.apiService.Vacancy.GetHRVacancies(ctx, &models.Pagination{Page: 1, Limit: 100}, companyID, "", "", "", 0, 0, 0, 0, ""); err == nil && vacList != nil {
+			for _, v := range vacList.Vacancies {
+				if alist, err := h.apiService.Application.ListForVacancy(ctx, v.ID, 0, 1, 100); err == nil && alist != nil {
+					for _, a := range alist.Applications {
+						add(&models.ChatThread{
+							ThreadID:     "application:" + a.ID,
+							Kind:         "application",
+							ResourceID:   a.ID,
+							PeerID:       a.StudentID,
+							ContextTitle: "Отклик на «" + v.Title + "»",
+						})
 					}
 				}
 			}
 		}
-
-		// Имя/роль/аватар собеседника подгружаем из Users.
-		if t.PeerID != "" {
-			p, err := h.apiService.User.GetUser(c.Context(), t.PeerID)
-			if err == nil && p != nil {
-				name := strings.TrimSpace(p.FirstName + " " + p.LastName)
-				if name == "" {
-					name = p.Email
+		if tasks, err := h.apiService.MicroTasks.ListByCompany(ctx, companyID, 1, 100); err == nil && tasks != nil {
+			for _, t := range tasks.Tasks {
+				if t.AssignedTo == "" {
+					continue
 				}
-				t.PeerName = name
-				t.PeerRole = roleHumanLabel(p.Role)
+				kind := "task"
+				if t.IsSkillQuest {
+					kind = "quest"
+				}
+				add(&models.ChatThread{
+					ThreadID:     kind + ":" + t.ID,
+					Kind:         kind,
+					ResourceID:   t.ID,
+					PeerID:       t.AssignedTo,
+					ContextTitle: t.Title,
+				})
 			}
+		}
+	}
+
+	// 3) EXPERT — его квесты (company_id == expert_id).
+	if role == ROLE_EXPERT {
+		if tasks, err := h.apiService.MicroTasks.ListByCompany(ctx, userID, 1, 100); err == nil && tasks != nil {
+			for _, t := range tasks.Tasks {
+				if !t.IsSkillQuest || t.TargetStudentID == "" {
+					continue
+				}
+				add(&models.ChatThread{
+					ThreadID:     "quest:" + t.ID,
+					Kind:         "quest",
+					ResourceID:   t.ID,
+					PeerID:       t.TargetStudentID,
+					ContextTitle: t.Title,
+				})
+			}
+		}
+	}
+
+	// Подтягиваем last_message по каждому треду (N+1 — для inbox ≤ 100 ок).
+	for _, t := range threads {
+		if msgs, err := h.apiService.Chat.ListMessages(ctx, t.ThreadID, 1, 1); err == nil && msgs != nil && len(msgs.Messages) > 0 {
+			last := msgs.Messages[len(msgs.Messages)-1]
+			t.LastMessage = last.Body
+			t.LastAt = last.CreatedAt
+		}
+	}
+
+	// Имя/роль собеседника.
+	for _, t := range threads {
+		if t.PeerID == "" {
+			continue
+		}
+		p, err := h.apiService.User.GetUser(ctx, t.PeerID)
+		if err == nil && p != nil {
+			name := strings.TrimSpace(p.FirstName + " " + p.LastName)
+			if name == "" {
+				name = p.Email
+			}
+			t.PeerName = name
+			t.PeerRole = roleHumanLabel(p.Role)
 		}
 	}
 

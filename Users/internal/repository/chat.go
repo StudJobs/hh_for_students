@@ -94,6 +94,37 @@ func (r *ChatRepository) ListByThread(ctx context.Context, threadID string, page
 	}, nil
 }
 
+// LastMessages возвращает map thread_id → последнее сообщение (по created_at DESC).
+// Если для треда нет ни одного сообщения, ключа в map не будет.
+func (r *ChatRepository) LastMessages(ctx context.Context, threadIDs []string) (map[string]*chatv1.Message, error) {
+	out := make(map[string]*chatv1.Message, len(threadIDs))
+	if len(threadIDs) == 0 {
+		return out, nil
+	}
+	query := `
+SELECT DISTINCT ON (thread_id) thread_id, id, from_user_id, body, created_at
+FROM chat_messages
+WHERE thread_id = ANY($1)
+ORDER BY thread_id, created_at DESC`
+	rows, err := r.db.Query(ctx, query, threadIDs)
+	if err != nil {
+		return nil, fmt.Errorf("last-messages: %w", err)
+	}
+	defer rows.Close()
+	for rows.Next() {
+		var m chatv1.Message
+		var createdAt time.Time
+		var threadID string
+		if err := rows.Scan(&threadID, &m.Id, &m.FromUserId, &m.Body, &createdAt); err != nil {
+			return nil, err
+		}
+		m.ThreadId = threadID
+		m.CreatedAt = createdAt.Format(time.RFC3339)
+		out[threadID] = &m
+	}
+	return out, nil
+}
+
 // ListUserThreads возвращает агрегаты по тредам, в которых юзер хотя бы раз писал
 // или ему писали. Для каждого треда: последний message_body, last_at, last_from_user_id.
 // Гейтвей дополняет ответ метаданными «собеседник + контекст» из MicroTasks/Vacancy/Users.
