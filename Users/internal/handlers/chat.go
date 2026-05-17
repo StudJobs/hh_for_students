@@ -54,6 +54,44 @@ func (h *ChatHandler) ListMessages(ctx context.Context, req *chatv1.ListMessages
 	return list, nil
 }
 
+func (h *ChatHandler) EditMessage(ctx context.Context, req *chatv1.EditMessageRequest) (*chatv1.Message, error) {
+	if req.GetMessageId() == "" || req.GetFromUserId() == "" || req.GetBody() == "" {
+		return nil, status.Error(codes.InvalidArgument, "message_id, from_user_id, body required")
+	}
+	m, err := h.repo.Chat.EditMessage(ctx, req.GetMessageId(), req.GetFromUserId(), req.GetBody())
+	if err != nil {
+		log.Printf("ChatHandler: EditMessage failed: %v", err)
+		return nil, status.Error(codes.PermissionDenied, "не ваше сообщение или не существует")
+	}
+	return m, nil
+}
+
+func (h *ChatHandler) HideThread(ctx context.Context, req *chatv1.HideThreadRequest) (*commonv1.Empty, error) {
+	if req.GetUserId() == "" || req.GetThreadId() == "" {
+		return nil, status.Error(codes.InvalidArgument, "user_id and thread_id required")
+	}
+	if err := h.repo.Chat.HideThread(ctx, req.GetUserId(), req.GetThreadId()); err != nil {
+		log.Printf("ChatHandler: HideThread failed: %v", err)
+		return nil, status.Error(codes.Internal, "failed to hide thread")
+	}
+	return &commonv1.Empty{}, nil
+}
+
+func (h *ChatHandler) ListHiddenThreads(ctx context.Context, req *chatv1.ListHiddenThreadsRequest) (*chatv1.HiddenThreadList, error) {
+	if req.GetUserId() == "" {
+		return nil, status.Error(codes.InvalidArgument, "user_id required")
+	}
+	set, err := h.repo.Chat.HiddenSet(ctx, req.GetUserId())
+	if err != nil {
+		return nil, status.Error(codes.Internal, "hidden set failed")
+	}
+	out := make([]string, 0, len(set))
+	for tid := range set {
+		out = append(out, tid)
+	}
+	return &chatv1.HiddenThreadList{ThreadIds: out}, nil
+}
+
 func (h *ChatHandler) ListUserThreads(ctx context.Context, req *chatv1.ListUserThreadsRequest) (*chatv1.ThreadList, error) {
 	if req.GetUserId() == "" {
 		return nil, status.Error(codes.InvalidArgument, "user_id required")

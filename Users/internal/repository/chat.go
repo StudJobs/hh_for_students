@@ -2,6 +2,7 @@ package repository
 
 import (
 	"context"
+	"database/sql"
 	"fmt"
 	"time"
 
@@ -25,17 +26,79 @@ func (r *ChatRepository) Insert(ctx context.Context, threadID, fromUser, body st
 		Insert("chat_messages").
 		Columns("thread_id", "from_user_id", "body").
 		Values(threadID, fromUser, body).
-		Suffix("RETURNING id, thread_id, from_user_id, body, created_at").
+		Suffix("RETURNING id, thread_id, from_user_id, body, created_at, edited_at").
 		ToSql()
 	if err != nil {
 		return nil, fmt.Errorf("build insert: %w", err)
 	}
+	return scanMessage(r.db.QueryRow(ctx, query, args...))
+}
+
+// EditMessage редактирует body своего сообщения. Проверка авторства строгая:
+// если from_user_id не совпадает с автором сообщения — UPDATE не сработает и
+// репо вернёт ErrMessageNotFoundOrForbidden.
+func (r *ChatRepository) EditMessage(ctx context.Context, id, fromUserID, body string) (*chatv1.Message, error) {
+	query := `
+UPDATE chat_messages
+SET body = $3, edited_at = NOW()
+WHERE id = $1 AND from_user_id = $2
+RETURNING id, thread_id, from_user_id, body, created_at, edited_at`
+	return scanMessage(r.db.QueryRow(ctx, query, id, fromUserID, body))
+}
+
+// HideThread помечает тред скрытым у юзера. Сообщения не удаляются —
+// собеседник продолжает видеть тред у себя.
+func (r *ChatRepository) HideThread(ctx context.Context, userID, threadID string) error {
+	_, err := r.db.Exec(ctx,
+		`INSERT INTO chat_thread_hides (user_id, thread_id) VALUES ($1, $2) ON CONFLICT DO NOTHING`,
+		userID, threadID)
+	return err
+}
+
+// IsHidden — true если тред скрыт для юзера.
+func (r *ChatRepository) IsHidden(ctx context.Context, userID, threadID string) (bool, error) {
+	var n int
+	err := r.db.QueryRow(ctx,
+		`SELECT 1 FROM chat_thread_hides WHERE user_id = $1 AND thread_id = $2`,
+		userID, threadID).Scan(&n)
+	if err != nil {
+		// pgx.ErrNoRows → не скрыт
+		return false, nil
+	}
+	return true, nil
+}
+
+// HiddenSet возвращает множество thread_id, скрытых для юзера (для batch-фильтра).
+func (r *ChatRepository) HiddenSet(ctx context.Context, userID string) (map[string]struct{}, error) {
+	rows, err := r.db.Query(ctx, `SELECT thread_id FROM chat_thread_hides WHERE user_id = $1`, userID)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	out := make(map[string]struct{})
+	for rows.Next() {
+		var tid string
+		if err := rows.Scan(&tid); err != nil {
+			return nil, err
+		}
+		out[tid] = struct{}{}
+	}
+	return out, nil
+}
+
+func scanMessage(row interface {
+	Scan(...interface{}) error
+}) (*chatv1.Message, error) {
 	var m chatv1.Message
 	var createdAt time.Time
-	if err := r.db.QueryRow(ctx, query, args...).Scan(&m.Id, &m.ThreadId, &m.FromUserId, &m.Body, &createdAt); err != nil {
-		return nil, fmt.Errorf("insert message: %w", err)
+	var editedAt sql.NullTime
+	if err := row.Scan(&m.Id, &m.ThreadId, &m.FromUserId, &m.Body, &createdAt, &editedAt); err != nil {
+		return nil, err
 	}
 	m.CreatedAt = createdAt.Format(time.RFC3339)
+	if editedAt.Valid {
+		m.EditedAt = editedAt.Time.Format(time.RFC3339)
+	}
 	return &m, nil
 }
 
@@ -49,7 +112,7 @@ func (r *ChatRepository) ListByThread(ctx context.Context, threadID string, page
 	offset := (page - 1) * limit
 
 	query, args, err := r.sb.
-		Select("id", "thread_id", "from_user_id", "body", "created_at").
+		Select("id", "thread_id", "from_user_id", "body", "created_at", "edited_at").
 		From("chat_messages").
 		Where(squirrel.Eq{"thread_id": threadID}).
 		OrderBy("created_at ASC").
@@ -67,13 +130,11 @@ func (r *ChatRepository) ListByThread(ctx context.Context, threadID string, page
 
 	var msgs []*chatv1.Message
 	for rows.Next() {
-		var m chatv1.Message
-		var createdAt time.Time
-		if err := rows.Scan(&m.Id, &m.ThreadId, &m.FromUserId, &m.Body, &createdAt); err != nil {
+		m, err := scanMessage(rows)
+		if err != nil {
 			return nil, fmt.Errorf("scan: %w", err)
 		}
-		m.CreatedAt = createdAt.Format(time.RFC3339)
-		msgs = append(msgs, &m)
+		msgs = append(msgs, m)
 	}
 
 	var total int32
@@ -138,7 +199,7 @@ func (r *ChatRepository) ListUserThreads(ctx context.Context, userID string, lim
 	if limit < 1 || limit > 200 {
 		limit = 50
 	}
-	// Берём треды, где юзер был хоть раз автором.
+	// Берём треды, где юзер был хоть раз автором, исключая те что он сам скрыл.
 	query := `
 SELECT
     cm.thread_id,
@@ -147,6 +208,9 @@ SELECT
 FROM chat_messages cm
 WHERE cm.thread_id IN (
     SELECT DISTINCT thread_id FROM chat_messages WHERE from_user_id = $1
+)
+AND cm.thread_id NOT IN (
+    SELECT thread_id FROM chat_thread_hides WHERE user_id = $1
 )
 GROUP BY cm.thread_id
 ORDER BY last_at DESC

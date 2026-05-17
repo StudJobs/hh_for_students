@@ -21,6 +21,9 @@ type Chat interface {
 	Insert(ctx context.Context, threadID, fromUser, body string) (*chatv1.Message, error)
 	ListByThread(ctx context.Context, threadID string, page, limit int32) (*chatv1.MessageList, error)
 	ListUserThreads(ctx context.Context, userID string, limit int32) ([]*chatv1.Thread, error)
+	EditMessage(ctx context.Context, id, fromUserID, body string) (*chatv1.Message, error)
+	HideThread(ctx context.Context, userID, threadID string) error
+	HiddenSet(ctx context.Context, userID string) (map[string]struct{}, error)
 }
 
 type Repository struct {

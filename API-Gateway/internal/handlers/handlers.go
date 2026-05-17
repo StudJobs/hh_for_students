@@ -119,8 +119,10 @@ func (h *Handler) initRoutes() {
 	// Двоеточие в URL Fiber не декодирует надёжно — поэтому kind и id отдельно.
 	chat := api.Group("/chat")
 	chat.Get("/threads", RoleMiddleware(ROLE_DEVELOPER, ROLE_STUDENT, ROLE_HR, ROLE_COMPANY, ROLE_EXPERT), h.GetChatThreads)
+	chat.Patch("/messages/:msg_id", RoleMiddleware(ROLE_DEVELOPER, ROLE_STUDENT, ROLE_HR, ROLE_COMPANY, ROLE_EXPERT), h.EditChatMessage)
 	chat.Get("/:kind/:rid", RoleMiddleware(ROLE_DEVELOPER, ROLE_STUDENT, ROLE_HR, ROLE_COMPANY, ROLE_EXPERT), h.GetChatMessages)
 	chat.Post("/:kind/:rid", RoleMiddleware(ROLE_DEVELOPER, ROLE_STUDENT, ROLE_HR, ROLE_COMPANY, ROLE_EXPERT), h.SendChatMessage)
+	chat.Delete("/:kind/:rid", RoleMiddleware(ROLE_DEVELOPER, ROLE_STUDENT, ROLE_HR, ROLE_COMPANY, ROLE_EXPERT), h.HideChatThread)
 
 	// === HR routes ===
 	profileHR := api.Group("/hr")

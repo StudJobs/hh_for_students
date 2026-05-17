@@ -73,5 +73,29 @@ func chatMessageFromProto(p *chatv1.Message) *models.ChatMessage {
 		FromUserID: p.GetFromUserId(),
 		Body:       p.GetBody(),
 		CreatedAt:  p.GetCreatedAt(),
+		EditedAt:   p.GetEditedAt(),
 	}
+}
+
+func (s *chatService) EditMessage(ctx context.Context, messageID, fromUser, body string) (*models.ChatMessage, error) {
+	resp, err := s.client.EditMessage(ctx, &chatv1.EditMessageRequest{
+		MessageId: messageID, FromUserId: fromUser, Body: body,
+	})
+	if err != nil {
+		return nil, err
+	}
+	return chatMessageFromProto(resp), nil
+}
+
+func (s *chatService) HideThread(ctx context.Context, userID, threadID string) error {
+	_, err := s.client.HideThread(ctx, &chatv1.HideThreadRequest{UserId: userID, ThreadId: threadID})
+	return err
+}
+
+func (s *chatService) ListHiddenThreads(ctx context.Context, userID string) ([]string, error) {
+	resp, err := s.client.ListHiddenThreads(ctx, &chatv1.ListHiddenThreadsRequest{UserId: userID})
+	if err != nil {
+		return nil, err
+	}
+	return resp.GetThreadIds(), nil
 }

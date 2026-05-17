@@ -3,8 +3,8 @@ github.com/KyleBanks/depth v1.2.1 h1:5h8fQADFrWtarTdtDudMmGsC7GPbOAu6RVB3ffsVFHc
 github.com/KyleBanks/depth v1.2.1/go.mod h1:jzSb9d0L43HxTQfT+oSA1EEp2q+ne2uh6XgeJcm8brE=
 github.com/PuerkitoBio/purell v1.1.1/go.mod h1:c11w/QuzBsJSee3cPx9rAFu61PvFxuPbtSwDGJws/X0=
 github.com/PuerkitoBio/urlesc v0.0.0-20170810143723-de5bf2ad4578/go.mod h1:uGdkoq3SwY9Y+13GIhn11/XLaGBb4BfwItxLd5jeuXE=
-github.com/StudJobs/proto_srtucture v0.0.0-20260517115443-c0b4765d86cc h1:QK8yU/8DwNsUXdEq9Q90LfpLzjYpVfbqhoks/MMbzqU=
-github.com/StudJobs/proto_srtucture v0.0.0-20260517115443-c0b4765d86cc/go.mod h1:pKJeIqXGsSLamBZkCv0y2dIm/x60Knjydfpl9Ebq82s=
+github.com/StudJobs/proto_srtucture v0.0.0-20260517121409-574df966ec17 h1:/T2ABcD9L41/BZibvIRAFezEjbXT+F8/tYfiPEHX1YQ=
+github.com/StudJobs/proto_srtucture v0.0.0-20260517121409-574df966ec17/go.mod h1:pKJeIqXGsSLamBZkCv0y2dIm/x60Knjydfpl9Ebq82s=
 github.com/agiledragon/gomonkey/v2 v2.3.1/go.mod h1:ap1AmDzcVOAz1YpeJ3TCzIgstoaWLA6jbbgxfB4w2iY=
 github.com/andybalholm/brotli v1.0.4/go.mod h1:fO7iG3H7G2nSZ7m0zPUDn85XEX2GTukHGRSepvi9Eig=
 github.com/andybalholm/brotli v1.2.0 h1:ukwgCxwYrmACq68yiUqwIWnGY0cTPox/M94sVwToPjQ=

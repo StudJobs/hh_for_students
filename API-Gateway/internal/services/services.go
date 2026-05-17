@@ -151,6 +151,9 @@ type ChatService interface {
 	SendMessage(ctx context.Context, threadID, fromUser, body string) (*models.ChatMessage, error)
 	ListMessages(ctx context.Context, threadID string, page, limit int32) (*models.ChatMessageList, error)
 	ListUserThreads(ctx context.Context, userID string, limit int32) ([]*models.ChatThread, error)
+	EditMessage(ctx context.Context, messageID, fromUser, body string) (*models.ChatMessage, error)
+	HideThread(ctx context.Context, userID, threadID string) error
+	ListHiddenThreads(ctx context.Context, userID string) ([]string, error)
 }
 
 // ApiGateway объединяет все сервисы

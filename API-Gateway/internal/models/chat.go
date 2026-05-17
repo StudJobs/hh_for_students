@@ -6,6 +6,7 @@ type ChatMessage struct {
 	FromUserID string `json:"from_user_id"`
 	Body       string `json:"body"`
 	CreatedAt  string `json:"created_at"`
+	EditedAt   string `json:"edited_at,omitempty"`
 }
 
 type ChatMessageList struct {

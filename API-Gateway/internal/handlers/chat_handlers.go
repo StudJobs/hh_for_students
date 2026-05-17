@@ -100,17 +100,28 @@ func (h *Handler) GetChatThreads(c *fiber.Ctx) error {
 		return c.Status(fiber.StatusUnauthorized).JSON(fiber.Map{"error": "unauthorized"})
 	}
 
+	ctx := c.Context()
+
+	// Скрытые юзером треды (анти-зачистка): после сбора будем фильтровать.
+	hidden := make(map[string]bool)
+	if hids, err := h.apiService.Chat.ListHiddenThreads(ctx, userID); err == nil {
+		for _, tid := range hids {
+			hidden[tid] = true
+		}
+	}
+
 	threads := make([]*models.ChatThread, 0, 32)
 	added := make(map[string]bool)
 	add := func(t *models.ChatThread) {
 		if t == nil || t.ThreadID == "" || added[t.ThreadID] {
 			return
 		}
+		if hidden[t.ThreadID] {
+			return
+		}
 		added[t.ThreadID] = true
 		threads = append(threads, t)
 	}
-
-	ctx := c.Context()
 
 	// Определяем company-id для HR/OWNER. У OWNER company_id == userID.
 	companyID := ""
@@ -314,6 +325,39 @@ func (h *Handler) GetChatMessages(c *fiber.Ctx) error {
 		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{"error": "failed to load messages"})
 	}
 	return c.JSON(list)
+}
+
+// EditChatMessage — редактирование своего сообщения.
+func (h *Handler) EditChatMessage(c *fiber.Ctx) error {
+	userID := getUserIDFromContext(c)
+	msgID := c.Params("msg_id")
+	if userID == "" || msgID == "" {
+		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{"error": "invalid request"})
+	}
+	var req models.ChatSendRequest
+	if err := c.BodyParser(&req); err != nil || strings.TrimSpace(req.Body) == "" {
+		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{"error": "body is required"})
+	}
+	m, err := h.apiService.Chat.EditMessage(c.Context(), msgID, userID, strings.TrimSpace(req.Body))
+	if err != nil {
+		log.Printf("EditChatMessage failed user=%s msg=%s: %v", userID, msgID, err)
+		return c.Status(fiber.StatusForbidden).JSON(fiber.Map{"error": "не ваше сообщение или не существует"})
+	}
+	return c.JSON(m)
+}
+
+// HideChatThread — скрыть тред со своей стороны (мягкое удаление, не трогает БД).
+func (h *Handler) HideChatThread(c *fiber.Ctx) error {
+	_, _, threadID := threadIDFromParams(c)
+	userID := getUserIDFromContext(c)
+	if threadID == "" || userID == "" {
+		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{"error": "invalid request"})
+	}
+	if err := h.apiService.Chat.HideThread(c.Context(), userID, threadID); err != nil {
+		log.Printf("HideChatThread failed user=%s thread=%s: %v", userID, threadID, err)
+		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{"error": "failed to hide"})
+	}
+	return c.JSON(fiber.Map{"ok": true})
 }
 
 func (h *Handler) SendChatMessage(c *fiber.Ctx) error {
