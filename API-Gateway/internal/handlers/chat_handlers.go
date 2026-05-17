@@ -208,8 +208,55 @@ func (h *Handler) GetChatThreads(c *fiber.Ctx) error {
 		}
 	}
 
+	// 4) Fallback: треды, где юзер уже писал хотя бы раз. Это страхует случаи,
+	//    которые не покрылись бизнес-источниками (HR без membership, expert как
+	//    co-reviewer и т.д.). Если запись уже есть в added — пропускается.
+	if extra, err := h.apiService.Chat.ListUserThreads(ctx, userID, 100); err == nil {
+		for _, t := range extra {
+			if t.ThreadID == "" || added[t.ThreadID] {
+				continue
+			}
+			parts := strings.SplitN(t.ThreadID, ":", 2)
+			if len(parts) != 2 {
+				continue
+			}
+			kind, rid := parts[0], parts[1]
+			thread := &models.ChatThread{
+				ThreadID:    t.ThreadID,
+				Kind:        kind,
+				ResourceID:  rid,
+				LastMessage: t.LastMessage,
+				LastAt:      t.LastAt,
+			}
+			switch kind {
+			case "task", "quest":
+				if task, err := h.apiService.MicroTasks.Get(ctx, rid); err == nil && task != nil {
+					thread.ContextTitle = task.Title
+					if task.AssignedTo != "" && task.AssignedTo != userID {
+						thread.PeerID = task.AssignedTo
+					} else {
+						thread.PeerID = task.CompanyID
+					}
+				}
+			case "application":
+				if a, err := h.apiService.Application.Get(ctx, rid); err == nil && a != nil {
+					thread.ContextTitle = "Отклик"
+					if a.StudentID != userID {
+						thread.PeerID = a.StudentID
+					} else if a.HRAssigneeID != "" {
+						thread.PeerID = a.HRAssigneeID
+					}
+				}
+			}
+			add(thread)
+		}
+	}
+
 	// Подтягиваем last_message по каждому треду (N+1 — для inbox ≤ 100 ок).
 	for _, t := range threads {
+		if t.LastMessage != "" {
+			continue // уже заполнено fallback'ом
+		}
 		if msgs, err := h.apiService.Chat.ListMessages(ctx, t.ThreadID, 1, 1); err == nil && msgs != nil && len(msgs.Messages) > 0 {
 			last := msgs.Messages[len(msgs.Messages)-1]
 			t.LastMessage = last.Body
