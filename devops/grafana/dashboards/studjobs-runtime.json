@@ -1,0 +1,211 @@
+{
+  "annotations": { "list": [] },
+  "editable": true,
+  "graphTooltip": 1,
+  "id": null,
+  "title": "StudJobs · Go runtime",
+  "tags": ["studjobs", "go", "runtime"],
+  "uid": "studjobs-runtime",
+  "schemaVersion": 39,
+  "version": 1,
+  "refresh": "15s",
+  "time": { "from": "now-30m", "to": "now" },
+  "timezone": "browser",
+  "templating": {
+    "list": [
+      {
+        "name": "service",
+        "type": "query",
+        "datasource": { "type": "prometheus", "uid": "prometheus" },
+        "query": "label_values(process_resident_memory_bytes{service!=\"\"}, service)",
+        "refresh": 2,
+        "multi": true,
+        "includeAll": true,
+        "allValue": ".*",
+        "current": { "text": "All", "value": "$__all" }
+      }
+    ]
+  },
+  "panels": [
+    {
+      "type": "row",
+      "title": "Память и процессы",
+      "gridPos": { "h": 1, "w": 24, "x": 0, "y": 0 },
+      "collapsed": false
+    },
+    {
+      "type": "timeseries",
+      "title": "Resident memory (RSS) по сервисам",
+      "description": "Сколько RAM реально занимает каждый Go-процесс. Базовая метрика для понимания «размера» сервиса в проде.",
+      "gridPos": { "h": 8, "w": 12, "x": 0, "y": 1 },
+      "datasource": { "type": "prometheus", "uid": "prometheus" },
+      "targets": [
+        {
+          "refId": "A",
+          "expr": "process_resident_memory_bytes{service=~\"$service\"}",
+          "legendFormat": "{{service}}"
+        }
+      ],
+      "fieldConfig": { "defaults": { "unit": "bytes", "custom": { "fillOpacity": 10, "lineWidth": 2 } } },
+      "options": { "legend": { "displayMode": "table", "calcs": ["last", "max"] } }
+    },
+    {
+      "type": "timeseries",
+      "title": "Heap allocated (Go) по сервисам",
+      "description": "Сколько байт занято в Go-куче прямо сейчас. Если растёт линейно — потенциальная утечка.",
+      "gridPos": { "h": 8, "w": 12, "x": 12, "y": 1 },
+      "datasource": { "type": "prometheus", "uid": "prometheus" },
+      "targets": [
+        {
+          "refId": "A",
+          "expr": "go_memstats_heap_alloc_bytes{service=~\"$service\"}",
+          "legendFormat": "{{service}}"
+        }
+      ],
+      "fieldConfig": { "defaults": { "unit": "bytes", "custom": { "fillOpacity": 10 } } },
+      "options": { "legend": { "displayMode": "table", "calcs": ["last", "max"] } }
+    },
+    {
+      "type": "timeseries",
+      "title": "Goroutines",
+      "description": "Количество активных goroutines. Резкий рост = блокировка/leak в обработке запросов.",
+      "gridPos": { "h": 8, "w": 12, "x": 0, "y": 9 },
+      "datasource": { "type": "prometheus", "uid": "prometheus" },
+      "targets": [
+        {
+          "refId": "A",
+          "expr": "go_goroutines{service=~\"$service\"}",
+          "legendFormat": "{{service}}"
+        }
+      ],
+      "fieldConfig": { "defaults": { "unit": "short", "custom": { "lineWidth": 2 } } },
+      "options": { "legend": { "displayMode": "table", "calcs": ["last", "max"] } }
+    },
+    {
+      "type": "timeseries",
+      "title": "Open file descriptors",
+      "description": "Сколько FD открыто (соединения с БД/Redis/ES, входящие сокеты). Подсветка max_fds сверху.",
+      "gridPos": { "h": 8, "w": 12, "x": 12, "y": 9 },
+      "datasource": { "type": "prometheus", "uid": "prometheus" },
+      "targets": [
+        {
+          "refId": "A",
+          "expr": "process_open_fds{service=~\"$service\"}",
+          "legendFormat": "{{service}}"
+        }
+      ],
+      "fieldConfig": { "defaults": { "unit": "short" } }
+    },
+    {
+      "type": "row",
+      "title": "CPU и GC",
+      "gridPos": { "h": 1, "w": 24, "x": 0, "y": 17 },
+      "collapsed": false
+    },
+    {
+      "type": "timeseries",
+      "title": "CPU usage (%)",
+      "description": "Используемые CPU-секунды в секунду × 100. Среднее по rate за 1 мин.",
+      "gridPos": { "h": 8, "w": 12, "x": 0, "y": 18 },
+      "datasource": { "type": "prometheus", "uid": "prometheus" },
+      "targets": [
+        {
+          "refId": "A",
+          "expr": "rate(process_cpu_seconds_total{service=~\"$service\"}[1m]) * 100",
+          "legendFormat": "{{service}}"
+        }
+      ],
+      "fieldConfig": { "defaults": { "unit": "percent", "min": 0 } },
+      "options": { "legend": { "displayMode": "table", "calcs": ["last", "max"] } }
+    },
+    {
+      "type": "timeseries",
+      "title": "GC pause · max (мс)",
+      "description": "Худшая GC-пауза процесса (Go отдаёт summary с квантилями 0/0.25/0.5/0.75/1 — берём 1 = max). Должно быть < 10мс на здоровом Go.",
+      "gridPos": { "h": 8, "w": 12, "x": 12, "y": 18 },
+      "datasource": { "type": "prometheus", "uid": "prometheus" },
+      "targets": [
+        {
+          "refId": "A",
+          "expr": "go_gc_duration_seconds{quantile=\"1\", service=~\"$service\"} * 1000",
+          "legendFormat": "max {{service}}"
+        },
+        {
+          "refId": "B",
+          "expr": "go_gc_duration_seconds{quantile=\"0.75\", service=~\"$service\"} * 1000",
+          "legendFormat": "p75 {{service}}"
+        }
+      ],
+      "fieldConfig": { "defaults": { "unit": "ms" } }
+    },
+    {
+      "type": "timeseries",
+      "title": "GC циклов в минуту",
+      "description": "Частота сборок мусора. Слишком частая — давление аллокаций.",
+      "gridPos": { "h": 8, "w": 12, "x": 0, "y": 26 },
+      "datasource": { "type": "prometheus", "uid": "prometheus" },
+      "targets": [
+        {
+          "refId": "A",
+          "expr": "rate(go_gc_duration_seconds_count{service=~\"$service\"}[1m]) * 60",
+          "legendFormat": "{{service}}"
+        }
+      ],
+      "fieldConfig": { "defaults": { "unit": "short" } }
+    },
+    {
+      "type": "timeseries",
+      "title": "Сетевой трафик процесса (RX/TX, bytes/s)",
+      "description": "Получено / отправлено байт в секунду самим процессом. Полезно для оценки нагрузки на сетевой стек.",
+      "gridPos": { "h": 8, "w": 12, "x": 12, "y": 26 },
+      "datasource": { "type": "prometheus", "uid": "prometheus" },
+      "targets": [
+        {
+          "refId": "A",
+          "expr": "rate(process_network_receive_bytes_total{service=~\"$service\"}[1m])",
+          "legendFormat": "RX {{service}}"
+        },
+        {
+          "refId": "B",
+          "expr": "rate(process_network_transmit_bytes_total{service=~\"$service\"}[1m])",
+          "legendFormat": "TX {{service}}"
+        }
+      ],
+      "fieldConfig": { "defaults": { "unit": "Bps" } }
+    },
+    {
+      "type": "row",
+      "title": "Uptime",
+      "gridPos": { "h": 1, "w": 24, "x": 0, "y": 34 },
+      "collapsed": false
+    },
+    {
+      "type": "table",
+      "title": "Сервисы · uptime",
+      "description": "Время с последнего рестарта каждого Go-процесса.",
+      "gridPos": { "h": 8, "w": 24, "x": 0, "y": 35 },
+      "datasource": { "type": "prometheus", "uid": "prometheus" },
+      "targets": [
+        {
+          "refId": "A",
+          "expr": "time() - process_start_time_seconds{service=~\"$service\"}",
+          "format": "table",
+          "instant": true,
+          "legendFormat": "{{service}}"
+        }
+      ],
+      "transformations": [
+        { "id": "organize", "options": {
+          "excludeByName": { "Time": true, "__name__": true, "instance": true, "job": true, "layer": true },
+          "renameByName": { "service": "Сервис", "Value": "Uptime, сек" }
+        }}
+      ],
+      "fieldConfig": {
+        "defaults": { "unit": "s" },
+        "overrides": [
+          { "matcher": { "id": "byName", "options": "Uptime, сек" }, "properties": [{ "id": "unit", "value": "s" }] }
+        ]
+      }
+    }
+  ]
+}

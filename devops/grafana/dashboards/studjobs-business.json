@@ -1,0 +1,232 @@
+{
+  "annotations": { "list": [] },
+  "editable": true,
+  "graphTooltip": 1,
+  "id": null,
+  "title": "StudJobs · Business activity",
+  "tags": ["studjobs", "business"],
+  "uid": "studjobs-business",
+  "schemaVersion": 39,
+  "version": 1,
+  "refresh": "30s",
+  "time": { "from": "now-1h", "to": "now" },
+  "timezone": "browser",
+  "panels": [
+    {
+      "type": "row",
+      "title": "Активность пользователей",
+      "gridPos": { "h": 1, "w": 24, "x": 0, "y": 0 },
+      "collapsed": false
+    },
+    {
+      "type": "stat",
+      "title": "Логинов за период",
+      "description": "Каждый успешный Login = вход пользователя в систему.",
+      "gridPos": { "h": 6, "w": 4, "x": 0, "y": 1 },
+      "datasource": { "type": "prometheus", "uid": "prometheus" },
+      "targets": [
+        {
+          "refId": "A",
+          "expr": "sum(increase(grpc_server_handled_total{grpc_method=~\".+/Login\", grpc_code=\"OK\"}[$__range])) or vector(0)"
+        }
+      ],
+      "fieldConfig": { "defaults": { "unit": "short" } },
+      "options": { "colorMode": "value", "graphMode": "area" }
+    },
+    {
+      "type": "stat",
+      "title": "Регистраций за период",
+      "description": "Успешные SignUp вызовы.",
+      "gridPos": { "h": 6, "w": 4, "x": 4, "y": 1 },
+      "datasource": { "type": "prometheus", "uid": "prometheus" },
+      "targets": [
+        {
+          "refId": "A",
+          "expr": "sum(increase(grpc_server_handled_total{grpc_method=~\".+/SignUp\", grpc_code=\"OK\"}[$__range])) or vector(0)"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "short",
+          "thresholds": { "mode": "absolute", "steps": [
+            { "color": "blue", "value": null },
+            { "color": "green", "value": 1 }
+          ]}
+        }
+      },
+      "options": { "colorMode": "value", "graphMode": "area" }
+    },
+    {
+      "type": "stat",
+      "title": "ParseToken rate",
+      "description": "Сколько раз в секунду Auth валидирует JWT. Прокси-метрика реальной активной нагрузки от авторизованных пользователей.",
+      "gridPos": { "h": 6, "w": 4, "x": 8, "y": 1 },
+      "datasource": { "type": "prometheus", "uid": "prometheus" },
+      "targets": [
+        {
+          "refId": "A",
+          "expr": "sum(rate(grpc_server_handled_total{grpc_method=~\".+/ParseToken\"}[5m]))"
+        }
+      ],
+      "fieldConfig": { "defaults": { "unit": "reqps", "decimals": 2 } },
+      "options": { "colorMode": "value", "graphMode": "area" }
+    },
+    {
+      "type": "stat",
+      "title": "Сообщений в чате за период",
+      "description": "Успешные SendMessage в ChatService.",
+      "gridPos": { "h": 6, "w": 4, "x": 12, "y": 1 },
+      "datasource": { "type": "prometheus", "uid": "prometheus" },
+      "targets": [
+        {
+          "refId": "A",
+          "expr": "sum(increase(grpc_server_handled_total{grpc_method=~\".+/SendMessage\", grpc_code=\"OK\"}[$__range])) or vector(0)"
+        }
+      ],
+      "fieldConfig": { "defaults": { "unit": "short" } },
+      "options": { "colorMode": "value", "graphMode": "area" }
+    },
+    {
+      "type": "stat",
+      "title": "Просмотров профилей",
+      "description": "Вызовы GetProfile (открытие чужой/своей страницы пользователя).",
+      "gridPos": { "h": 6, "w": 4, "x": 16, "y": 1 },
+      "datasource": { "type": "prometheus", "uid": "prometheus" },
+      "targets": [
+        {
+          "refId": "A",
+          "expr": "sum(increase(grpc_server_handled_total{grpc_method=~\".+/GetProfile\", grpc_code=\"OK\"}[$__range])) or vector(0)"
+        }
+      ],
+      "fieldConfig": { "defaults": { "unit": "short" } },
+      "options": { "colorMode": "value", "graphMode": "area" }
+    },
+    {
+      "type": "stat",
+      "title": "Списков вакансий",
+      "description": "Вызовы GetAllVacancies — открытие витрины /vacancies.",
+      "gridPos": { "h": 6, "w": 4, "x": 20, "y": 1 },
+      "datasource": { "type": "prometheus", "uid": "prometheus" },
+      "targets": [
+        {
+          "refId": "A",
+          "expr": "sum(increase(grpc_server_handled_total{grpc_method=~\".+/GetAllVacancies\", grpc_code=\"OK\"}[$__range])) or vector(0)"
+        }
+      ],
+      "fieldConfig": { "defaults": { "unit": "short" } },
+      "options": { "colorMode": "value", "graphMode": "area" }
+    },
+    {
+      "type": "row",
+      "title": "Вакансии и микрозадачи",
+      "gridPos": { "h": 1, "w": 24, "x": 0, "y": 7 },
+      "collapsed": false
+    },
+    {
+      "type": "timeseries",
+      "title": "Операции с вакансиями (rate)",
+      "description": "Что делают пользователи с вакансиями — список / открытие / поиск HR-своих.",
+      "gridPos": { "h": 8, "w": 12, "x": 0, "y": 8 },
+      "datasource": { "type": "prometheus", "uid": "prometheus" },
+      "targets": [
+        {
+          "refId": "A",
+          "expr": "sum by (grpc_method) (rate(grpc_server_handled_total{service=\"vacancy\", grpc_method=~\".*Vacanc.*\"}[1m]))",
+          "legendFormat": "{{grpc_method}}"
+        }
+      ],
+      "fieldConfig": { "defaults": { "unit": "reqps", "custom": { "fillOpacity": 25 } } }
+    },
+    {
+      "type": "timeseries",
+      "title": "Микрозадачи (rate)",
+      "description": "Create / Apply / Submit / List по микрозадачам.",
+      "gridPos": { "h": 8, "w": 12, "x": 12, "y": 8 },
+      "datasource": { "type": "prometheus", "uid": "prometheus" },
+      "targets": [
+        {
+          "refId": "A",
+          "expr": "sum by (grpc_method) (rate(grpc_server_handled_total{service=\"microtasks\"}[1m]))",
+          "legendFormat": "{{grpc_method}}"
+        }
+      ],
+      "fieldConfig": { "defaults": { "unit": "reqps", "custom": { "fillOpacity": 25 } } }
+    },
+    {
+      "type": "row",
+      "title": "Поиск и контент",
+      "gridPos": { "h": 1, "w": 24, "x": 0, "y": 16 },
+      "collapsed": false
+    },
+    {
+      "type": "timeseries",
+      "title": "Elasticsearch · операции по типу",
+      "description": "Какие индексы и операции (search / index / refresh) грузят ES.",
+      "gridPos": { "h": 8, "w": 12, "x": 0, "y": 17 },
+      "datasource": { "type": "prometheus", "uid": "prometheus" },
+      "targets": [
+        {
+          "refId": "A",
+          "expr": "sum by (op) (rate(search_es_query_duration_seconds_count[1m]))",
+          "legendFormat": "{{op}}"
+        }
+      ],
+      "fieldConfig": { "defaults": { "unit": "ops", "custom": { "fillOpacity": 20 } } }
+    },
+    {
+      "type": "timeseries",
+      "title": "Достижения и ачивки",
+      "description": "Загрузка / submit на ревью / approve экспертом / получение списка.",
+      "gridPos": { "h": 8, "w": 12, "x": 12, "y": 17 },
+      "datasource": { "type": "prometheus", "uid": "prometheus" },
+      "targets": [
+        {
+          "refId": "A",
+          "expr": "sum by (grpc_method) (rate(grpc_server_handled_total{service=\"achievements\"}[1m]))",
+          "legendFormat": "{{grpc_method}}"
+        }
+      ],
+      "fieldConfig": { "defaults": { "unit": "reqps", "custom": { "fillOpacity": 20 } } }
+    },
+    {
+      "type": "row",
+      "title": "Топ маршрутов",
+      "gridPos": { "h": 1, "w": 24, "x": 0, "y": 25 },
+      "collapsed": false
+    },
+    {
+      "type": "bargauge",
+      "title": "Топ-15 REST-маршрутов · запросов за период",
+      "description": "Самые «горячие» точки публичного API. Видно, что пользователи реально дёргают.",
+      "gridPos": { "h": 10, "w": 12, "x": 0, "y": 26 },
+      "datasource": { "type": "prometheus", "uid": "prometheus" },
+      "targets": [
+        {
+          "refId": "A",
+          "expr": "topk(15, sum by (route) (increase(http_request_duration_seconds_count{service=\"api-gateway\"}[$__range])))",
+          "legendFormat": "{{route}}",
+          "instant": true
+        }
+      ],
+      "fieldConfig": { "defaults": { "unit": "short" } },
+      "options": { "orientation": "horizontal", "displayMode": "gradient" }
+    },
+    {
+      "type": "bargauge",
+      "title": "Топ-15 gRPC-методов · вызовов за период",
+      "description": "Самые нагружаемые межсервисные вызовы. Кандидаты на кэширование/оптимизацию.",
+      "gridPos": { "h": 10, "w": 12, "x": 12, "y": 26 },
+      "datasource": { "type": "prometheus", "uid": "prometheus" },
+      "targets": [
+        {
+          "refId": "A",
+          "expr": "topk(15, sum by (service, grpc_method) (increase(grpc_server_handled_total[$__range])))",
+          "legendFormat": "{{service}} · {{grpc_method}}",
+          "instant": true
+        }
+      ],
+      "fieldConfig": { "defaults": { "unit": "short" } },
+      "options": { "orientation": "horizontal", "displayMode": "gradient" }
+    }
+  ]
+}

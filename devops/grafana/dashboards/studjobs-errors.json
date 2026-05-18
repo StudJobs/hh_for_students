@@ -1,0 +1,228 @@
+{
+  "annotations": { "list": [] },
+  "editable": true,
+  "graphTooltip": 1,
+  "id": null,
+  "title": "StudJobs · Errors & status codes",
+  "tags": ["studjobs", "errors"],
+  "uid": "studjobs-errors",
+  "schemaVersion": 39,
+  "version": 1,
+  "refresh": "15s",
+  "time": { "from": "now-1h", "to": "now" },
+  "timezone": "browser",
+  "panels": [
+    {
+      "type": "row",
+      "title": "HTTP — суммарно (API-Gateway)",
+      "gridPos": { "h": 1, "w": 24, "x": 0, "y": 0 },
+      "collapsed": false
+    },
+    {
+      "type": "stat",
+      "title": "5xx · последний час",
+      "description": "Сколько ошибок 5xx прилетело за выбранный диапазон. Алерт-кандидат: >0 в проде.",
+      "gridPos": { "h": 6, "w": 6, "x": 0, "y": 1 },
+      "datasource": { "type": "prometheus", "uid": "prometheus" },
+      "targets": [
+        {
+          "refId": "A",
+          "expr": "sum(increase(http_request_duration_seconds_count{service=\"api-gateway\", status=~\"5..\"}[$__range])) or vector(0)"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "short",
+          "thresholds": { "mode": "absolute", "steps": [
+            { "color": "green", "value": null },
+            { "color": "orange", "value": 1 },
+            { "color": "red", "value": 10 }
+          ]}
+        }
+      },
+      "options": { "colorMode": "value", "graphMode": "area" }
+    },
+    {
+      "type": "stat",
+      "title": "4xx · последний час",
+      "description": "Клиентские ошибки. Норма для публичного API — пользователи всегда что-то делают неправильно. Резкий рост — баг в фронте.",
+      "gridPos": { "h": 6, "w": 6, "x": 6, "y": 1 },
+      "datasource": { "type": "prometheus", "uid": "prometheus" },
+      "targets": [
+        {
+          "refId": "A",
+          "expr": "sum(increase(http_request_duration_seconds_count{service=\"api-gateway\", status=~\"4..\"}[$__range])) or vector(0)"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "short",
+          "thresholds": { "mode": "absolute", "steps": [
+            { "color": "green", "value": null },
+            { "color": "yellow", "value": 50 },
+            { "color": "orange", "value": 500 }
+          ]}
+        }
+      },
+      "options": { "colorMode": "value", "graphMode": "area" }
+    },
+    {
+      "type": "stat",
+      "title": "Error rate (%)",
+      "description": "Доля 4xx+5xx в общем потоке. Подсветка по уровню.",
+      "gridPos": { "h": 6, "w": 6, "x": 12, "y": 1 },
+      "datasource": { "type": "prometheus", "uid": "prometheus" },
+      "targets": [
+        {
+          "refId": "A",
+          "expr": "sum(rate(http_request_duration_seconds_count{service=\"api-gateway\", status=~\"[45]..\"}[5m])) / clamp_min(sum(rate(http_request_duration_seconds_count{service=\"api-gateway\"}[5m])), 1)"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "percentunit",
+          "min": 0, "max": 1,
+          "thresholds": { "mode": "absolute", "steps": [
+            { "color": "green", "value": null },
+            { "color": "yellow", "value": 0.05 },
+            { "color": "orange", "value": 0.15 },
+            { "color": "red", "value": 0.30 }
+          ]}
+        }
+      },
+      "options": { "colorMode": "background", "graphMode": "none" }
+    },
+    {
+      "type": "stat",
+      "title": "Запросов всего · последний час",
+      "gridPos": { "h": 6, "w": 6, "x": 18, "y": 1 },
+      "datasource": { "type": "prometheus", "uid": "prometheus" },
+      "targets": [
+        {
+          "refId": "A",
+          "expr": "sum(increase(http_request_duration_seconds_count{service=\"api-gateway\"}[$__range])) or vector(0)"
+        }
+      ],
+      "fieldConfig": { "defaults": { "unit": "short" } },
+      "options": { "colorMode": "value", "graphMode": "area" }
+    },
+    {
+      "type": "timeseries",
+      "title": "Status codes · во времени",
+      "description": "Стек кодов ответа Gateway. На зелёном — норма, скачки красного — инциденты.",
+      "gridPos": { "h": 8, "w": 24, "x": 0, "y": 7 },
+      "datasource": { "type": "prometheus", "uid": "prometheus" },
+      "targets": [
+        {
+          "refId": "A",
+          "expr": "sum by (status) (rate(http_request_duration_seconds_count{service=\"api-gateway\"}[1m]))",
+          "legendFormat": "{{status}}"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "reqps",
+          "custom": { "stacking": { "mode": "normal" }, "fillOpacity": 60, "lineWidth": 0 }
+        },
+        "overrides": [
+          { "matcher": { "id": "byRegexp", "options": "^2.." }, "properties": [{ "id": "color", "value": { "mode": "fixed", "fixedColor": "green" }}] },
+          { "matcher": { "id": "byRegexp", "options": "^3.." }, "properties": [{ "id": "color", "value": { "mode": "fixed", "fixedColor": "blue" }}] },
+          { "matcher": { "id": "byRegexp", "options": "^4.." }, "properties": [{ "id": "color", "value": { "mode": "fixed", "fixedColor": "yellow" }}] },
+          { "matcher": { "id": "byRegexp", "options": "^5.." }, "properties": [{ "id": "color", "value": { "mode": "fixed", "fixedColor": "red" }}] }
+        ]
+      }
+    },
+    {
+      "type": "row",
+      "title": "Топ-ошибки по маршрутам",
+      "gridPos": { "h": 1, "w": 24, "x": 0, "y": 15 },
+      "collapsed": false
+    },
+    {
+      "type": "table",
+      "title": "Топ-10 маршрутов с 5xx",
+      "description": "Где сервер падает чаще всего. Прямо сюда копировать имя маршрута в issue/PR.",
+      "gridPos": { "h": 9, "w": 12, "x": 0, "y": 16 },
+      "datasource": { "type": "prometheus", "uid": "prometheus" },
+      "targets": [
+        {
+          "refId": "A",
+          "expr": "topk(10, sum by (method, route) (increase(http_request_duration_seconds_count{service=\"api-gateway\", status=~\"5..\"}[$__range])))",
+          "format": "table",
+          "instant": true
+        }
+      ],
+      "transformations": [
+        { "id": "organize", "options": {
+          "excludeByName": { "Time": true, "__name__": true, "instance": true, "job": true, "layer": true, "service": true },
+          "renameByName": { "method": "Метод", "route": "Маршрут", "Value": "5xx за период" }
+        }}
+      ],
+      "fieldConfig": { "defaults": { "unit": "short" } }
+    },
+    {
+      "type": "table",
+      "title": "Топ-10 маршрутов с 4xx",
+      "gridPos": { "h": 9, "w": 12, "x": 12, "y": 16 },
+      "datasource": { "type": "prometheus", "uid": "prometheus" },
+      "targets": [
+        {
+          "refId": "A",
+          "expr": "topk(10, sum by (method, route, status) (increase(http_request_duration_seconds_count{service=\"api-gateway\", status=~\"4..\"}[$__range])))",
+          "format": "table",
+          "instant": true
+        }
+      ],
+      "transformations": [
+        { "id": "organize", "options": {
+          "excludeByName": { "Time": true, "__name__": true, "instance": true, "job": true, "layer": true, "service": true },
+          "renameByName": { "method": "Метод", "route": "Маршрут", "status": "Код", "Value": "4xx за период" }
+        }}
+      ],
+      "fieldConfig": { "defaults": { "unit": "short" } }
+    },
+    {
+      "type": "row",
+      "title": "gRPC — ошибки по коду",
+      "gridPos": { "h": 1, "w": 24, "x": 0, "y": 25 },
+      "collapsed": false
+    },
+    {
+      "type": "timeseries",
+      "title": "gRPC · не-OK ответов в сек",
+      "description": "Все gRPC-вызовы между микросервисами, кроме `OK`. Высокие значения — проблема в core-слое.",
+      "gridPos": { "h": 8, "w": 12, "x": 0, "y": 26 },
+      "datasource": { "type": "prometheus", "uid": "prometheus" },
+      "targets": [
+        {
+          "refId": "A",
+          "expr": "sum by (grpc_code, service) (rate(grpc_server_handled_total{grpc_code!=\"OK\"}[1m]))",
+          "legendFormat": "{{service}} · {{grpc_code}}"
+        }
+      ],
+      "fieldConfig": { "defaults": { "unit": "reqps" } }
+    },
+    {
+      "type": "table",
+      "title": "Топ gRPC-методов по ошибкам",
+      "description": "Какие RPC чаще всего возвращают не-OK. NotFound — обычно норма, Internal/Unavailable — инциденты.",
+      "gridPos": { "h": 8, "w": 12, "x": 12, "y": 26 },
+      "datasource": { "type": "prometheus", "uid": "prometheus" },
+      "targets": [
+        {
+          "refId": "A",
+          "expr": "topk(15, sum by (service, grpc_method, grpc_code) (increase(grpc_server_handled_total{grpc_code!=\"OK\"}[$__range])))",
+          "format": "table",
+          "instant": true
+        }
+      ],
+      "transformations": [
+        { "id": "organize", "options": {
+          "excludeByName": { "Time": true, "__name__": true, "instance": true, "job": true, "layer": true, "grpc_type": true, "grpc_service": true },
+          "renameByName": { "service": "Сервис", "grpc_method": "Метод", "grpc_code": "Код", "Value": "Ошибок за период" }
+        }}
+      ],
+      "fieldConfig": { "defaults": { "unit": "short" } }
+    }
+  ]
+}
